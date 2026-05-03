@@ -29,10 +29,33 @@ const defaultCorsOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173'
 ];
+const normalizeOrigin = (value) => {
+    if (!value) {
+        return null;
+    }
+
+    try {
+        return new URL(value).origin;
+    } catch {
+        return String(value).trim();
+    }
+};
+
+const configuredCorsOrigins = [
+    process.env.CORS_ORIGINS,
+    process.env.APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.PUBLIC_URL
+]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((origin) => normalizeOrigin(origin))
+    .filter(Boolean);
+
 const allowedCorsOrigins = new Set(
-    (process.env.CORS_ORIGINS || defaultCorsOrigins.join(','))
-        .split(',')
-        .map((origin) => origin.trim())
+    [...defaultCorsOrigins, ...configuredCorsOrigins]
+        .map((origin) => normalizeOrigin(origin))
         .filter(Boolean)
 );
 

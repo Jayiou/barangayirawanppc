@@ -242,7 +242,8 @@
 
                                 <div class="recaptcha-shell">
                                     <div id="g-recaptcha" class="recaptcha-container"></div>
-                                    <p v-if="!recaptchaReady" class="recaptcha-loading">Loading reCAPTCHA...</p>
+                                    <p v-if="!recaptchaReady && !recaptchaError" class="recaptcha-loading">Loading reCAPTCHA...</p>
+                                    <p v-else-if="recaptchaError" class="recaptcha-loading recaptcha-error">{{ recaptchaError }}</p>
                                 </div>
                                 <div class="legal-text">
                                     Protected by reCAPTCHA and subject to the Google 
@@ -359,7 +360,7 @@ import { usePasswordReset } from '@/composables/usePasswordReset';
 
 // Composables
 const { loginForm, registerForm, proofOfResidencyFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, getPendingOtpEmail, setPendingOtpEmail } = useLandingAuth();
-const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanup } = useRecaptcha();
+const { recaptchaReady, recaptchaError, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanup } = useRecaptcha();
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
 
 // Local state
@@ -420,6 +421,17 @@ const setStatus = (message, isError = false) => {
     toastTimer = setTimeout(() => {
         clearToast();
     }, 3500);
+};
+
+const loadRecaptcha = () => {
+    return ensureRecaptchaReady()
+        .then(() => {
+            renderRecaptchaCheckbox();
+        })
+        .catch((error) => {
+            console.error('reCaptcha loading error:', error);
+            setStatus('reCaptcha failed to load. Please refresh the page.', true);
+        });
 };
 
 // UI helpers
@@ -485,14 +497,7 @@ const openModal = (mode) => {
     }
     // Pre-load reCaptcha script when registration modal opens
     if (mode === 'register') {
-        ensureRecaptchaReady()
-            .then(() => {
-                renderRecaptchaCheckbox();
-            })
-            .catch((error) => {
-                console.error('reCaptcha loading error:', error);
-                setStatus('reCaptcha failed to load. Please refresh the page.', true);
-            });
+        loadRecaptcha();
     }
 };
 
@@ -590,7 +595,7 @@ const announcements = [
 onMounted(() => {
     console.log('[LandingApp] onMounted hook called');
 
-        ensureRecaptchaReady().catch(() => {
+        loadRecaptcha().catch(() => {
         // The register flow will show a visible error if the script never becomes available.
     });
     
