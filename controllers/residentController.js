@@ -1,0 +1,263 @@
+const Resident = require('../models/Resident');
+const User = require('../models/User');
+const path = require('node:path');
+const fs = require('node:fs');
+const asyncHandler = require('../utils/asyncHandler');
+const { createHttpError } = require('../utils/httpError');
+const { sendStatusUpdateEmail } = require('../utils/mailer');
+
+const residentProfileFields = [
+    'firstName',
+    'middleName',
+    'lastName',
+    'suffix',
+    'sex',
+    'birthDate',
+    'civilStatus',
+    'contactNumber',
+    'email',
+    'address',
+    'purok',
+    'citizenship',
+    'occupation',
+    'voterStatus',
+    'profileImage'
+];
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const pickResidentFields = (source) => residentProfileFields.reduce((accumulator, field) => {
+    if (source[field] !== undefined) {
+        accumulator[field] = source[field];
+    }
+
+    return accumulator;
+}, {});
+
+const validateRequiredResidentFields = (payload) => {
+    const requiredFields = ['firstName', 'lastName', 'sex', 'birthDate', 'address'];
+    const missingFields = requiredFields.filter((field) => !payload[field]);
+
+    return missingFields;
+};
+
+const validateResidentData = (payload) => {
+    if (payload.email !== undefined && payload.email !== '' && !emailRegex.test(String(payload.email).trim())) {
+        return 'Please provide a valid resident email address';
+    }
+
+    if (payload.birthDate !== undefined && Number.isNaN(new Date(payload.birthDate).getTime())) {
+        return 'Please provide a valid birthDate';
+    }
+
+    return null;
+};
+
+// CREATE
+exports.createResident = asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+    const residentData = pickResidentFields(req.body);
+    const missingFields = validateRequiredResidentFields(residentData);
+    const validationError = validateResidentData(residentData);
+
+    if (!userId) {
+        throw createHttpError(400, 'userId is required', { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    if (missingFields.length > 0) {
+        throw createHttpError(400, `Missing required fields: ${missingFields.join(', ')}`, { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    if (validationError) {
+        throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw createHttpError(404, 'User not found', { code: 'RESIDENT_USER_NOT_FOUND' });
+    }
+
+    if (user.role !== 'resident') {
+        throw createHttpError(400, 'Profile can only be created for resident users', { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    const existingResident = await Resident.findOne({ userId });
+
+    if (existingResident) {
+        throw createHttpError(409, 'Resident profile already exists for this user', { code: 'RESIDENT_CONFLICT' });
+    }
+
+    const resident = await Resident.create({
+        userId,
+        ...residentData
+    });
+
+    const populatedResident = await Resident.findById(resident._id)
+        .populate('userId', 'username email role isActive createdAt');
+
+    res.status(201).json(populatedResident);
+});
+
+// GET ALL
+exports.getResidents = asyncHandler(async (req, res) => {
+    const residents = await Resident.find()
+        .populate('userId', 'username email role isActive accountStatus createdAt')
+        .sort({ createdAt: -1 });
+
+    // Filter out residents whose user accounts have been deleted
+    const activeResidents = residents.filter(resident => resident.userId !== null && resident.userId !== undefined);
+
+    res.json(activeResidents);
+});
+
+exports.getResidentById = asyncHandler(async (req, res) => {
+    const resident = await Resident.findById(req.params.id)
+        .populate('userId', 'username email role isActive accountStatus createdAt');
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    res.json(resident);
+});
+
+exports.downloadResidentProof = asyncHandler(async (req, res) => {
+    const resident = await Resident.findById(req.params.id).select('proofOfResidency');
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    if (!resident.proofOfResidency) {
+        throw createHttpError(404, 'Proof of residency not found', { code: 'RESIDENT_PROOF_NOT_FOUND' });
+    }
+
+    const filename = path.basename(resident.proofOfResidency);
+    const privatePath = path.join(__dirname, '../private/uploads/proofs', filename);
+    const legacyPublicPath = path.join(__dirname, '../public/uploads', filename);
+    const proofPath = fs.existsSync(privatePath) ? privatePath : legacyPublicPath;
+
+    if (!fs.existsSync(proofPath)) {
+        throw createHttpError(404, 'Proof of residency file not found', { code: 'RESIDENT_PROOF_NOT_FOUND' });
+    }
+
+    res.sendFile(proofPath);
+});
+
+exports.getMyResidentProfile = asyncHandler(async (req, res) => {
+    const resident = await Resident.findOne({ userId: req.user.id })
+        .populate('userId', 'username email role isActive createdAt');
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    res.json(resident);
+});
+
+exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
+    const residentData = pickResidentFields(req.body);
+    const existingResident = await Resident.findOne({ userId: req.user.id });
+    const validationError = validateResidentData(residentData);
+
+    if (validationError) {
+        throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    if (!existingResident) {
+        const missingFields = validateRequiredResidentFields(residentData);
+
+        if (missingFields.length > 0) {
+            throw createHttpError(400, `Missing required fields: ${missingFields.join(', ')}`, { code: 'RESIDENT_VALIDATION_ERROR' });
+        }
+
+        const createdResident = await Resident.create({
+            userId: req.user.id,
+            ...residentData
+        });
+
+        const populatedResident = await Resident.findById(createdResident._id)
+            .populate('userId', 'username email role isActive createdAt');
+
+        return res.status(201).json(populatedResident);
+    }
+
+    Object.assign(existingResident, residentData);
+    await existingResident.save();
+
+    const updatedResident = await Resident.findById(existingResident._id)
+        .populate('userId', 'username email role isActive createdAt');
+
+    res.json(updatedResident);
+});
+
+// UPDATE
+exports.updateResident = asyncHandler(async (req, res) => {
+    const residentData = pickResidentFields(req.body);
+    const validationError = validateResidentData(residentData);
+
+    if (validationError) {
+        throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    const updated = await Resident.findByIdAndUpdate(req.params.id, residentData, {
+        new: true,
+        runValidators: true
+    }).populate('userId', 'username email role isActive accountStatus createdAt');
+
+    if (!updated) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    res.json(updated);
+});
+
+// UPDATE ACCOUNT STATUS (ADMIN)
+exports.updateResidentStatus = asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    
+    if (!['approved', 'rejected'].includes(status)) {
+        throw createHttpError(400, 'Status must be either approved or rejected', { code: 'INVALID_STATUS' });
+    }
+
+    const resident = await Resident.findById(req.params.id);
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    const user = await User.findById(resident.userId);
+    if (!user) {
+        throw createHttpError(404, 'Associated user account not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    if (user.accountStatus !== 'pending_approval') {
+        throw createHttpError(400, `Cannot change status. Current account status is ${user.accountStatus}`, { code: 'INVALID_STATUS_TRANSITION' });
+    }
+
+    user.accountStatus = status;
+    user.isActive = status === 'approved'; // Only activate if approved
+    await user.save();
+
+    // Send email notification to user about approval or rejection
+    if (user.email && resident.firstName) {
+        sendStatusUpdateEmail(user.email, resident.firstName, status);
+    }
+
+    res.json({
+        message: `Resident account successfully ${status}`,
+        resident,
+        user: { id: user._id, accountStatus: user.accountStatus, isActive: user.isActive }
+    });
+});
+
+// DELETE
+exports.deleteResident = asyncHandler(async (req, res) => {
+    const resident = await Resident.findByIdAndDelete(req.params.id);
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    res.json({ message: "Resident deleted successfully" });
+});

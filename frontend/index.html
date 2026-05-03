@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Connect</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>">
+    <!-- Preload critical resources -->
+    <link rel="preload" as="image" href="/images/hero-bg.jpg" fetchpriority="high">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://www.google.com" crossorigin />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google.com/recaptcha/" />
+    <link rel="dns-prefetch" href="https://www.gstatic.com/" />
+        <script>
+            (function() {
+                var checkDelay = 2500;
+                var timeout = setTimeout(function() {
+                      if (globalThis.__APP_MOUNTED) return;
+                    document.body.style.margin = '0';
+                    document.body.style.fontFamily = 'Arial, sans-serif';
+                    document.body.innerHTML = '\n            <div style="max-width:720px;margin:40px auto;padding:20px;background:#fff;border:1px solid #ddd;border-radius:8px;">\n              <h2 style="margin-top:0;color:#c33">App failed to load</h2>\n              <p>The page did not finish mounting. Try refreshing the page and clearing the browser cache.</p>\n            </div>';
+                }, checkDelay);
+                globalThis.addEventListener('error', function() { clearTimeout(timeout); });
+                globalThis.addEventListener('unhandledrejection', function() { clearTimeout(timeout); });
+            })();
+        </script>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/src/main-landing.js"></script>
+</body>
+</html>
