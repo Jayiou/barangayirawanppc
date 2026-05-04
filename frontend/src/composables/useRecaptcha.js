@@ -50,26 +50,35 @@ export function useRecaptcha() {
                     return;
                 }
 
+                // Setup explicit callback for recaptcha
+                const callbackName = 'onRecaptchaLoadCallback_' + Math.random().toString(36).substring(2, 9);
+                globalThis[callbackName] = () => {
+                    // Callback fired by Google when fully ready
+                    if (globalThis.grecaptcha && globalThis.grecaptcha.render) {
+                        resolve();
+                    }
+                };
+
                 // Load the reCaptcha script
                 const script = document.createElement('script');
-                script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+                script.src = `https://www.google.com/recaptcha/api.js?onload=${callbackName}&render=explicit`;
                 script.async = true;
                 script.defer = true;
 
                 script.onload = () => {
-                    // Wait for grecaptcha object to be available
+                    // Wait for grecaptcha object to be available via our explicit callback or poll
                     const checkGrecaptcha = setInterval(() => {
                         if (globalThis.grecaptcha && globalThis.grecaptcha.render) {
                             clearInterval(checkGrecaptcha);
                             resolve();
                         }
-                    }, 100);
+                    }, 250);
                     setTimeout(() => {
                         clearInterval(checkGrecaptcha);
                         resetLoaderState();
-                        setRecaptchaError('reCAPTCHA did not finish loading. Please refresh the page and try again.');
+                        setRecaptchaError('reCAPTCHA did not finish loading. Please check your connection or turn off adblockers and try again.');
                         reject(new Error('reCaptcha object not available'));
-                    }, 5000);
+                    }, 15000); // Increased timeout to 15 seconds for slower connections
                 };
 
                 script.onerror = () => {
