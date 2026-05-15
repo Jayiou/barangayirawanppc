@@ -10,15 +10,13 @@ const formatLabel = (text) => {
 };
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: 'smtp.sendgrid.net',
     port: 587,
     secure: false,
     requireTLS: true,
-    family: 4,
     auth: {
-        // You'll need to set these in your .env file
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY || 'your-sendgrid-api-key'
     }
 });
 
