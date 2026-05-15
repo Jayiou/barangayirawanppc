@@ -3,6 +3,7 @@ import { apiFetch, clearAuth } from '@/shared/client';
 
 export function usePortalAuth() {
     const user = ref(null);
+    const initializing = ref(true);
 
     const ensureResident = async () => {
         try {
@@ -18,6 +19,8 @@ export function usePortalAuth() {
             clearAuth();
             globalThis.location.href = '/';
             return false;
+        } finally {
+            initializing.value = false;
         }
     };
 
@@ -26,5 +29,5 @@ export function usePortalAuth() {
         globalThis.location.href = '/';
     };
 
-    return { user, ensureResident, logout };
+    return { user, initializing, ensureResident, logout };
 }

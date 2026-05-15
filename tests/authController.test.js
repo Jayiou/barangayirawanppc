@@ -14,6 +14,7 @@ const originals = {
     create: User.create,
     exists: User.exists,
     residentCreate: Resident.create,
+    residentFindOne: Resident.findOne,
     findById: User.findById,
     findByIdAndDelete: User.findByIdAndDelete,
     hash: bcrypt.hash,
@@ -32,6 +33,7 @@ test.afterEach(() => {
     User.findById = originals.findById;
     User.findByIdAndDelete = originals.findByIdAndDelete;
     Resident.create = originals.residentCreate;
+    Resident.findOne = originals.residentFindOne;
     bcrypt.hash = originals.hash;
     bcrypt.compare = originals.compare;
     jwt.sign = originals.sign;
@@ -59,12 +61,11 @@ const defaultValidReq = {
     file: { filename: 'proof.jpg' }
 };
 
-test('register creates a resident user and returns a token payload', async () => {
+test('register caches the resident profile and returns an OTP payload', async () => {
     process.env.SKIP_RECAPTCHA = 'true';
     const req = { ...defaultValidReq };
     const res = createMockResponse();
     let createdUserPayload;
-    let createdResidentPayload;
 
     User.findOne = async () => null;
     User.exists = async () => true;
@@ -77,8 +78,9 @@ test('register creates a resident user and returns a token payload', async () =>
             isActive: false
         };
     };
-    Resident.create = async (payload) => {
-        createdResidentPayload = payload;
+    let residentCreateCalled = false;
+    Resident.create = async () => {
+        residentCreateCalled = true;
         return { _id: 'resident-123' };
     };
     mailer.sendOtpEmail = async () => true;
@@ -89,7 +91,57 @@ test('register creates a resident user and returns a token payload', async () =>
     assert.equal(res.body.message, 'Registration initiated. Please check your email for the OTP.');
     assert.equal(res.body.user.email, 'juan@example.com');
     assert.match(createdUserPayload.otpCode, /^hashed-\d{6}$/);
-    assert.equal(createdResidentPayload.contactNumber, '09123456789');
+    assert.equal(createdUserPayload.pendingResidentProfile.contactNumber, '09123456789');
+    assert.equal(createdUserPayload.pendingResidentProfile.proofOfResidency, 'proof.jpg');
+    assert.equal(residentCreateCalled, false);
+});
+
+test('verifyOtp creates the resident profile after OTP verification', async () => {
+    const req = {
+        body: {
+            email: 'juan@example.com',
+            otpCode: '123456'
+        }
+    };
+    const res = createMockResponse();
+    let savedUser;
+    let createdResidentPayload;
+
+    User.findOne = async () => ({
+        _id: 'user-123',
+        email: 'juan@example.com',
+        accountStatus: 'pending_otp',
+        otpExpires: new Date(Date.now() + 60_000),
+        otpCode: '123456',
+        pendingResidentProfile: {
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            sex: 'male',
+            birthDate: '1990-01-01',
+            contactNumber: '09123456789',
+            address: '123 Main St',
+            purok: 'Purok 1',
+            proofOfResidency: 'proof.jpg'
+        },
+        async save() {
+            savedUser = this;
+        }
+    });
+    Resident.findOne = async () => null;
+    Resident.create = async (payload) => {
+        createdResidentPayload = payload;
+        return { _id: 'resident-123' };
+    };
+    bcrypt.compare = async () => true;
+
+    await authController.verifyOtp(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.message, 'Email successfully verified! Your account is now pending admin approval.');
+    assert.equal(createdResidentPayload.userId, 'user-123');
+    assert.equal(createdResidentPayload.firstName, 'Juan');
+    assert.equal(savedUser.accountStatus, 'pending_approval');
+    assert.equal(savedUser.pendingResidentProfile, undefined);
 });
 
 test('register requires reCaptcha in production', async () => {
@@ -340,6 +392,7 @@ test('verifyOtp compares hashed OTP values and clears them after success', async
         assert.equal(query.email, 'juan@example.com');
         return user;
     };
+    Resident.findOne = async () => null;
     bcrypt.compare = async (value, hash) => value === '123456' && hash === '$2b$test-hashed-otp';
 
     await authController.verifyOtp(req, res);

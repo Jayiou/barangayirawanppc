@@ -1,6 +1,6 @@
 <template>
     <transition name="toast-pop">
-        <div v-if="message" class="toast-popup" :class="[`is-${type}`]" role="status" aria-live="polite">
+        <output v-if="message" class="toast-popup" :class="[`is-${type}`]" aria-live="polite">
             <div class="toast-icon" aria-hidden="true">
                 <i :class="iconClass"></i>
             </div>
@@ -11,12 +11,12 @@
             <button type="button" class="toast-close" :aria-label="`Dismiss ${type} message`" @click="$emit('close')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-        </div>
+        </output>
     </transition>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
     message: {
@@ -30,7 +30,8 @@ const props = defineProps({
     }
 });
 
-defineEmits(['close']);
+const emit = defineEmits(['close']);
+let timeoutId = null;
 
 const title = computed(() => ({
     success: 'Success',
@@ -43,6 +44,24 @@ const iconClass = computed(() => ({
     error: 'fa-solid fa-triangle-exclamation',
     info: 'fa-solid fa-circle-info'
 }[props.type] || 'fa-solid fa-circle-info'));
+
+const scheduleClose = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (props.message) {
+        timeoutId = setTimeout(() => {
+            emit('close');
+        }, 4000);
+    }
+};
+
+// Watch for message changes and reset the auto-dismiss timer
+watch(() => props.message, () => {
+    scheduleClose();
+});
+
+onBeforeUnmount(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+});
 </script>
 
 <style scoped>

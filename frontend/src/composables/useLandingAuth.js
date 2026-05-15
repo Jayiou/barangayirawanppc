@@ -136,7 +136,7 @@ export function useLandingAuth() {
                 body: JSON.stringify({ email: otpForm.email, otpCode: otpForm.code })
             });
             clearPendingOtpEmail();
-            return { success: true, message: 'Email verified successfully! You can now log in.' };
+            return { success: true, message: 'Email verified successfully! Your account is now pending admin approval.' };
         } catch (error) {
             return { success: false, message: error.message || 'OTP verification failed. Please try again.' };
         }

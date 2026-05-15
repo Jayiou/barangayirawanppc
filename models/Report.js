@@ -5,17 +5,56 @@ const reportSchema = new mongoose.Schema(
         residentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resident',
-            required: true
+            default: null
+        },
+        requesterType: {
+            type: String,
+            enum: ['resident', 'guest'],
+            default: 'resident'
+        },
+        firstName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        middleName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        lastName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        suffix: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        contactNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: ''
+        },
+        address: {
+            type: String,
+            trim: true,
+            default: ''
         },
         reportType: {
             type: String,
             enum: [
                 'noise_complaint',
                 'disturbance',
-                'blotter',
                 'sanitation',
                 'infrastructure',
-                'manpower_request',
                 'public_safety',
                 'animal_related',
                 'disaster',
@@ -38,9 +77,27 @@ const reportSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        locationCoordinates: {
+            latitude: {
+                type: Number,
+                default: null
+            },
+            longitude: {
+                type: Number,
+                default: null
+            },
+            accuracy: {
+                type: Number,
+                default: null
+            }
+        },
         incidentDate: {
             type: Date,
             default: null
+        },
+        proofFiles: {
+            type: [String],
+            default: []
         },
         priority: {
             type: String,

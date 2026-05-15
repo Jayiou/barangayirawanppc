@@ -7,7 +7,6 @@ export function useStatusCRUD(resourceType) {
 
     const pathMap = {
         document: '/document-requests',
-        appointment: '/appointments',
         reservation: '/facility-reservations',
         report: '/reports'
     };

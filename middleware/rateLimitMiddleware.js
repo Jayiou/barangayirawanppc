@@ -37,7 +37,32 @@ const resetRateLimitBuckets = () => {
     buckets.clear();
 };
 
+// Public endpoint rate limiters
+const publicDocumentRequestLimiter = createRateLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Max 5 requests per hour per IP
+    scope: 'public_document',
+    message: 'Too many document requests. Please try again after 1 hour.'
+});
+
+const publicReportLimiter = createRateLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Max 5 reports per hour per IP
+    scope: 'public_report',
+    message: 'Too many reports submitted. Please try again after 1 hour.'
+});
+
+const publicFacilityLimiter = createRateLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Max 5 reservations per hour per IP
+    scope: 'public_facility',
+    message: 'Too many facility reservation requests. Please try again after 1 hour.'
+});
+
 module.exports = {
     createRateLimiter,
-    resetRateLimitBuckets
+    resetRateLimitBuckets,
+    publicDocumentRequestLimiter,
+    publicReportLimiter,
+    publicFacilityLimiter
 };

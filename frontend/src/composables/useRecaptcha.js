@@ -1,5 +1,18 @@
 import { ref } from 'vue';
 
+const pollForGrecaptcha = (onReady, onTimeout) => {
+    const checkGrecaptcha = setInterval(() => {
+        if (globalThis.grecaptcha?.render) {
+            clearInterval(checkGrecaptcha);
+            onReady();
+        }
+    }, 250);
+    setTimeout(() => {
+        clearInterval(checkGrecaptcha);
+        onTimeout();
+    }, 15000);
+};
+
 export function useRecaptcha() {
     const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
     const recaptchaReady = ref(false);
@@ -27,7 +40,7 @@ export function useRecaptcha() {
                 clearRecaptchaError();
 
                 // Check if already loaded
-                if (globalThis.grecaptcha) {
+                if (globalThis.grecaptcha?.render) {
                     resolve();
                     return;
                 }
@@ -36,7 +49,7 @@ export function useRecaptcha() {
                 if (document.querySelector('script[src*="recaptcha"]')) {
                     // Wait for grecaptcha to be available
                     const checkGrecaptcha = setInterval(() => {
-                        if (globalThis.grecaptcha) {
+                        if (globalThis.grecaptcha?.render) {
                             clearInterval(checkGrecaptcha);
                             resolve();
                         }
@@ -46,7 +59,7 @@ export function useRecaptcha() {
                         resetLoaderState();
                         setRecaptchaError('reCAPTCHA failed to load. Please refresh the page and try again.');
                         reject(new Error('reCaptcha failed to load'));
-                    }, 10000);
+                    }, 15000);
                     return;
                 }
 
@@ -54,9 +67,19 @@ export function useRecaptcha() {
                 const callbackName = 'onRecaptchaLoadCallback_' + Math.random().toString(36).substring(2, 9);
                 globalThis[callbackName] = () => {
                     // Callback fired by Google when fully ready
-                    if (globalThis.grecaptcha && globalThis.grecaptcha.render) {
+                    if (globalThis.grecaptcha?.render) {
                         resolve();
                     }
+                };
+
+                const onPollReady = () => {
+                    resetLoaderState();
+                    resolve();
+                };
+                const onPollTimeout = () => {
+                    resetLoaderState();
+                    setRecaptchaError('reCAPTCHA did not finish loading. Please check your connection or turn off adblockers and try again.');
+                    reject(new Error('reCaptcha object not available'));
                 };
 
                 // Load the reCaptcha script
@@ -65,21 +88,7 @@ export function useRecaptcha() {
                 script.async = true;
                 script.defer = true;
 
-                script.onload = () => {
-                    // Wait for grecaptcha object to be available via our explicit callback or poll
-                    const checkGrecaptcha = setInterval(() => {
-                        if (globalThis.grecaptcha && globalThis.grecaptcha.render) {
-                            clearInterval(checkGrecaptcha);
-                            resolve();
-                        }
-                    }, 250);
-                    setTimeout(() => {
-                        clearInterval(checkGrecaptcha);
-                        resetLoaderState();
-                        setRecaptchaError('reCAPTCHA did not finish loading. Please check your connection or turn off adblockers and try again.');
-                        reject(new Error('reCaptcha object not available'));
-                    }, 15000); // Increased timeout to 15 seconds for slower connections
-                };
+                script.onload = () => pollForGrecaptcha(onPollReady, onPollTimeout);
 
                 script.onerror = () => {
                     resetLoaderState();
@@ -104,18 +113,15 @@ export function useRecaptcha() {
         }
 
         try {
-            if (globalThis.grecaptcha && globalThis.grecaptcha.render) {
-                if (recaptchaWidgetId !== null) {
+            if (globalThis.grecaptcha?.render) {
+                if (recaptchaWidgetId !== null && container.dataset.rendered === 'true') {
                     globalThis.grecaptcha.reset(recaptchaWidgetId);
                     recaptchaReady.value = true;
                     return;
                 }
 
-                if (container.dataset.rendered === 'true') {
-                    return;
-                }
-
                 container.innerHTML = '';
+                delete container.dataset.rendered;
                 recaptchaWidgetId = globalThis.grecaptcha.render('g-recaptcha', {
                     sitekey: recaptchaSiteKey,
                     theme: 'light'
@@ -149,7 +155,17 @@ export function useRecaptcha() {
         }
     };
 
-    const cleanup = () => {
+    const cleanupRecaptchaWidget = () => {
+        const container = document.getElementById('g-recaptcha');
+        if (container) {
+            delete container.dataset.rendered;
+            container.innerHTML = '';
+        }
+
+        recaptchaWidgetId = null;
+        recaptchaReady.value = false;
+        clearRecaptchaError();
+
         if (recaptchaRenderTimer) {
             clearTimeout(recaptchaRenderTimer);
             recaptchaRenderTimer = null;
@@ -158,6 +174,6 @@ export function useRecaptcha() {
 
     return {
         recaptchaSiteKey, recaptchaReady, recaptchaError,
-        ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanup
+        ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanupRecaptchaWidget
     };
 }

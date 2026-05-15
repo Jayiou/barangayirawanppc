@@ -7,14 +7,19 @@ export function useAdminAuth() {
     const loginForm = reactive({ username: '', password: '' });
     const loginStatus = ref('');
     const loginError = ref(false);
+    const initializing = ref(true);
+    const loginLoading = ref(false);
 
     const loginAdmin = async () => {
+        if (loginLoading.value) return;
+        
         if (!loginForm.username || !loginForm.password) {
             loginStatus.value = 'Please enter both username and password.';
             loginError.value = true;
             return;
         }
 
+        loginLoading.value = true;
         try {
             loginStatus.value = 'Signing in...';
             loginError.value = false;
@@ -39,6 +44,8 @@ export function useAdminAuth() {
         } catch (error) {
             loginStatus.value = error.message || 'Login failed. Please try again.';
             loginError.value = true;
+        } finally {
+            loginLoading.value = false;
         }
     };
 
@@ -53,7 +60,10 @@ export function useAdminAuth() {
 
     const initSession = async () => {
         const auth = getAuth();
-        if (!auth.token) return;
+        if (!auth.token) {
+            initializing.value = false;
+            return;
+        }
 
         try {
             const me = await apiFetch('/auth/me');
@@ -68,6 +78,8 @@ export function useAdminAuth() {
             console.error('Session init failed:', error);
             clearAuth();
             isAuthenticated.value = false;
+        } finally {
+            initializing.value = false;
         }
     };
 
@@ -77,6 +89,8 @@ export function useAdminAuth() {
         loginForm,
         loginStatus,
         loginError,
+        loginLoading,
+        initializing,
         loginAdmin,
         logout,
         initSession

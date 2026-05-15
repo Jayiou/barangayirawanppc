@@ -9,6 +9,7 @@ const { createMockResponse } = require('./helpers/httpMocks');
 const originals = {
     reportCreate: Report.create,
     reportFind: Report.find,
+    reportFindOne: Report.findOne,
     reportFindById: Report.findById,
     reportFindByIdAndUpdate: Report.findByIdAndUpdate,
     residentFindOne: Resident.findOne
@@ -17,6 +18,7 @@ const originals = {
 test.afterEach(() => {
     Report.create = originals.reportCreate;
     Report.find = originals.reportFind;
+    Report.findOne = originals.reportFindOne;
     Report.findById = originals.reportFindById;
     Report.findByIdAndUpdate = originals.reportFindByIdAndUpdate;
     Resident.findOne = originals.residentFindOne;
@@ -67,7 +69,7 @@ test('createReport requires a resident profile', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' },
         body: {
-            reportType: 'noise_complaint',
+            reportType: 'disturbance',
             title: 'Maingay na kapitbahay',
             description: 'May malakas na speaker',
             locationText: 'Purok 1'
@@ -84,6 +86,71 @@ test('createReport requires a resident profile', async () => {
         success: false,
         message: 'Resident profile not found. Please complete your profile first.'
     });
+});
+
+test('createPublicReport rejects missing guest details', async () => {
+    const req = {
+        body: {
+            reportType: 'noise_complaint',
+            title: 'Maingay sa gabi',
+            description: 'May videoke hanggang madaling araw',
+            locationText: 'Purok 2'
+        }
+    };
+    const res = createMockResponse();
+
+    await reportController.createPublicReport(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'firstName, lastName, contactNumber, email, and address are required'
+    });
+});
+
+test('createPublicReport creates and returns a populated guest report', async () => {
+    const populatedReport = {
+        _id: 'report-public-1',
+        requesterType: 'guest',
+        firstName: 'Maria',
+        lastName: 'Santos',
+        email: 'maria@example.com',
+        reportType: 'sanitation',
+        title: 'Basura sa kalsada',
+        description: 'May tambak na basura sa kanto',
+        locationText: 'Purok 4',
+        status: 'pending'
+    };
+
+    const req = {
+        body: {
+            reportType: 'sanitation',
+            title: 'Basura sa kalsada',
+            description: 'May tambak na basura sa kanto',
+            locationText: 'Purok 4',
+            firstName: 'Maria',
+            middleName: '',
+            lastName: 'Santos',
+            suffix: '',
+            contactNumber: '09171234567',
+            email: 'maria@example.com',
+            address: 'Barangay 5'
+        }
+    };
+    const res = createMockResponse();
+
+    Report.findOne = async () => null;
+    Report.create = async (payload) => ({ _id: 'report-public-1', ...payload });
+    Report.findById = () => ({
+        populate() {
+            return Promise.resolve(populatedReport);
+        }
+    });
+
+    await reportController.createPublicReport(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(res.body, populatedReport);
 });
 
 test('createReport creates and returns a populated report', async () => {
@@ -204,6 +271,10 @@ test('updateReportStatus returns 404 when report does not exist', async () => {
     };
     const res = createMockResponse();
 
+    Report.findById = async () => ({
+        _id: 'report-404',
+        status: 'pending'
+    });
     Report.findByIdAndUpdate = async () => null;
 
     await reportController.updateReportStatus(req, res);

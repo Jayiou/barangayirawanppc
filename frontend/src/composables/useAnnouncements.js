@@ -54,11 +54,6 @@ export function useAnnouncements() {
         formData.append('endDate', announcementForm.endDate || '');
         formData.append('isActive', announcementForm.isActive !== false);
 
-        if (isEdit) {
-            const order = Math.max(1, Number.parseInt(announcementForm.displayOrder, 10) || 1);
-            formData.append('displayOrder', order);
-        }
-
         if (announcementImageFile.value) {
             formData.append('image', announcementImageFile.value);
         }

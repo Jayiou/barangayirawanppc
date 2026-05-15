@@ -48,11 +48,7 @@ router.get('/admin/next-order', authMiddleware, roleMiddleware('admin'), asyncHa
 
 // Create announcement (admin only, with optional file upload)
 router.post('/', authMiddleware, roleMiddleware('admin'), upload.single('image'), asyncHandler(async (req, res) => {
-    console.log('[CREATE] Body:', req.body);
-    console.log('[CREATE] File:', req.file ? req.file.filename : 'none');
-    console.log('[CREATE] User:', req.user.id);
-
-        const { title, description, startDate, endDate, isActive } = req.body;
+    const { title, description, startDate, endDate, isActive } = req.body;
 
     if (!title || !description) {
         throw createHttpError(400, 'Title and description are required');
@@ -105,15 +101,8 @@ router.post('/', authMiddleware, roleMiddleware('admin'), upload.single('image')
     });
 }));
 
-// Update announcement (admin only)
-router.put('/:id', authMiddleware, roleMiddleware('admin'), upload.single('image'), asyncHandler(async (req, res) => {
-    const { title, description, displayOrder, startDate, endDate, isActive } = req.body;
-    const { id } = req.params;
-
-    const announcement = await Announcement.findById(id);
-    if (!announcement) {
-        throw createHttpError(404, 'Announcement not found');
-    }
+const applyAnnouncementUpdates = (announcement, body, file) => {
+    const { title, description, displayOrder, startDate, endDate, isActive } = body;
 
     if (title) announcement.title = title.trim();
     if (description) announcement.description = description.trim();
@@ -121,30 +110,30 @@ router.put('/:id', authMiddleware, roleMiddleware('admin'), upload.single('image
         const parsedOrder = Number.parseInt(displayOrder, 10);
         announcement.displayOrder = Number.isFinite(parsedOrder) && parsedOrder >= 1 ? parsedOrder : 1;
     }
-    
     if (startDate) {
         const parsed = new Date(startDate);
-        if (!Number.isNaN(parsed.getTime())) {
-            announcement.startDate = parsed;
-        }
+        if (!Number.isNaN(parsed.getTime())) announcement.startDate = parsed;
     }
-
     if (endDate && endDate.toString().trim() !== '') {
         const parsed = new Date(endDate);
-        if (!Number.isNaN(parsed.getTime())) {
-            announcement.endDate = parsed;
-        }
+        if (!Number.isNaN(parsed.getTime())) announcement.endDate = parsed;
     } else if (endDate === '' || endDate === null) {
         announcement.endDate = null;
     }
+    if (isActive !== undefined) announcement.isActive = isActive === 'true' || isActive === true;
+    if (file) announcement.imagePath = `/uploads/${file.filename}`;
+};
 
-    if (isActive !== undefined) {
-        announcement.isActive = isActive === 'true' || isActive === true;
+// Update announcement (admin only)
+router.put('/:id', authMiddleware, roleMiddleware('admin'), upload.single('image'), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const announcement = await Announcement.findById(id);
+    if (!announcement) {
+        throw createHttpError(404, 'Announcement not found');
     }
 
-    if (req.file) {
-        announcement.imagePath = `/uploads/${req.file.filename}`;
-    }
+    applyAnnouncementUpdates(announcement, req.body, req.file);
 
     await announcement.save();
     await announcement.populate('createdBy', 'username email');

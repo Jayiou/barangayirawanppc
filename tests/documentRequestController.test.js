@@ -40,6 +40,24 @@ test('createDocumentRequest rejects missing required fields', async () => {
     });
 });
 
+test('createPublicDocumentRequest rejects incomplete guest submissions', async () => {
+    const req = {
+        body: {
+            documentType: 'barangay_clearance',
+            purpose: 'Employment requirements'
+        }
+    };
+    const res = createMockResponse();
+
+    await documentRequestController.createPublicDocumentRequest(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'documentType, purpose, firstName, lastName, email, and address are required'
+    });
+});
+
 test('createDocumentRequest requires a resident profile', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' },
@@ -98,6 +116,67 @@ test('createDocumentRequest creates and returns a populated request', async () =
     assert.deepEqual(res.body, populatedRequest);
 });
 
+test('createPublicDocumentRequest creates and returns a populated request', async () => {
+    const populatedRequest = {
+        _id: 'request-public-1',
+        residentId: null,
+        requesterType: 'non_resident',
+        firstName: 'Maria',
+        lastName: 'Santos',
+        email: 'maria@gmail.com',
+        address: 'City Proper',
+        documentType: 'barangay_clearance',
+        purpose: 'Employment requirements',
+        status: 'pending'
+    };
+
+    const req = {
+        body: {
+            documentType: 'barangay_clearance',
+            purpose: 'Employment requirements',
+            requestDetails: 'For a job application',
+            firstName: 'Maria',
+            middleName: '',
+            lastName: 'Santos',
+            suffix: '',
+            contactNumber: '09171234567',
+            email: 'maria@gmail.com',
+            address: 'City Proper'
+        }
+    };
+    const res = createMockResponse();
+
+    let capturedPayload;
+    DocumentRequest.create = async (payload) => {
+        capturedPayload = payload;
+        return { _id: 'request-public-1', ...payload };
+    };
+    DocumentRequest.findById = () => ({
+        populate() {
+            return Promise.resolve(populatedRequest);
+        }
+    });
+
+    await documentRequestController.createPublicDocumentRequest(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(capturedPayload, {
+        requesterType: 'non_resident',
+        residentId: null,
+        firstName: 'Maria',
+        middleName: '',
+        lastName: 'Santos',
+        suffix: '',
+        contactNumber: '09171234567',
+        email: 'maria@gmail.com',
+        address: 'City Proper',
+        documentType: 'barangay_clearance',
+        purpose: 'Employment requirements',
+        requestDetails: 'For a job application'
+    });
+    assert.deepEqual(res.body, populatedRequest);
+});
+
 test('getMyDocumentRequests returns 404 when resident profile does not exist', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' }
@@ -148,6 +227,37 @@ test('getDocumentRequestById blocks residents from viewing other residents reque
     });
 });
 
+test('getDocumentRequestById blocks residents from viewing public requests', async () => {
+    const request = {
+        _id: 'request-public-1',
+        residentId: null
+    };
+
+    const req = {
+        user: { id: 'user-1', role: 'resident' },
+        params: { id: 'request-public-1' }
+    };
+    const res = createMockResponse();
+
+    DocumentRequest.findById = () => ({
+        populate() {
+            return Promise.resolve(request);
+        }
+    });
+    Resident.findOne = async () => ({
+        _id: { toString: () => 'resident-1' },
+        userId: 'user-1'
+    });
+
+    await documentRequestController.getDocumentRequestById(req, res);
+
+    assert.equal(res.statusCode, 403);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Access denied'
+    });
+});
+
 test('updateDocumentRequestStatus requires a status value', async () => {
     const req = {
         params: { id: 'request-1' },
@@ -175,7 +285,7 @@ test('updateDocumentRequestStatus returns 404 when request does not exist', asyn
     };
     const res = createMockResponse();
 
-    DocumentRequest.findByIdAndUpdate = async () => null;
+    DocumentRequest.findById = async () => null;
 
     await documentRequestController.updateDocumentRequestStatus(req, res);
 

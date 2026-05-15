@@ -1,159 +1,641 @@
 const Appointment = require('../models/Appointment');
-const Resident = require('../models/Resident');
 const Official = require('../models/Official');
+const BlockedSchedule = require('../models/BlockedSchedule');
+const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
+const {
+    getAvailableTimeSlots,
+    hasActiveAppointment,
+    isTimeSlotAvailable,
+    isValidAppointmentDate,
+    formatAppointmentResponse,
+    hasAppointmentExpired,
+    expireOldPendingAppointments,
+    DEFAULT_TIME_SLOTS
+} = require('../utils/appointmentHelpers');
 
-const appointmentFields = [
-    'officialId',
-    'appointmentDate',
-    'timeSlot',
-    'purpose',
-    'concernDetails'
-];
+// ============================================
+// ADMIN - OFFICIAL MANAGEMENT
+// ============================================
 
-const appointmentStatusFields = ['status', 'adminNotes'];
+/**
+ * Get all officials
+ */
+const getAllOfficials = asyncHandler(async (req, res) => {
+    const officials = await Official.find().sort({ createdAt: -1 });
 
-const pickFields = (source, fields) => fields.reduce((accumulator, field) => {
-    if (source[field] !== undefined) {
-        accumulator[field] = source[field];
+    res.status(200).json({
+        success: true,
+        message: 'Officials retrieved successfully',
+        data: officials
+    });
+});
+
+/**
+ * Get single official
+ */
+const getOfficial = asyncHandler(async (req, res) => {
+    const official = await Official.findById(req.params.id);
+
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
     }
 
-    return accumulator;
-}, {});
+    res.status(200).json({
+        success: true,
+        message: 'Official retrieved successfully',
+        data: official
+    });
+});
 
-const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
+/**
+ * Create official
+ */
+const createOfficial = asyncHandler(async (req, res) => {
+    const { name, position, email, contactNumber, status, notes } = req.body;
 
-const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
-
-const validateAppointmentData = (payload) => {
-    if (payload.appointmentDate !== undefined && !isValidDate(payload.appointmentDate)) {
-        return 'Please provide a valid appointmentDate';
+    // Validate required fields
+    if (!name || !position) {
+        throw createHttpError(400, 'Name and position are required');
     }
 
-    if (payload.timeSlot !== undefined && !hasText(payload.timeSlot)) {
-        return 'Please provide a valid timeSlot';
+    const officialData = {
+        name,
+        position,
+        email: email || '',
+        contactNumber: contactNumber || '',
+        status: status || 'active',
+        notes: notes || ''
+    };
+
+    if (req.file) {
+        officialData.picture = `/uploads/${req.file.filename}`;
     }
 
-    if (payload.purpose !== undefined && !hasText(payload.purpose)) {
-        return 'Please provide a valid purpose';
+    const official = new Official(officialData);
+
+    await official.save();
+
+    res.status(201).json({
+        success: true,
+        message: 'Official created successfully',
+        data: official
+    });
+});
+
+/**
+ * Update official
+ */
+const updateOfficial = asyncHandler(async (req, res) => {
+    const { name, position, email, contactNumber, status, notes, officeHours } = req.body;
+
+    const official = await Official.findById(req.params.id);
+
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
     }
 
-    return null;
-};
+    // Update fields
+    if (name) official.name = name;
+    if (position) official.position = position;
+    if (email !== undefined) official.email = email;
+    if (contactNumber !== undefined) official.contactNumber = contactNumber;
+    if (status) official.status = status;
+    if (notes !== undefined) official.notes = notes;
+    if (officeHours) official.officeHours = { ...official.officeHours, ...officeHours };
+    if (req.file) {
+        official.picture = `/uploads/${req.file.filename}`;
+    }
 
-const populateAppointment = (query) => query
-    .populate({
-        path: 'residentId',
-        select: 'firstName middleName lastName contactNumber email address purok userId',
-        populate: {
-            path: 'userId',
-            select: 'username email role isActive'
+    official.updatedAt = new Date();
+    await official.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Official updated successfully',
+        data: official
+    });
+});
+
+/**
+ * Delete official
+ */
+const deleteOfficial = asyncHandler(async (req, res) => {
+    const official = await Official.findByIdAndDelete(req.params.id);
+
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
+    }
+
+    // Clean up related appointments and blocked schedules
+    await Appointment.deleteMany({ officialId: req.params.id });
+    await BlockedSchedule.deleteMany({ officialId: req.params.id });
+
+    res.status(200).json({
+        success: true,
+        message: 'Official deleted successfully'
+    });
+});
+
+// ============================================
+// ADMIN - BLOCKED SCHEDULES MANAGEMENT
+// ============================================
+
+/**
+ * Get blocked schedules for an official
+ */
+const getBlockedSchedules = asyncHandler(async (req, res) => {
+    const { officialId } = req.params;
+    const { fromDate, toDate } = req.query;
+
+    const query = { officialId };
+
+    if (fromDate || toDate) {
+        query.blockedDate = {};
+        if (fromDate) {
+            const from = new Date(fromDate);
+            from.setHours(0, 0, 0, 0);
+            query.blockedDate.$gte = from;
         }
-    })
-    .populate('officialId', 'fullName position officeDays officeStartTime officeEndTime availabilityStatus officeLocation');
-
-exports.createAppointment = asyncHandler(async (req, res) => {
-    const appointmentData = pickFields(req.body, appointmentFields);
-    const validationError = validateAppointmentData(appointmentData);
-
-    if (!appointmentData.officialId || !appointmentData.appointmentDate || !appointmentData.timeSlot || !appointmentData.purpose) {
-        throw createHttpError(400, 'officialId, appointmentDate, timeSlot, and purpose are required', {
-            code: 'APPOINTMENT_VALIDATION_ERROR'
-        });
+        if (toDate) {
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            query.blockedDate.$lte = to;
+        }
     }
 
-    if (validationError) {
-        throw createHttpError(400, validationError, { code: 'APPOINTMENT_VALIDATION_ERROR' });
+    const blockedSchedules = await BlockedSchedule.find(query).sort({ blockedDate: 1 });
+
+    res.status(200).json({
+        success: true,
+        message: 'Blocked schedules retrieved successfully',
+        data: blockedSchedules
+    });
+});
+
+/**
+ * Create blocked schedule
+ */
+const createBlockedSchedule = asyncHandler(async (req, res) => {
+    const { officialId, blockedDate, startTime, endTime, note, reason } = req.body;
+
+    // Validate required fields
+    if (!officialId || !blockedDate || !startTime || !endTime) {
+        throw createHttpError(
+            400,
+            'officialId, blockedDate, startTime, and endTime are required'
+        );
     }
 
-    const resident = await Resident.findOne({ userId: req.user.id });
-
-    if (!resident) {
-        throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
-            code: 'APPOINTMENT_RESIDENT_NOT_FOUND'
-        });
+    // Verify official exists
+    const official = await Official.findById(officialId);
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
     }
 
-    const official = await Official.findById(appointmentData.officialId);
-
-    if (!official || !official.isActive) {
-        throw createHttpError(404, 'Official not found', { code: 'APPOINTMENT_OFFICIAL_NOT_FOUND' });
-    }
-
-    const appointment = await Appointment.create({
-        residentId: resident._id,
-        ...appointmentData
+    const blockedSchedule = new BlockedSchedule({
+        officialId,
+        blockedDate: new Date(blockedDate),
+        startTime,
+        endTime,
+        note: note || '',
+        reason: reason || ''
     });
 
-    const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
-    res.status(201).json(populatedAppointment);
+    await blockedSchedule.save();
+
+    res.status(201).json({
+        success: true,
+        message: 'Blocked schedule created successfully',
+        data: blockedSchedule
+    });
 });
 
-exports.getMyAppointments = asyncHandler(async (req, res) => {
-    const resident = await Resident.findOne({ userId: req.user.id });
+/**
+ * Update blocked schedule
+ */
+const updateBlockedSchedule = asyncHandler(async (req, res) => {
+    const { startTime, endTime, note, reason } = req.body;
 
-    if (!resident) {
-        throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
-            code: 'APPOINTMENT_RESIDENT_NOT_FOUND'
-        });
+    const blockedSchedule = await BlockedSchedule.findById(req.params.id);
+
+    if (!blockedSchedule) {
+        throw createHttpError(404, 'Blocked schedule not found');
     }
 
-    const appointments = await populateAppointment(
-        Appointment.find({ residentId: resident._id }).sort({ createdAt: -1 })
-    );
+    if (startTime) blockedSchedule.startTime = startTime;
+    if (endTime) blockedSchedule.endTime = endTime;
+    if (note !== undefined) blockedSchedule.note = note;
+    if (reason !== undefined) blockedSchedule.reason = reason;
 
-    res.json(appointments);
+    blockedSchedule.updatedAt = new Date();
+    await blockedSchedule.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Blocked schedule updated successfully',
+        data: blockedSchedule
+    });
 });
 
-exports.getAppointments = asyncHandler(async (req, res) => {
-    const appointments = await populateAppointment(
-        Appointment.find().sort({ createdAt: -1 })
-    );
+/**
+ * Delete blocked schedule
+ */
+const deleteBlockedSchedule = asyncHandler(async (req, res) => {
+    const blockedSchedule = await BlockedSchedule.findByIdAndDelete(req.params.id);
 
-    res.json(appointments);
+    if (!blockedSchedule) {
+        throw createHttpError(404, 'Blocked schedule not found');
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Blocked schedule deleted successfully'
+    });
 });
 
-exports.getAppointmentById = asyncHandler(async (req, res) => {
-    const appointment = await populateAppointment(
-        Appointment.findById(req.params.id)
-    );
+// ============================================
+// RESIDENT - REQUEST APPOINTMENT
+// ============================================
+
+/**
+ * Get available time slots for an official on a specific date
+ */
+const getAvailableSlots = asyncHandler(async (req, res) => {
+    const { officialId, appointmentDate } = req.query;
+
+    if (!officialId || !appointmentDate) {
+        throw createHttpError(400, 'officialId and appointmentDate are required');
+    }
+
+    const availableSlots = await getAvailableTimeSlots(officialId, appointmentDate);
+
+    res.status(200).json({
+        success: true,
+        message: 'Available time slots retrieved successfully',
+        data: availableSlots
+    });
+});
+
+/**
+ * Request appointment
+ */
+const requestAppointment = asyncHandler(async (req, res) => {
+    const { officialId, appointmentDate, startTime, endTime, purpose } = req.body;
+    const userId = req.user._id;
+
+    // Validate required fields
+    if (!officialId || !appointmentDate || !startTime || !endTime || !purpose) {
+        throw createHttpError(
+            400,
+            'officialId, appointmentDate, startTime, endTime, and purpose are required'
+        );
+    }
+
+    // Get resident info
+    const resident = await Resident.findOne({ userId });
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found');
+    }
+
+    // Check if resident already has active appointment
+    const hasActive = await hasActiveAppointment(resident._id);
+    if (hasActive) {
+        throw createHttpError(
+            400,
+            'You already have an active appointment request. Please wait for approval, completion, cancellation, or rejection before creating another appointment.'
+        );
+    }
+
+    // Verify official exists and is active
+    const official = await Official.findById(officialId);
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
+    }
+
+    if (official.status !== 'active') {
+        throw createHttpError(400, 'This official is currently inactive');
+    }
+
+    // Validate appointment date
+    if (!isValidAppointmentDate(appointmentDate)) {
+        throw createHttpError(400, 'Appointment date must be at least 1 day in the future');
+    }
+
+    // Check if time slot is available
+    const availability = await isTimeSlotAvailable(officialId, appointmentDate, startTime, endTime);
+    if (!availability.available) {
+        throw createHttpError(400, availability.reason);
+    }
+
+    // Create appointment
+    const appointment = new Appointment({
+        residentId: resident._id,
+        userId,
+        officialId,
+        appointmentDate: new Date(appointmentDate),
+        timeSlot: {
+            startTime,
+            endTime
+        },
+        purpose,
+        status: 'pending'
+    });
+
+    await appointment.save();
+
+    res.status(201).json({
+        success: true,
+        message: 'Appointment request submitted successfully',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+/**
+ * Get my appointments (resident)
+ */
+const getMyAppointments = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { status } = req.query;
+
+    const resident = await Resident.findOne({ userId });
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found');
+    }
+
+    const query = { residentId: resident._id };
+    if (status) {
+        query.status = status;
+    }
+
+    const appointments = await Appointment.find(query)
+        .populate('officialId', 'name position')
+        .sort({ appointmentDate: -1 });
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointments retrieved successfully',
+        data: appointments.map(formatAppointmentResponse)
+    });
+});
+
+/**
+ * Get appointment details
+ */
+const getAppointmentDetail = asyncHandler(async (req, res) => {
+    const appointment = await Appointment.findById(req.params.id)
+        .populate('officialId', 'name position email contactNumber')
+        .populate('residentId', 'firstName lastName contactNumber email');
 
     if (!appointment) {
-        throw createHttpError(404, 'Appointment not found', { code: 'APPOINTMENT_NOT_FOUND' });
+        throw createHttpError(404, 'Appointment not found');
     }
 
-    if (req.user.role === 'resident') {
-        const resident = await Resident.findOne({ userId: req.user.id });
+    res.status(200).json({
+        success: true,
+        message: 'Appointment retrieved successfully',
+        data: appointment
+    });
+});
 
-        if (!resident || appointment.residentId._id.toString() !== resident._id.toString()) {
-            throw createHttpError(403, 'Access denied', { code: 'APPOINTMENT_FORBIDDEN' });
+/**
+ * Cancel appointment (resident)
+ */
+const cancelAppointment = asyncHandler(async (req, res) => {
+    const { cancellationReason } = req.body;
+    const userId = req.user._id;
+
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+        throw createHttpError(404, 'Appointment not found');
+    }
+
+    // Verify ownership
+    const resident = await Resident.findById(appointment.residentId);
+    if (resident.userId.toString() !== userId.toString()) {
+        throw createHttpError(403, 'You do not have permission to cancel this appointment');
+    }
+
+    // Only allow cancellation of pending or approved appointments
+    if (!['pending', 'approved'].includes(appointment.status)) {
+        throw createHttpError(
+            400,
+            `Cannot cancel appointment with status: ${appointment.status}`
+        );
+    }
+
+    appointment.status = 'cancelled';
+    appointment.cancellationReason = cancellationReason || '';
+    appointment.cancelledAt = new Date();
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment cancelled successfully',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+// ============================================
+// ADMIN - APPOINTMENT MANAGEMENT
+// ============================================
+
+/**
+ * Get all appointments
+ */
+const getAllAppointments = asyncHandler(async (req, res) => {
+    const { status, officialId, fromDate, toDate } = req.query;
+
+    // Expire old pending appointments
+    await expireOldPendingAppointments(24);
+
+    const query = {};
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (officialId) {
+        query.officialId = officialId;
+    }
+
+    if (fromDate || toDate) {
+        query.appointmentDate = {};
+        if (fromDate) {
+            const from = new Date(fromDate);
+            from.setHours(0, 0, 0, 0);
+            query.appointmentDate.$gte = from;
+        }
+        if (toDate) {
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            query.appointmentDate.$lte = to;
         }
     }
 
-    res.json(appointment);
+    const appointments = await Appointment.find(query)
+        .populate('residentId', 'firstName lastName contactNumber email')
+        .populate('officialId', 'name position')
+        .sort({ appointmentDate: -1, 'timeSlot.startTime': 1 });
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointments retrieved successfully',
+        data: appointments.map(formatAppointmentResponse)
+    });
 });
 
-exports.updateAppointmentStatus = asyncHandler(async (req, res) => {
-    const statusData = pickFields(req.body, appointmentStatusFields);
+/**
+ * Approve appointment
+ */
+const approveAppointment = asyncHandler(async (req, res) => {
+    const { remarks } = req.body;
 
-    if (!statusData.status) {
-        throw createHttpError(400, 'status is required', { code: 'APPOINTMENT_VALIDATION_ERROR' });
-    }
-
-    const appointment = await Appointment.findByIdAndUpdate(
-        req.params.id,
-        statusData,
-        { new: true, runValidators: true }
-    );
+    const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
-        throw createHttpError(404, 'Appointment not found', { code: 'APPOINTMENT_NOT_FOUND' });
+        throw createHttpError(404, 'Appointment not found');
     }
 
-    const populatedAppointment = await populateAppointment(
-        Appointment.findById(appointment._id)
-    );
+    if (appointment.status !== 'pending') {
+        throw createHttpError(400, 'Only pending appointments can be approved');
+    }
 
-    res.json(populatedAppointment);
+    appointment.status = 'approved';
+    appointment.remarks = remarks || '';
+    appointment.approvedAt = new Date();
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment approved successfully',
+        data: formatAppointmentResponse(appointment)
+    });
 });
+
+/**
+ * Reject appointment
+ */
+const rejectAppointment = asyncHandler(async (req, res) => {
+    const { rejectionReason, remarks } = req.body;
+
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+        throw createHttpError(404, 'Appointment not found');
+    }
+
+    if (appointment.status !== 'pending') {
+        throw createHttpError(400, 'Only pending appointments can be rejected');
+    }
+
+    appointment.status = 'rejected';
+    appointment.rejectionReason = rejectionReason || '';
+    appointment.remarks = remarks || '';
+    appointment.rejectedAt = new Date();
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment rejected successfully',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+/**
+ * Mark appointment as completed
+ */
+const completeAppointment = asyncHandler(async (req, res) => {
+    const { remarks } = req.body;
+
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+        throw createHttpError(404, 'Appointment not found');
+    }
+
+    if (appointment.status !== 'approved') {
+        throw createHttpError(400, 'Only approved appointments can be marked as completed');
+    }
+
+    appointment.status = 'completed';
+    appointment.remarks = remarks || '';
+    appointment.completedAt = new Date();
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment marked as completed',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+/**
+ * Admin cancel appointment
+ */
+const adminCancelAppointment = asyncHandler(async (req, res) => {
+    const { cancellationReason, remarks } = req.body;
+
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+        throw createHttpError(404, 'Appointment not found');
+    }
+
+    if (!['pending', 'approved'].includes(appointment.status)) {
+        throw createHttpError(
+            400,
+            `Cannot cancel appointment with status: ${appointment.status}`
+        );
+    }
+
+    appointment.status = 'cancelled';
+    appointment.cancellationReason = cancellationReason || '';
+    appointment.remarks = remarks || '';
+    appointment.cancelledAt = new Date();
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment cancelled successfully',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+module.exports = {
+    // Officials
+    getAllOfficials,
+    getOfficial,
+    createOfficial,
+    updateOfficial,
+    deleteOfficial,
+    // Blocked Schedules
+    getBlockedSchedules,
+    createBlockedSchedule,
+    updateBlockedSchedule,
+    deleteBlockedSchedule,
+    // Resident Appointments
+    getAvailableSlots,
+    requestAppointment,
+    getMyAppointments,
+    getAppointmentDetail,
+    cancelAppointment,
+    // Admin Appointments
+    getAllAppointments,
+    approveAppointment,
+    rejectAppointment,
+    completeAppointment,
+    adminCancelAppointment
+};

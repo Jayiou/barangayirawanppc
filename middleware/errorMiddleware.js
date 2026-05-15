@@ -4,9 +4,22 @@ const path = require('node:path');
 
 const errorHandler = (err, req, res, next) => {
     if (err?.name === 'CastError') {
+        const castLog = `[${new Date().toISOString()}] CastError: ${err.message}\nPath: ${err.path}\nValue: ${JSON.stringify(err.value)}\nKind: ${err.kind}\nRequest: ${req.method} ${req.url}\nBody: ${JSON.stringify(req.body)}\n---\n`;
+        fs.appendFileSync(path.join(__dirname, '../app-debug.log'), castLog);
+
         return res.status(400).json({
             success: false,
             message: 'Invalid ID format'
+        });
+    }
+
+    if (err?.name === 'ValidationError') {
+        const validationLog = `[${new Date().toISOString()}] ValidationError: ${err.message}\nRequest: ${req.method} ${req.url}\nBody: ${JSON.stringify(req.body)}\n---\n`;
+        fs.appendFileSync(path.join(__dirname, '../app-debug.log'), validationLog);
+        
+        return res.status(400).json({
+            success: false,
+            message: err.message
         });
     }
 

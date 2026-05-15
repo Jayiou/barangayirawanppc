@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendStatusUpdateEmail } = require('../utils/mailer');
+const { sendStatusUpdateSMS } = require('../utils/sms');
 
 const residentProfileFields = [
     'firstName',
@@ -76,6 +77,10 @@ exports.createResident = asyncHandler(async (req, res) => {
 
     if (!user) {
         throw createHttpError(404, 'User not found', { code: 'RESIDENT_USER_NOT_FOUND' });
+    }
+
+    if (!residentData.email && user.email) {
+        residentData.email = user.email;
     }
 
     if (user.role !== 'resident') {
@@ -161,6 +166,11 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const existingResident = await Resident.findOne({ userId: req.user.id });
     const validationError = validateResidentData(residentData);
 
+    const user = await User.findById(req.user.id);
+    if (!residentData.email && user && user.email) {
+        residentData.email = user.email;
+    }
+
     if (validationError) {
         throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
     }
@@ -242,6 +252,11 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
     // Send email notification to user about approval or rejection
     if (user.email && resident.firstName) {
         sendStatusUpdateEmail(user.email, resident.firstName, status);
+    }
+
+    // Send SMS notification to user about approval or rejection
+    if (resident.contactNumber && resident.firstName) {
+        sendStatusUpdateSMS(resident.contactNumber, resident.firstName, status);
     }
 
     res.json({

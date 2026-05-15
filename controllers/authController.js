@@ -182,7 +182,7 @@ exports.register = asyncHandler(async (req, res) => {
     const hasAdmin = await User.exists({ role: 'admin' });
     const assignedRole = (!hasAdmin && role === 'admin') ? 'admin' : 'resident';
 
-    // 7. Save user and resident profile
+    // 7. Save user and cache resident profile until OTP verification succeeds
     const user = await User.create({
         username,
         email: normalizedEmail,
@@ -191,12 +191,7 @@ exports.register = asyncHandler(async (req, res) => {
         accountStatus: 'pending_otp',
         otpCode: otpHash,
         otpExpires,
-        isActive: false // Explicitly inactive until OTP -> Admin Approval
-    });
-
-    try {
-        await Resident.create({
-            userId: user._id,
+        pendingResidentProfile: {
             firstName,
             lastName,
             sex,
@@ -205,16 +200,17 @@ exports.register = asyncHandler(async (req, res) => {
             address,
             purok: purok || '',
             proofOfResidency
-        });
-    } catch (residentError) {
-        console.error('Resident create error:', residentError);
-        // Rollback user if resident profile fails
-        await User.findByIdAndDelete(user._id);
-        throw createHttpError(500, 'Failed to save resident profile. Please try again.', { code: 'PROFILE_SAVE_ERROR' });
-    }
+        },
+        isActive: false // Explicitly inactive until OTP -> Admin Approval
+    });
 
-    // 8. Send Email
-    await mailer.sendOtpEmail(normalizedEmail, otpCode, firstName);
+    // 8. Send Email (Do not await so UI doesn't hang on server timeouts)
+    mailer.sendOtpEmail(normalizedEmail, otpCode, firstName).catch(e => console.error("Email send failed in background:", e));
+    
+    // FOR RENDER DEPLOYMENTS: Since free Render blocks SMTP emails, log it here so you can test it
+    console.log(`\n==============================================`);
+    console.log(`🔑 OTP CODE FOR ${normalizedEmail}: ${otpCode}`);
+    console.log(`==============================================\n`);
 
     res.status(201).json({
         message: 'Registration initiated. Please check your email for the OTP.',
@@ -248,9 +244,29 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
     }
 
     // Update status 
+    const existingResident = await Resident.findOne({ userId: user._id });
+    if (!existingResident) {
+        const pendingProfile = user.pendingResidentProfile || {};
+
+        if (pendingProfile.firstName && pendingProfile.lastName && pendingProfile.sex && pendingProfile.birthDate && pendingProfile.address) {
+            await Resident.create({
+                userId: user._id,
+                firstName: pendingProfile.firstName,
+                lastName: pendingProfile.lastName,
+                sex: pendingProfile.sex,
+                birthDate: pendingProfile.birthDate,
+                contactNumber: pendingProfile.contactNumber || '',
+                address: pendingProfile.address,
+                purok: pendingProfile.purok || '',
+                proofOfResidency: pendingProfile.proofOfResidency || ''
+            });
+        }
+    }
+
     user.accountStatus = 'pending_approval';
     user.otpCode = undefined;
     user.otpExpires = undefined;
+    user.pendingResidentProfile = undefined;
     await user.save();
 
     res.json({
@@ -265,18 +281,29 @@ exports.resendOtp = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Email is required.', { code: 'OTP_MISSING_EMAIL' });
     }
 
-    const user = await User.findOne({ email: normalizedEmail, accountStatus: 'pending_otp' });
+    const user = await User.findOne({ email: normalizedEmail });
 
-    if (user) {
-        const otpCode = generateOtp();
-        user.otpCode = await hashOtp(otpCode);
-        user.otpExpires = createOtpExpiry();
-        await user.save();
-        await mailer.sendOtpEmail(user.email, otpCode, user.username);
+    if (!user) {
+        throw createHttpError(404, 'Email not found in our records.', { code: 'USER_NOT_FOUND' });
     }
 
+    if (user.accountStatus !== 'pending_otp') {
+        throw createHttpError(400, 'Account is already verified or no longer requires OTP.', { code: 'OTP_NOT_REQUIRED' });
+    }
+
+    const otpCode = generateOtp();
+    user.otpCode = await hashOtp(otpCode);
+    user.otpExpires = createOtpExpiry();
+    await user.save();
+    await mailer.sendOtpEmail(user.email, otpCode, user.username);
+
+    // FOR TESTING/RENDER: Log terminal check
+    console.log(`\n==============================================`);
+    console.log(`🔑 RESENT OTP CODE FOR ${normalizedEmail}: ${otpCode}`);
+    console.log(`==============================================\n`);
+
     res.json({
-        message: 'If that email has a pending verification, a new OTP has been sent.'
+        message: 'A new OTP has been successfully sent to your email.'
     });
 });
 

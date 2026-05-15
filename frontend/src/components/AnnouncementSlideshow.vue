@@ -286,6 +286,9 @@ const stopAutoSlide = () => {
 };
 
 let refreshInterval = null;
+let isFetchPending = false;
+let lastFetchTime = 0;
+const FETCH_COOLDOWN = 5000; // 5 seconds minimum between fetches
 
 onMounted(() => {
     fetchAnnouncements();
@@ -296,7 +299,17 @@ onMounted(() => {
 
     visibilityChangeHandler = () => {
         if (!document.hidden) {
-            fetchAnnouncements();
+            // Debounce: only fetch if last fetch was > 5 seconds ago and no request is pending
+            const now = Date.now();
+            if (!isFetchPending && (now - lastFetchTime) > FETCH_COOLDOWN) {
+                lastFetchTime = now;
+                isFetchPending = true;
+                
+                // Use Promise-based approach to prevent blocking
+                fetchAnnouncements().finally(() => {
+                    isFetchPending = false;
+                });
+            }
         }
     };
 

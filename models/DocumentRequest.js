@@ -5,7 +5,49 @@ const documentRequestSchema = new mongoose.Schema(
         residentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resident',
-            required: true
+            required: false,
+            default: null
+        },
+        requesterType: {
+            type: String,
+            enum: ['resident', 'non_resident'],
+            default: 'resident'
+        },
+        firstName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        middleName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        lastName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        suffix: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        contactNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: ''
+        },
+        address: {
+            type: String,
+            trim: true,
+            default: ''
         },
         documentType: {
             type: String,
@@ -28,13 +70,29 @@ const documentRequestSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['pending', 'approved', 'rejected', 'ready_for_pickup', 'completed', 'cancelled'],
+            enum: ['pending', 'approved', 'processing', 'rejected', 'ready_for_pickup', 'completed', 'cancelled'],
             default: 'pending'
         },
         adminNotes: {
             type: String,
             trim: true,
             default: ''
+        },
+        generatedDocumentPath: {
+            type: String,
+            trim: true,
+            default: '',
+            description: 'Path to the generated PDF file'
+        },
+        documentSentAt: {
+            type: Date,
+            default: null,
+            description: 'Timestamp when the document was emailed to the resident'
+        },
+        documentGeneratedAt: {
+            type: Date,
+            default: null,
+            description: 'Timestamp when the PDF was generated'
         }
     },
     {

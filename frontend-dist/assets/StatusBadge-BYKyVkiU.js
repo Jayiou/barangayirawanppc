@@ -1,1 +1,0 @@
-import{G as e,T as t,U as n,V as r,f as i,j as a,x as o}from"./styles-BTs4eHNB.js";var s,c=e((()=>{i(),s={__name:`StatusBadge`,props:{status:{type:String,default:`unknown`}},setup(e){let i=e,s=o(()=>i.status.replaceAll(`_`,` `));return(i,o)=>(a(),t(`span`,{class:r([`badge`,e.status])},n(s.value),3))}}}));export{c as n,s as t};

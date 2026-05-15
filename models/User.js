@@ -35,6 +35,39 @@ const userSchema = new mongoose.Schema(
         otpExpires: {
             type: Date
         },
+        pendingResidentProfile: {
+            firstName: {
+                type: String,
+                trim: true
+            },
+            lastName: {
+                type: String,
+                trim: true
+            },
+            sex: {
+                type: String,
+                trim: true
+            },
+            birthDate: {
+                type: Date
+            },
+            contactNumber: {
+                type: String,
+                trim: true
+            },
+            address: {
+                type: String,
+                trim: true
+            },
+            purok: {
+                type: String,
+                trim: true
+            },
+            proofOfResidency: {
+                type: String,
+                trim: true
+            }
+        },
         isActive: {
             type: Boolean,
             default: true

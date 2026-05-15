@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const { publicFacilityLimiter } = require('../middleware/rateLimitMiddleware');
 const {
     createFacilityReservation,
+    createPublicFacilityReservation,
     getMyFacilityReservations,
     getFacilityAvailability,
     getFacilityReservations,
@@ -12,6 +14,7 @@ const {
 } = require('../controllers/facilityReservationController');
 
 router.post('/', authMiddleware, roleMiddleware('resident'), createFacilityReservation);
+router.post('/public', publicFacilityLimiter, createPublicFacilityReservation);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyFacilityReservations);
 router.get('/availability', authMiddleware, getFacilityAvailability);
 router.get('/:id', authMiddleware, getFacilityReservationById);

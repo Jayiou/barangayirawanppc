@@ -1,40 +1,53 @@
 <template>
-    <div class="page-shell app-shell">
+    <div v-if="initializing" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; flex-direction: column;">
+        <div style="width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">Initializing portal...</p>
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
+    </div>
+    <div class="page-shell app-shell" v-else>
         <aside class="app-sidebar" :class="{ open: sidebarOpen }">
-            <button class="sidebar-close-btn" @click="sidebarOpen = false">X</button>
-            <BrandMark initials="BC" eyebrow="Resident Portal" title="Barangay Connect" />
+            <button class="sidebar-close-btn" @click="sidebarOpen = false"><i class="fa-solid fa-xmark"></i></button>
 
-            <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'">My Profile</button>
-                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'">Document Requests</button>
-                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'">Appointments</button>
-                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'">Facility Reservations</button>
-                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'">Reports</button>
-            </nav>
-
-            <div class="sidebar-block">
-                <span class="eyebrow">Signed In</span>
-                <div v-if="user">
-                    <strong>{{ user.username }}</strong>
-                    <div class="fine-print">{{ user.email }}</div>
-                </div>
-                <div v-else class="fine-print">Checking session...</div>
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <BrandMark initials="BC" eyebrow="Resident Portal" title="Barangay Connect" />
             </div>
 
-            <button type="button" class="ghost-button" @click="logout">Log Out</button>
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar-nav">
+                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-user"></i> My Profile</button>
+                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> Appointments</button>
+                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i> Document Requests</button>
+                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facility Reservations</button>
+                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports</button>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <span class="footer-eyebrow">Logged In As</span>
+                <div class="user-info" v-if="user">
+                    <strong class="user-name">{{ user.username }}</strong>
+                    <div class="user-email">{{ user.email }}</div>
+                </div>
+                <div v-else class="fine-print">Checking session...</div>
+                <button type="button" class="logout-btn" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+            </div>
         </aside>
 
         <main class="app-main">
             <header class="mobile-app-header">
-                <button class="sidebar-open-btn" @click="sidebarOpen = true">☰</button>
+                <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
             </header>
             <section class="hero-banner">
                 <div>
                     <span class="eyebrow">Resident Workspace</span>
                     <h2>{{ viewTitle }}</h2>
                 </div>
-                <div class="status-box" :style="{ color: statusError ? '#d52a2a' : '' }">{{ statusMessage }}</div>
             </section>
+            
+            <ToastPopup :message="statusMessage" :type="statusError ? 'error' : 'success'" @close="setStatus('', false)" />
 
             <!-- My Profile View -->
             <section class="app-view" :class="{ active: currentView === 'profile' }">
@@ -83,24 +96,8 @@
                                 </label>
                                 <label><span>Profile image URL</span><input v-model="profile.profileImage" type="url"></label>
                             </div>
-                            <button type="submit" class="primary-button">Save Resident Profile</button>
+                            <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Resident Profile' }}</button>
                         </form>
-                    </article>
-                </div>
-            </section>
-
-            <!-- Document Requests View -->
-            <section class="app-view" :class="{ active: currentView === 'documents' }">
-                <div class="portal-grid">
-                    <article class="content-card">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span class="eyebrow">Document Requests</span>
-                                <h3>My requested documents</h3>
-                            </div>
-                            <button class="primary-button" @click="activeModal = 'document'">Request Document</button>
-                        </div>
-                        <RecordList :items="documentItems" />
                     </article>
                 </div>
             </section>
@@ -112,19 +109,82 @@
                         <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <span class="eyebrow">Appointments</span>
-                                <h3>My booked appointments</h3>
+                                <h3>My appointments</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'appointment'">Book Appointment</button>
+                            <button class="primary-button" @click="activeModal = 'appointment'">Request Appointment</button>
                         </div>
-                        <RecordList :items="appointmentItems" />
+                        <div v-if="!appointmentItems.length" style="padding: 20px; text-align: center; color: #999;">No appointments found.</div>
+                        <div v-else style="display: flex; flex-direction: column; gap: 12px;">
+                            <div v-for="item in appointmentItems" :key="item._id" style="padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; margin-bottom: 4px;">{{ item.title }}</div>
+                                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">{{ item.meta }}</div>
+                                    <div><StatusBadge :status="item.status" /></div>
+                                </div>
+                                <button class="primary-button" @click="viewingAppointment = item.fullItem" style="margin-left: 12px; white-space: nowrap;">View Details</button>
+                            </div>
+                        </div>
                     </article>
-                    
+                </div>
+            </section>
+
+            <!-- Document Requests View -->
+            <section class="app-view" :class="{ active: currentView === 'documents' }">
+                <div class="portal-grid">
                     <article class="content-card">
-                        <div class="section-head">
-                            <span class="eyebrow">Officials</span>
-                            <h3>Available barangay staff</h3>
+                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <span class="eyebrow">Document Requests</span>
+                                <h3>My requested documents</h3>
+                            </div>
+                            <button class="primary-button" @click="activeModal = 'document'">Request Document</button>
                         </div>
-                        <RecordList :items="officialItems" />
+                        
+                        <div class="table-responsive" style="border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 15px;">
+                            <table class="data-table" style="margin-top: 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Date Requested</th>
+                                        <th>Document Type</th>
+                                        <th>Purpose</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="documentRequests.length === 0">
+                                        <td colspan="4" style="text-align: center; padding: 20px;">No document requests found.</td>
+                                    </tr>
+                                    <tr v-for="doc in paginatedDocumentRequests" :key="doc._id" class="hoverable">
+                                        <td>{{ formatDate(doc.createdAt) }}</td>
+                                        <td style="text-transform: capitalize;">{{ doc.documentType.replace(/_/g, ' ') }}</td>
+                                        <td>{{ doc.purpose }}</td>
+                                        <td><StatusBadge :status="doc.status" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div v-if="docTotalPages > 1" style="display: flex; gap: 8px; justify-content: center; align-items: center; padding: 15px; background: #f9f9f9; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+                            <button 
+                                @click="docCurrentPage > 1 && (docCurrentPage -= 1)" 
+                                :disabled="docCurrentPage === 1"
+                                style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 0.9rem;"
+                                :style="{ opacity: docCurrentPage === 1 ? 0.5 : 1, cursor: docCurrentPage === 1 ? 'not-allowed' : 'pointer' }"
+                            >
+                                ← Previous
+                            </button>
+                            <span style="font-size: 0.9rem; color: #666; min-width: 120px; text-align: center;">
+                                Page {{ docCurrentPage }} of {{ docTotalPages }}
+                            </span>
+                            <button 
+                                @click="docCurrentPage < docTotalPages && (docCurrentPage += 1)" 
+                                :disabled="docCurrentPage === docTotalPages"
+                                style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 0.9rem;"
+                                :style="{ opacity: docCurrentPage === docTotalPages ? 0.5 : 1, cursor: docCurrentPage === docTotalPages ? 'not-allowed' : 'pointer' }"
+                            >
+                                Next →
+                            </button>
+                        </div>
                     </article>
                 </div>
             </section>
@@ -160,119 +220,296 @@
                     </article>
                 </div>
             </section>
+
         </main>
 
         <!-- Modals -->
-        <div class="landing-modal-backdrop" v-if="activeModal" @click.self="activeModal = null">
+        <div class="landing-modal-backdrop" v-if="activeModal" @click.self="closeModal">
             <dialog class="landing-modal" open>
-                <button class="landing-modal-close" @click="activeModal = null">X</button>
+                <button class="landing-modal-close" @click="closeModal">X</button>
                 
-                <div v-if="activeModal === 'document'">
-                    <h2>Request Document</h2>
-                    <p class="fine-print">Fill up the details for the document you need.</p>
-                    <form class="stack" @submit.prevent="submitDocumentRequest">
-                        <label><span>Document type</span><select v-model="documentForm.documentType" required><option value="barangay_clearance">Barangay Clearance</option><option value="certificate_of_residency">Certificate of Residency</option><option value="certificate_of_indigency">Certificate of Indigency</option></select></label>
-                        <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" required></label>
-                        <label><span>Request details</span><textarea v-model="documentForm.requestDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button">Submit Request</button>
+                <div v-if="activeModal === 'appointment'">
+                    <h2>Request Appointment</h2>
+                    <p class="fine-print">Schedule a meeting with a barangay official.</p>
+                    <form class="stack" @submit.prevent="handleSubmitAppointment">
+                        <label><span>Official</span>
+                            <select v-model="appointmentForm.officialId" required @change="loadAvailableSlots">
+                                <option disabled value="">Select Official</option>
+                                <option v-for="official in officials" :key="official._id" :value="official._id">{{ official.name }} - {{ official.position }}</option>
+                            </select>
+                        </label>
+                        <label><span>Date</span><input v-model="appointmentForm.appointmentDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadAvailableSlots"></label>
+                        
+                        <div v-if="appointmentForm.officialId && appointmentForm.appointmentDate">
+                            <span>Available Time Slots</span>
+                            <div v-if="isFetchingSlots" style="margin-top: 5px; font-size: 0.9em; color: #666;">Loading slots...</div>
+                            <div v-else-if="availableSlots.length === 0" style="margin-top: 5px; font-size: 0.9em; color: #d32f2f;">No available slots for this date.</div>
+                            <div v-else style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                                <button type="button" 
+                                    v-for="(slot, idx) in availableSlots" :key="idx"
+                                    @click="slot.isAvailable ? selectSlot(slot) : null"
+                                    :disabled="!slot.isAvailable"
+                                    :style="{
+                                        padding: '8px 12px',
+                                        border: '1px solid #2c3e50',
+                                        borderRadius: '6px',
+                                        background: !slot.isAvailable ? '#f5f5f5' : (appointmentForm.startTime === slot.startTime ? '#2c3e50' : 'transparent'),
+                                        color: !slot.isAvailable ? '#aaa' : (appointmentForm.startTime === slot.startTime ? '#fff' : '#2c3e50'),
+                                        cursor: !slot.isAvailable ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center'
+                                    }"
+                                >
+                                    <span>{{ slot.label }}</span>
+                                    <span v-if="!slot.isAvailable" style="font-size: 0.75em; color: #d32f2f;">({{ slot.reason || 'Unavailable' }})</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label><span>Purpose</span><input v-model="appointmentForm.purpose" type="text" required placeholder="What is this meeting about?"></label>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting || !appointmentForm.startTime">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
                     </form>
                 </div>
 
-                <div v-if="activeModal === 'appointment'">
-                    <h2>Book Appointment</h2>
-                    <p class="fine-print">Set an appointment with a barangay official.</p>
-                    <form class="stack" @submit.prevent="submitAppointment">
-                        <label><span>Official</span><select v-model="appointmentForm.officialId" required><option value="">Select an official</option><option v-for="official in officials" :key="official._id" :value="official._id">{{ official.fullName }} - {{ official.position }}</option></select></label>
-                        <label><span>Date</span><input v-model="appointmentForm.appointmentDate" type="date" required></label>
-                        <label><span>Time slot</span><input v-model="appointmentForm.timeSlot" type="text" placeholder="09:00-10:00" required></label>
-                        <label><span>Purpose</span><input v-model="appointmentForm.purpose" type="text" required></label>
-                        <label><span>Concern details</span><textarea v-model="appointmentForm.concernDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button">Submit Appointment</button>
+                <div v-if="activeModal === 'document'">
+                    <h2>Request Document</h2>
+                    <p class="fine-print">Fill up the details for the document you need.</p>
+                    <form class="stack" @submit.prevent="handleSubmitDocument">
+                        <label><span>Document type</span><select v-model="documentForm.documentType" required><option value="barangay_clearance">Barangay Clearance</option><option value="certificate_of_residency">Certificate of Residency</option><option value="certificate_of_indigency">Certificate of Indigency</option></select></label>
+                        <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" required></label>
+                        <label><span>Request details</span><textarea v-model="documentForm.requestDetails" rows="3"></textarea></label>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
                     </form>
                 </div>
 
                 <div v-if="activeModal === 'reservation'">
                     <h2>Reserve Facility</h2>
                     <p class="fine-print">Book a barangay facility for your event.</p>
-                    <form class="stack" @submit.prevent="submitReservation">
+                    <form class="stack" @submit.prevent="handleSubmitReservation">
                         <label><span>Facility</span><select v-model="reservationForm.facilityName" required @change="loadFacilityAvailability"><option value="barangay_hall">Barangay Hall</option><option value="covered_court">Covered Court</option><option value="multi_purpose_hall">Multi Purpose Hall</option></select></label>
-                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" required @change="loadFacilityAvailability"></label>
+                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadFacilityAvailability"></label>
                         <label><span>Start time</span><input v-model="reservationForm.startTime" type="time" required></label>
                         <label><span>End time</span><input v-model="reservationForm.endTime" type="time" required></label>
                         <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button">Submit Reservation</button>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
-                    <div class="status-box">{{ facilityAvailability }}</div>
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(58,78,67,0.05); color: #3a4e43; border-radius: 6px; font-size: 0.85rem; font-weight: 500;" v-if="facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
 
                 <div v-if="activeModal === 'report'">
                     <h2>Submit Report</h2>
                     <p class="fine-print">Report an incident or concern in the barangay.</p>
-                    <form class="stack" @submit.prevent="submitReport">
-                        <label><span>Report type</span><select v-model="reportForm.reportType" required><option value="noise_complaint">Noise Complaint</option><option value="disturbance">Disturbance</option><option value="blotter">Blotter</option><option value="sanitation">Sanitation</option><option value="infrastructure">Infrastructure</option><option value="manpower_request">Manpower Request</option><option value="public_safety">Public Safety</option><option value="animal_related">Animal Related</option><option value="disaster">Disaster</option><option value="other">Other</option></select></label>
-                        <label><span>Title</span><input v-model="reportForm.title" type="text" required></label>
-                        <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required></textarea></label>
-                        <label><span>Location</span><input v-model="reportForm.locationText" type="text" required></label>
-                        <label><span>Incident date</span><input v-model="reportForm.incidentDate" type="date"></label>
+                    <form class="stack" @submit.prevent="handleSubmitReport">
+                        <label>
+                            <span>Report type</span>
+                            <select v-model="reportForm.reportType" required>
+                                <option v-for="option in reportTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                            </select>
+                        </label>
+                        <label><span>Title</span><input v-model="reportForm.title" type="text" required :placeholder="currentReportTypeConfig.titlePlaceholder"></label>
+                        <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
+                        <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
+                        <label v-if="currentReportTypeConfig.requireIncidentDate"><span>Incident date</span><input v-model="reportForm.incidentDate" type="date" required></label>
+                        <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
+                            <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
+                            <button type="button" class="ghost-button" @click="captureCurrentLocation" :disabled="locatingPosition">
+                                {{ locatingPosition ? 'Getting location...' : 'Use My Current Location' }}
+                            </button>
+                            <small v-if="hasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ reportForm.locationLatitude }}, {{ reportForm.locationLongitude }} (±{{ reportForm.locationAccuracy || 'N/A' }}m)</small>
+                            <iframe
+                                v-if="reportMapEmbedUrl"
+                                :src="reportMapEmbedUrl"
+                                title="Report location preview map"
+                                style="width: 100%; height: 180px; border: 1px solid #dce6e1; border-radius: 8px;"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        </div>
+                        <label v-if="currentReportTypeConfig.requireProof">
+                            <span>{{ currentReportTypeConfig.proofLabel }}</span>
+                            <input type="file" accept="image/jpeg,image/png,image/jpg" multiple @change="handleReportProofFiles" required>
+                        </label>
+                        <small v-if="reportProofFiles.length" style="color: #4f6b5d;">{{ reportProofFiles.length }} file(s) selected</small>
                         <label><span>Priority</span><select v-model="reportForm.priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label>
                         <label><span>Contact preference</span><select v-model="reportForm.contactPreference"><option value="phone">Phone</option><option value="email">Email</option><option value="in_app">In app</option><option value="none">None</option></select></label>
                         <label class="checkbox-row"><input v-model="reportForm.isAnonymous" type="checkbox"><span>Submit anonymously</span></label>
-                        <button type="submit" class="primary-button">Submit Report</button>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
                     </form>
                 </div>
+            </dialog>
+        </div>
+
+        <!-- Appointment Details Modal -->
+        <div class="landing-modal-backdrop" v-if="viewingAppointment" @click.self="viewingAppointment = null">
+            <dialog class="landing-modal" open>
+                <button class="landing-modal-close" @click="viewingAppointment = null">X</button>
+                <h2>Appointment Details</h2>
+                <div style="display: grid; gap: 12px; margin-top: 15px;">
+                    <div>
+                        <span style="font-weight: 600; color: #555;">Official:</span>
+                        <p style="margin: 0; color: #333;">{{ viewingAppointment.officialId?.name }} - {{ viewingAppointment.officialId?.position }}</p>
+                    </div>
+                    <div>
+                        <span style="font-weight: 600; color: #555;">Date:</span>
+                        <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.appointmentDate) }}</p>
+                    </div>
+                    <div>
+                        <span style="font-weight: 600; color: #555;">Time:</span>
+                        <p style="margin: 0; color: #333;">{{ viewingAppointment.timeSlot?.startTime }} - {{ viewingAppointment.timeSlot?.endTime }}</p>
+                    </div>
+                    <div>
+                        <span style="font-weight: 600; color: #555;">Purpose:</span>
+                        <p style="margin: 0; color: #333;">{{ viewingAppointment.purpose }}</p>
+                    </div>
+                    <div>
+                        <span style="font-weight: 600; color: #555;">Status:</span>
+                        <div style="margin-top: 4px;"><StatusBadge :status="viewingAppointment.status" /></div>
+                    </div>
+                    <div v-if="viewingAppointment.status === 'rejected' && viewingAppointment.rejectionReason">
+                        <span style="font-weight: 600; color: #d32f2f;">Rejection Reason:</span>
+                        <p style="margin: 0; color: #333; padding: 10px; background: rgba(211,47,47,0.05); border-radius: 4px;">{{ viewingAppointment.rejectionReason }}</p>
+                    </div>
+                    <div v-if="viewingAppointment.status === 'cancelled' && viewingAppointment.cancellationReason">
+                        <span style="font-weight: 600; color: #ff9800;">Cancellation Reason:</span>
+                        <p style="margin: 0; color: #333; padding: 10px; background: rgba(255,152,0,0.05); border-radius: 4px;">{{ viewingAppointment.cancellationReason }}</p>
+                    </div>
+                    <div v-if="viewingAppointment.remarks">
+                        <span style="font-weight: 600; color: #555;">Admin Notes:</span>
+                        <p style="margin: 0; color: #333; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 4px;">{{ viewingAppointment.remarks }}</p>
+                    </div>
+                    <div v-if="viewingAppointment.approvedAt">
+                        <span style="font-weight: 600; color: #555;">Approved:</span>
+                        <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.approvedAt) }}</p>
+                    </div>
+                    <div v-if="viewingAppointment.completedAt">
+                        <span style="font-weight: 600; color: #555;">Completed:</span>
+                        <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.completedAt) }}</p>
+                    </div>
+                </div>
+                <button class="primary-button" @click="viewingAppointment = null" style="margin-top: 20px; width: 100%;">Close</button>
             </dialog>
         </div>
     </div>
 </template>
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import RecordList from '@/components/RecordList.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import ToastPopup from '@/components/ToastPopup.vue';
 import { formatDate } from '@/shared/client';
+import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
+import { useAppointments } from '@/composables/useAppointments';
 
 // Composables
-const { user, ensureResident, logout } = usePortalAuth();
-const { statusMessage, statusError, officials, appointments, documentRequests, reservations, reports, facilityAvailability, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
-const { appointmentForm, documentForm, reservationForm, reportForm, submitAppointment, submitDocumentRequest, submitReservation, submitReport } = usePortalForms();
+const { user, initializing, ensureResident, logout } = usePortalAuth();
 
+const confirmLogout = () => {
+    if (confirm("Are you sure you want to log out?")) {
+        logout();
+    }
+};
+const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, facilityAvailability, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
+const { documentForm, reservationForm, reportForm, reportProofFiles, submitDocumentRequest, submitReservation, submitReport } = usePortalForms();
+const { getAvailableSlots, requestAppointment } = useAppointments();
 // Local state
 const sidebarOpen = ref(false);
-const currentView = ref('profile');
+const currentView = ref(localStorage.getItem('portal_current_view') || 'profile');
 const activeModal = ref(null);
+const docCurrentPage = ref(1);
+const itemsPerPage = 5;
+const isSubmitting = ref(false);
+
+const appointmentForm = ref({
+    officialId: '',
+    appointmentDate: '',
+    startTime: '',
+    endTime: '',
+    purpose: ''
+});
+const availableSlots = ref([]);
+const isFetchingSlots = ref(false);
+const viewingAppointment = ref(null);
+const locatingPosition = ref(false);
+
+const loadAvailableSlots = async () => {
+    if (!appointmentForm.value.officialId || !appointmentForm.value.appointmentDate) {
+        availableSlots.value = [];
+        return;
+    }
+    isFetchingSlots.value = true;
+    appointmentForm.value.startTime = '';
+    appointmentForm.value.endTime = '';
+    try {
+        availableSlots.value = await getAvailableSlots(appointmentForm.value.officialId, appointmentForm.value.appointmentDate);
+    } catch(err) {
+        console.error(err);
+        availableSlots.value = [];
+    } finally {
+        isFetchingSlots.value = false;
+    }
+};
+
+const selectSlot = (slot) => {
+    appointmentForm.value.startTime = slot.startTime;
+    appointmentForm.value.endTime = slot.endTime;
+};
+
+const handleSubmitAppointment = async () => {
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        await requestAppointment(appointmentForm.value);
+        setStatus("Appointment requested successfully!");
+        closeModal();
+        loadAll(); // reload data
+        appointmentForm.value = { officialId: '', appointmentDate: '', startTime: '', endTime: '', purpose: '' };
+        availableSlots.value = [];
+    } catch(err) {
+        setStatus(err.message, true);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+// Persist view state on change
+watch(currentView, (newView) => {
+    localStorage.setItem('portal_current_view', newView);
+});
 
 // Computed properties
 const viewTitle = computed(() => ({
     profile: 'Manage your personal information',
     documents: 'Request and track barangay documents',
-    appointments: 'Book and manage your appointments',
     reservations: 'Reserve facilities for events',
-    reports: 'Submit and monitor your reports'
+    reports: 'Submit and monitor your reports',
+    appointments: 'Schedule meetings with barangay officials'
 }[currentView.value]));
-
-const officialItems = computed(() => officials.value.map((item) => ({
-    id: item._id,
-    title: item.fullName,
-    status: item.availabilityStatus,
-    meta: item.position + ' | ' + (item.officeLocation || 'No office location')
-})));
-
-const appointmentItems = computed(() => appointments.value.map((item) => ({
-    id: item._id,
-    title: item.purpose,
-    status: item.status,
-    meta: formatDate(item.appointmentDate) + ' | ' + item.timeSlot + ' | Official: ' + (item.officialId?.fullName || item.officialId)
-})));
 
 const documentItems = computed(() => documentRequests.value.map((item) => ({
     id: item._id,
     title: item.documentType,
     status: item.status,
-    meta: item.purpose + (item.adminNotes ? ' | Notes: ' + item.adminNotes : '')
+    meta: item.purpose
 })));
+
+const appointmentItems = computed(() => appointments.value.map((item) => {
+    const title = item.officialId && item.officialId.name ? `${item.officialId.position} - ${item.purpose}` : 'Appointment';
+    const tStart = item.timeSlot?.startTime || 'TBD';
+    const tEnd = item.timeSlot?.endTime || 'TBD';
+    return {
+        _id: item._id,
+        id: item._id,
+        title,
+        status: item.status,
+        meta: `${formatDate(item.appointmentDate)} | ${tStart}-${tEnd}`,
+        fullItem: item
+    };
+}));
 
 const reservationItems = computed(() => reservations.value.map((item) => ({
     id: item._id,
@@ -288,6 +525,37 @@ const reportItems = computed(() => reports.value.map((item) => ({
     meta: item.reportType + ' | ' + item.priority + ' | ' + item.locationText
 })));
 
+const reportTypeOptions = REPORT_TYPE_OPTIONS;
+
+const currentReportTypeConfig = computed(() => {
+    return REPORT_TYPE_CONFIG[reportForm.reportType] || REPORT_TYPE_CONFIG.other;
+});
+
+const paginatedDocumentRequests = computed(() => {
+    const start = (docCurrentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return documentRequests.value.slice(start, end);
+});
+
+const docTotalPages = computed(() => {
+    return Math.ceil(documentRequests.value.length / itemsPerPage) || 1;
+});
+
+const formatTimeRange = (startTime, endTime) => {
+    if (!startTime || !endTime) {
+        return 'No time set';
+    }
+
+    const formatTime = (value) => {
+        const [hours, minutes] = String(value).split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes || 0, 0, 0);
+        return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    };
+
+    return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+};
+
 // Modal handlers
 const openModal = (type) => {
     activeModal.value = type;
@@ -295,50 +563,121 @@ const openModal = (type) => {
 
 const closeModal = () => {
     activeModal.value = null;
+    docCurrentPage.value = 1;
+};
+
+const hasCapturedCoordinates = computed(() => {
+    return Boolean(reportForm.locationLatitude && reportForm.locationLongitude);
+});
+
+const reportMapEmbedUrl = computed(() => {
+    if (!hasCapturedCoordinates.value) {
+        return '';
+    }
+
+    return `https://maps.google.com/maps?q=${reportForm.locationLatitude},${reportForm.locationLongitude}&z=16&output=embed`;
+});
+
+const handleReportProofFiles = (event) => {
+    const incoming = Array.from(event.target.files || []);
+    reportProofFiles.value = incoming.slice(0, 5);
+};
+
+const captureCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+        setStatus('Geolocation is not supported on this device/browser.', true);
+        return;
+    }
+
+    locatingPosition.value = true;
+
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        });
+
+        reportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
+        reportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
+        reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
+        setStatus('Current location captured.');
+    } catch (error) {
+        setStatus(error?.message || 'Unable to capture your location.', true);
+    } finally {
+        locatingPosition.value = false;
+    }
 };
 
 const handleSaveProfile = async () => {
-    await saveProfile();
-    closeModal();
-};
-
-const handleSubmitAppointment = async () => {
-    const result = await submitAppointment(() => loadAll());
-    if (result.success) {
-        setStatus(result.message);
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        await saveProfile();
         closeModal();
-    } else {
-        setStatus(result.message, true);
+    } finally {
+        isSubmitting.value = false;
     }
 };
 
 const handleSubmitDocument = async () => {
-    const result = await submitDocumentRequest(() => loadAll());
-    if (result.success) {
-        setStatus(result.message);
-        closeModal();
-    } else {
-        setStatus(result.message, true);
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        const result = await submitDocumentRequest(() => loadAll());
+        if (result.success) {
+            setStatus(result.message);
+            closeModal();
+        } else {
+            setStatus(result.message, true);
+        }
+    } finally {
+        isSubmitting.value = false;
     }
 };
 
 const handleSubmitReservation = async () => {
-    const result = await submitReservation(() => loadAll(), loadFacilityAvailability);
-    if (result.success) {
-        setStatus(result.message);
-        closeModal();
-    } else {
-        setStatus(result.message, true);
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        const result = await submitReservation(() => loadAll(), loadFacilityAvailability);
+        if (result.success) {
+            setStatus(result.message);
+            closeModal();
+        } else {
+            setStatus(result.message, true);
+        }
+    } finally {
+        isSubmitting.value = false;
     }
 };
 
 const handleSubmitReport = async () => {
-    const result = await submitReport(() => loadAll());
-    if (result.success) {
-        setStatus(result.message);
-        closeModal();
-    } else {
-        setStatus(result.message, true);
+    if (isSubmitting.value) return;
+
+    if (currentReportTypeConfig.value.requireProof && reportProofFiles.value.length === 0) {
+        setStatus('Please upload at least one proof image for this report type.', true);
+        return;
+    }
+
+    if (currentReportTypeConfig.value.requireIncidentDate && !reportForm.incidentDate) {
+        setStatus('Incident date is required for this report type.', true);
+        return;
+    }
+
+    isSubmitting.value = true;
+    try {
+        const result = await submitReport(() => loadAll());
+        if (result.success) {
+            setStatus(result.message);
+            closeModal();
+        } else {
+            setStatus(result.message, true);
+        }
+    } finally {
+        isSubmitting.value = false;
     }
 };
 
@@ -351,4 +690,6 @@ onMounted(async () => {
     if (!allowed) return;
     await loadAll();
 });
+
+onUnmounted(() => {});
 </script>

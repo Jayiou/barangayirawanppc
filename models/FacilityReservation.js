@@ -5,7 +5,48 @@ const facilityReservationSchema = new mongoose.Schema(
         residentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resident',
-            required: true
+            default: null
+        },
+        requesterType: {
+            type: String,
+            enum: ['resident', 'guest'],
+            default: 'resident'
+        },
+        firstName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        middleName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        lastName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        suffix: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        contactNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: ''
+        },
+        address: {
+            type: String,
+            trim: true,
+            default: ''
         },
         facilityName: {
             type: String,

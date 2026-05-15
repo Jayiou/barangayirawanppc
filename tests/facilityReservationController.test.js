@@ -97,6 +97,72 @@ test('createFacilityReservation requires a resident profile', async () => {
     });
 });
 
+test('createPublicFacilityReservation rejects missing guest details', async () => {
+    const req = {
+        body: {
+            facilityName: 'covered_court',
+            reservationDate: '2026-05-01',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Family event'
+        }
+    };
+    const res = createMockResponse();
+
+    await facilityReservationController.createPublicFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'firstName, lastName, contactNumber, email, and address are required'
+    });
+});
+
+test('createPublicFacilityReservation creates and returns a populated guest reservation', async () => {
+    const populatedReservation = {
+        _id: 'reservation-public-1',
+        requesterType: 'guest',
+        firstName: 'Juan',
+        lastName: 'Dela Cruz',
+        email: 'juan@example.com',
+        facilityName: 'covered_court',
+        reservationDate: '2026-05-01T00:00:00.000Z',
+        status: 'pending'
+    };
+
+    const req = {
+        body: {
+            facilityName: 'covered_court',
+            reservationDate: '2026-05-01',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Family event',
+            reservationDetails: 'Birthday party',
+            firstName: 'Juan',
+            middleName: '',
+            lastName: 'Dela Cruz',
+            suffix: '',
+            contactNumber: '09171234567',
+            email: 'juan@example.com',
+            address: 'Outside Barangay'
+        }
+    };
+    const res = createMockResponse();
+
+    FacilityReservation.find = async () => [];
+    FacilityReservation.create = async (payload) => ({ _id: 'reservation-public-1', ...payload });
+    FacilityReservation.findById = () => ({
+        populate() {
+            return Promise.resolve(populatedReservation);
+        }
+    });
+
+    await facilityReservationController.createPublicFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(res.body, populatedReservation);
+});
+
 test('createFacilityReservation creates and returns a populated reservation', async () => {
     const populatedReservation = {
         _id: 'reservation-1',
@@ -283,7 +349,8 @@ test('updateFacilityReservationStatus rejects conflicting approvals', async () =
         facilityName: 'covered_court',
         reservationDate: '2026-05-01',
         startTime: '10:00',
-        endTime: '11:00'
+        endTime: '11:00',
+        status: 'pending'
     });
     FacilityReservation.find = async () => ([
         {

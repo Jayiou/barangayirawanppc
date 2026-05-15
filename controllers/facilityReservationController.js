@@ -2,6 +2,9 @@ const FacilityReservation = require('../models/FacilityReservation');
 const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
+const { isValidTransition } = require('../utils/statusWorkflows');
+const { logStatusChange } = require('../utils/statusLogger');
+const { sendRequestStatusEmail } = require('../utils/mailer');
 
 const reservationFields = [
     'facilityName',
@@ -12,6 +15,7 @@ const reservationFields = [
     'reservationDetails'
 ];
 
+const reservationRequesterFields = ['firstName', 'middleName', 'lastName', 'suffix', 'contactNumber', 'email', 'address'];
 const reservationStatusFields = ['status', 'adminNotes'];
 const OPERATING_HOURS = {
     start: '08:00',
@@ -31,6 +35,7 @@ const pickFields = (source, fields) => fields.reduce((accumulator, field) => {
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const normalizeText = (value) => String(value || '').trim();
 
 const isValidTime = (value) => hasText(value) && timePattern.test(value.trim());
 
@@ -87,6 +92,46 @@ const populateReservation = (query) => query.populate({
     }
 });
 
+const buildResidentReservationPayload = (residentId, reservationData) => ({
+    residentId,
+    requesterType: 'resident',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    suffix: '',
+    contactNumber: '',
+    email: '',
+    address: '',
+    ...reservationData
+});
+
+const buildGuestReservationPayload = (reservationData) => ({
+    ...reservationData,
+    residentId: null,
+    requesterType: 'guest',
+    firstName: normalizeText(reservationData.firstName),
+    middleName: normalizeText(reservationData.middleName),
+    lastName: normalizeText(reservationData.lastName),
+    suffix: normalizeText(reservationData.suffix),
+    contactNumber: normalizeText(reservationData.contactNumber),
+    email: normalizeText(reservationData.email).toLowerCase(),
+    address: normalizeText(reservationData.address)
+});
+
+const getReservationRequesterName = (reservation) => {
+    const guestName = [reservation.firstName, reservation.middleName, reservation.lastName, reservation.suffix].filter(Boolean).join(' ').trim();
+
+    if (guestName) {
+        return guestName;
+    }
+
+    if (reservation.residentId) {
+        return [reservation.residentId.firstName, reservation.residentId.middleName, reservation.residentId.lastName, reservation.residentId.suffix].filter(Boolean).join(' ').trim();
+    }
+
+    return 'Guest Requester';
+};
+
 const validateReservationData = (payload) => {
     if (payload.reservationDate !== undefined && !isValidDate(payload.reservationDate)) {
         return 'Please provide a valid reservationDate';
@@ -113,6 +158,16 @@ const validateReservationData = (payload) => {
     return null;
 };
 
+const validateGuestReservationData = (payload) => {
+    const required = ['firstName', 'lastName', 'contactNumber', 'email', 'address'];
+
+    if (required.some((field) => !hasText(payload[field]))) {
+        return 'firstName, lastName, contactNumber, email, and address are required';
+    }
+
+    return null;
+};
+
 const findConflictingReservation = async ({
     facilityName,
     reservationDate,
@@ -134,7 +189,7 @@ const findConflictingReservation = async ({
     const requestedEnd = toMinutes(endTime);
 
     return reservations.find((reservation) => {
-        if (excludeReservationId && reservation._id.toString() === excludeReservationId.toString()) {
+        if (reservation._id?.toString() === excludeReservationId?.toString()) {
             return false;
         }
 
@@ -220,11 +275,62 @@ exports.createFacilityReservation = asyncHandler(async (req, res) => {
         });
     }
 
-    const reservation = await FacilityReservation.create({
-        residentId: resident._id,
-        ...reservationData
+    const reservation = await FacilityReservation.create(buildResidentReservationPayload(resident._id, reservationData));
+
+    const populatedReservation = await populateReservation(
+        FacilityReservation.findById(reservation._id)
+    );
+
+    res.status(201).json(populatedReservation);
+});
+
+exports.createPublicFacilityReservation = asyncHandler(async (req, res) => {
+    const reservationData = pickFields(req.body, [...reservationFields, ...reservationRequesterFields]);
+    const validationError = validateReservationData(reservationData) || validateGuestReservationData(reservationData);
+
+    if (
+        !reservationData.facilityName
+        || !reservationData.reservationDate
+        || !reservationData.startTime
+        || !reservationData.endTime
+        || !reservationData.purpose
+    ) {
+        throw createHttpError(
+            400,
+            'facilityName, reservationDate, startTime, endTime, and purpose are required',
+            { code: 'FACILITY_RESERVATION_VALIDATION_ERROR' }
+        );
+    }
+
+    if (validationError) {
+        throw createHttpError(400, validationError, {
+            code: 'FACILITY_RESERVATION_VALIDATION_ERROR'
+        });
+    }
+
+    // Prevent duplicate reservations from same email within 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existingReservation = await FacilityReservation.findOne({
+        email: normalizeEmail(reservationData.email),
+        requesterType: 'non_resident',
+        createdAt: { $gte: oneDayAgo }
     });
 
+    if (existingReservation) {
+        throw createHttpError(409, 'You already submitted a facility reservation request in the last 24 hours. Please check your email for updates or contact the barangay admin.', {
+            code: 'DUPLICATE_REQUEST'
+        });
+    }
+
+    const conflictingReservation = await findConflictingReservation(reservationData);
+
+    if (conflictingReservation) {
+        throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+            code: 'FACILITY_RESERVATION_CONFLICT'
+        });
+    }
+
+    const reservation = await FacilityReservation.create(buildGuestReservationPayload(reservationData));
     const populatedReservation = await populateReservation(
         FacilityReservation.findById(reservation._id)
     );
@@ -309,7 +415,7 @@ exports.getFacilityReservationById = asyncHandler(async (req, res) => {
     if (req.user.role === 'resident') {
         const resident = await Resident.findOne({ userId: req.user.id });
 
-        if (!resident || reservation.residentId._id.toString() !== resident._id.toString()) {
+        if (!reservation.residentId || !resident || reservation.residentId._id.toString() !== resident._id.toString()) {
             throw createHttpError(403, 'Access denied', {
                 code: 'FACILITY_RESERVATION_FORBIDDEN'
             });
@@ -336,6 +442,15 @@ exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
         });
     }
 
+    // Validate status transition
+    if (!isValidTransition('facilityReservation', existingReservation.status, statusData.status)) {
+        throw createHttpError(400, `Cannot transition from ${existingReservation.status} to ${statusData.status}`, {
+            code: 'INVALID_STATUS_TRANSITION'
+        });
+    }
+
+    const previousStatus = existingReservation.status;
+
     if (CONFLICT_STATUSES.includes(statusData.status)) {
         const conflictingReservation = await findConflictingReservation({
             facilityName: existingReservation.facilityName,
@@ -358,9 +473,36 @@ exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
         { new: true, runValidators: true }
     );
 
+    // Log the status change
+    try {
+        await logStatusChange(
+            'FacilityReservation',
+            req.params.id,
+            previousStatus,
+            statusData.status,
+            req.user,
+            statusData.adminNotes || '',
+            req.ip || req.connection.remoteAddress || ''
+        );
+    } catch (logError) {
+        console.error('Failed to log status change:', logError);
+    }
+
     const populatedReservation = await populateReservation(
         FacilityReservation.findById(reservation._id)
     );
+
+    const recipientEmail = populatedReservation.email || populatedReservation.residentId?.email;
+
+    if (recipientEmail) {
+        await sendRequestStatusEmail(
+            recipientEmail,
+            getReservationRequesterName(populatedReservation),
+            'facility reservation',
+            statusData.status,
+            statusData.adminNotes || ''
+        );
+    }
 
     res.json(populatedReservation);
 });

@@ -2,10 +2,23 @@ import { reactive, ref } from 'vue';
 import { apiFetch } from '@/shared/client';
 
 export function usePortalForms() {
-    const appointmentForm = reactive({ officialId: '', appointmentDate: '', timeSlot: '', purpose: '', concernDetails: '' });
+    const submissionLock = ref(false);
     const documentForm = reactive({ documentType: 'barangay_clearance', purpose: '', requestDetails: '' });
     const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', purpose: '', reservationDetails: '' });
-    const reportForm = reactive({ reportType: 'noise_complaint', title: '', description: '', locationText: '', incidentDate: '', priority: 'medium', contactPreference: 'in_app', isAnonymous: false });
+    const reportForm = reactive({
+        reportType: 'noise_complaint',
+        title: '',
+        description: '',
+        locationText: '',
+        locationLatitude: '',
+        locationLongitude: '',
+        locationAccuracy: '',
+        incidentDate: '',
+        priority: 'medium',
+        contactPreference: 'in_app',
+        isAnonymous: false
+    });
+    const reportProofFiles = ref([]);
 
     const resetForm = (target, resetValues) => {
         Object.keys(target).forEach((key) => {
@@ -14,8 +27,15 @@ export function usePortalForms() {
     };
 
     const submitForm = async (path, payload, successMessage, resetTarget, resetValues, reloader) => {
+        if (submissionLock.value) {
+            return { success: false, message: 'Please wait and try again.' };
+        }
+
+        submissionLock.value = true;
+
         try {
-            await apiFetch(path, { method: 'POST', body: JSON.stringify(payload) });
+            const requestBody = payload instanceof FormData ? payload : JSON.stringify(payload);
+            await apiFetch(path, { method: 'POST', body: requestBody });
             if (resetTarget && resetValues) {
                 resetForm(resetTarget, resetValues);
             }
@@ -24,18 +44,11 @@ export function usePortalForms() {
             }
             return { success: true, message: successMessage };
         } catch (error) {
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, status: error.status, code: error.code };
+        } finally {
+            submissionLock.value = false;
         }
     };
-
-    const submitAppointment = async (loadAppointments) => submitForm(
-        '/appointments',
-        appointmentForm,
-        'Appointment booked.',
-        appointmentForm,
-        { officialId: '', appointmentDate: '', timeSlot: '', purpose: '', concernDetails: '' },
-        loadAppointments
-    );
 
     const submitDocumentRequest = async (loadDocuments) => submitForm(
         '/document-requests',
@@ -63,15 +76,44 @@ export function usePortalForms() {
 
     const submitReport = async (loadReports) => submitForm(
         '/reports',
-        reportForm,
+        (() => {
+            const payload = new FormData();
+
+            Object.entries(reportForm).forEach(([key, value]) => {
+                payload.append(key, value === null || value === undefined ? '' : String(value));
+            });
+
+            reportProofFiles.value.forEach((file) => {
+                payload.append('proofFiles', file);
+            });
+
+            return payload;
+        })(),
         'Report submitted.',
         reportForm,
-        { reportType: 'noise_complaint', title: '', description: '', locationText: '', incidentDate: '', priority: 'medium', contactPreference: 'in_app', isAnonymous: false },
-        loadReports
+        {
+            reportType: 'noise_complaint',
+            title: '',
+            description: '',
+            locationText: '',
+            locationLatitude: '',
+            locationLongitude: '',
+            locationAccuracy: '',
+            incidentDate: '',
+            priority: 'medium',
+            contactPreference: 'in_app',
+            isAnonymous: false
+        },
+        async () => {
+            reportProofFiles.value = [];
+            if (loadReports) {
+                await loadReports();
+            }
+        }
     );
 
     return {
-        appointmentForm, documentForm, reservationForm, reportForm,
-        submitAppointment, submitDocumentRequest, submitReservation, submitReport
+        documentForm, reservationForm, reportForm, reportProofFiles,
+        submitDocumentRequest, submitReservation, submitReport
     };
 }

@@ -23,7 +23,8 @@ module.exports = defineConfig({
             input: {
                 main: path.resolve(__dirname, 'index.html'),
                 portal: path.resolve(__dirname, 'portal.html'),
-                admin: path.resolve(__dirname, 'admin.html')
+                admin: path.resolve(__dirname, 'admin.html'),
+                preview: path.resolve(__dirname, 'preview.html')
             }
         }
     },

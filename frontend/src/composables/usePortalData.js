@@ -1,14 +1,16 @@
 import { ref, reactive } from 'vue';
-import { apiFetch } from '@/shared/client';
+import { apiFetch, getAuth } from '@/shared/client';
+
+const isObjectId = (value) => /^[a-fA-F\d]{24}$/.test(String(value || '').trim());
 
 export function usePortalData() {
     const statusMessage = ref('Checking your session.');
     const statusError = ref(false);
-    const officials = ref([]);
-    const appointments = ref([]);
     const documentRequests = ref([]);
     const reservations = ref([]);
     const reports = ref([]);
+    const appointments = ref([]);
+    const officials = ref([]);
     const facilityAvailability = ref('Pick a facility and date to load available slots.');
 
     const profile = reactive({
@@ -28,29 +30,21 @@ export function usePortalData() {
     };
 
     const loadProfile = async () => {
+        const auth = getAuth();
         try {
             const data = await apiFetch('/residents/me');
             applyValues(profile, { ...profile, ...data, birthDate: data.birthDate ? String(data.birthDate).slice(0, 10) : '' });
+            if (!profile.email && auth.user?.email) {
+                profile.email = auth.user.email;
+            }
         } catch (error) {
+            if (auth.user?.email) {
+                profile.email = auth.user.email;
+            }
             setStatus(error.message, true);
         }
     };
 
-    const loadOfficials = async () => { 
-        try {
-            officials.value = await apiFetch('/officials');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    };
-
-    const loadAppointments = async () => { 
-        try {
-            appointments.value = await apiFetch('/appointments/me');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    };
 
     const loadDocuments = async () => { 
         try {
@@ -76,15 +70,33 @@ export function usePortalData() {
         }
     };
 
+    const loadAppointments = async () => { 
+        try {
+            const data = await apiFetch('/appointments/my-appointments');
+            appointments.value = data.data || data || [];
+        } catch (error) {
+            console.error('Failed to load appointments', error);
+        }
+    };
+
+    const loadOfficials = async () => {
+        try {
+            const data = await apiFetch('/appointments/officials');
+            officials.value = data.data || data || [];
+        } catch (error) {
+            console.error('Failed to load officials', error);
+        }
+    };
+
     const loadAll = async () => {
         try {
             await Promise.all([
                 loadProfile(),
-                loadOfficials(),
-                loadAppointments(),
                 loadDocuments(),
                 loadReservations(),
-                loadReports()
+                loadReports(),
+                loadAppointments(),
+                loadOfficials()
             ]);
             setStatus('Dashboard loaded.');
         } catch (error) {
@@ -121,7 +133,25 @@ export function usePortalData() {
     };
 
     return {
-        statusMessage, statusError, officials, appointments, documentRequests, reservations, reports, facilityAvailability,
-        profile, setStatus, applyValues, loadProfile, loadOfficials, loadAppointments, loadDocuments, loadReservations, loadReports, loadAll, saveProfile, loadFacilityAvailability
+        statusMessage,
+        statusError,
+        documentRequests,
+        reservations,
+        reports,
+        appointments,
+        officials,
+        facilityAvailability,
+        profile,
+        setStatus,
+        applyValues,
+        loadProfile,
+        loadDocuments,
+        loadReservations,
+        loadReports,
+        loadAppointments,
+        loadOfficials,
+        loadAll,
+        saveProfile,
+        loadFacilityAvailability
     };
 }

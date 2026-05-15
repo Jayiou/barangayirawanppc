@@ -1,5 +1,5 @@
 <template>
-    <span :class="['badge', status]">{{ label }}</span>
+    <span :class="['badge', statusClass]">{{ label }}</span>
 </template>
 
 <script setup>
@@ -10,4 +10,15 @@ const props = defineProps({
 });
 
 const label = computed(() => props.status.replaceAll('_', ' '));
+
+const statusClass = computed(() => {
+    if (!props.status) return 'unknown';
+    return props.status.toLowerCase();
+});
 </script>
+
+<style scoped>
+.badge {
+    text-decoration: none;
+}
+</style>

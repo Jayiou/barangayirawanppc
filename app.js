@@ -17,6 +17,11 @@ app.use(helmet({
     hsts: false,
     crossOriginOpenerPolicy: false,
     crossOriginEmbedderPolicy: false,
+    permissionsPolicy: {
+        features: {
+            geolocation: ['self']
+        }
+    }
 }));
 
 // Trust first proxy (useful for rate limiting if behind Heroku, Nginx, etc.)
@@ -119,6 +124,13 @@ const isDevelopmentTunnelHost = (hostname) => {
 
 app.use(express.json());
 
+// Register status actions routes
+try {
+    app.use('/api/actions', require('./routes/statusActionsRoutes'));
+} catch (err) {
+    console.error('ERROR loading status actions routes:', err.message);
+}
+
 // NoSQL Injection Protection
 app.use((req, res, next) => {
     sanitize(req.body);
@@ -195,13 +207,6 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-// Test middleware for debugging announcements endpoint
-app.use('/api/announcements', (req, res, next) => {
-    const msg = `[${new Date().toISOString()}] ${req.method} /api/announcements${req.url}\n`;
-    fs.appendFileSync(path.join(__dirname, 'app-debug.log'), msg);
-    next();
-});
-
 app.use('/api/residents', require('./routes/residentRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 try {
@@ -209,11 +214,14 @@ try {
 } catch (err) {
     console.error('ERROR loading announcement routes:', err);
 }
-app.use('/api/officials', require('./routes/officialRoutes'));
-app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/document-requests', require('./routes/documentRequestRoutes'));
 app.use('/api/facility-reservations', require('./routes/facilityReservationRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/sms-logs', require('./routes/smsRoutes'));
+    app.use('/api/blotters', require('./routes/blotterRoutes'));
+    app.use('/api/manpower-requests', require('./routes/manpowerRequestRoutes'));
+app.use('/api/status-audit', require('./routes/statusAuditRoutes'));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(frontendDirectory, 'index.html'));
