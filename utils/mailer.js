@@ -34,7 +34,7 @@ const transporter = nodemailer.createTransport({
 const sendOtpEmail = async (toEmail, otpCode, name) => {
     try {
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: 'Verify your Barangay Connect Registration',
             html: `
@@ -68,7 +68,7 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
 const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
     try {
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: 'Reset your Barangay Connect password',
             html: `
