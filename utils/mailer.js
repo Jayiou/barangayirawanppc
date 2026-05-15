@@ -10,7 +10,11 @@ const formatLabel = (text) => {
 };
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    family: 4,
     auth: {
         // You'll need to set these in your .env file
         user: process.env.EMAIL_USER || 'your-email@gmail.com',
