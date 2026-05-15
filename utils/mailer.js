@@ -9,15 +9,26 @@ const formatLabel = (text) => {
         .join(' ');
 };
 
+const FROM_EMAIL = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'no-reply@barangay.local';
+
+// Build transporter dynamically: prefer SendGrid API key (SMTP relay), fallback to EMAIL_USER/EMAIL_PASS
+const smtpHost = process.env.EMAIL_HOST || 'smtp.sendgrid.net';
+const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
+const smtpSecure = smtpPort === 465;
+
+let smtpAuth = null;
+if (process.env.SENDGRID_API_KEY) {
+    smtpAuth = { user: 'apikey', pass: process.env.SENDGRID_API_KEY };
+} else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    smtpAuth = { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS };
+}
+
 const transporter = nodemailer.createTransport({
-    host: 'smtp.sendgrid.net',
-    port: 587,
-    secure: false,
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     requireTLS: true,
-    auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY || 'your-sendgrid-api-key'
-    }
+    auth: smtpAuth
 });
 
 const sendOtpEmail = async (toEmail, otpCode, name) => {
@@ -41,8 +52,8 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
         };
 
         // Don't crash if email config is missing during dev testing
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping email send because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping email send because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
@@ -74,8 +85,8 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             `
         };
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping password reset email because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping password reset email because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
@@ -95,7 +106,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             : 'We regret to inform you that your account registration has been <strong>REJECTED</strong>. Please ensure all your details and proof of residency are correct, and try registering again or visit the Barangay Hall for clarification.';
 
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
             html: `
@@ -111,8 +122,8 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             `
         };
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping email send because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping email send because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
@@ -152,7 +163,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
         const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
 
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
             html: `
@@ -169,8 +180,8 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             `
         };
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping document email send because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping document email send because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
@@ -207,7 +218,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
         const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
 
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
             html: `
@@ -224,8 +235,8 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             `
         };
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping request status email because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping request status email because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
@@ -241,7 +252,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
         const docTypeFormatted = formatLabel(documentType);
         
         const mailOptions = {
-            from: `"Barangay Connect" <${process.env.EMAIL_USER}>`,
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `${docTypeFormatted} from Barangay Irawan`,
             html: `
@@ -272,8 +283,8 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
             ]
         };
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('Skipping document email send because EMAIL_USER/EMAIL_PASS are missing in .env');
+        if (!smtpAuth) {
+            console.log('Skipping document email send because no SendGrid API key or SMTP credentials are configured');
             return;
         }
 
