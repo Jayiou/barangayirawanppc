@@ -82,7 +82,7 @@
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
-                    <button type="button" class="ghost-button" @click="soundSettingsModalOpen = true" title="Alert sound settings" style="padding: 0.6rem; width: 44px; height: 44px; display: grid; place-items: center;">
+                    <button type="button" class="ghost-button sound-settings-btn" @click="soundSettingsModalOpen = true" title="Alert sound settings">
                         <i class="fa-solid fa-gear"></i>
                     </button>
                 </div>
@@ -129,10 +129,10 @@
 
                         <div class="control-group">
                             <div class="volume-header">
-                                <label>Volume</label>
+                                <span class="volume-label">Volume</span>
                                 <span class="volume-value">{{ soundVolume.toFixed(1) }}x</span>
                             </div>
-                            <input type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" class="volume-slider" />
+                            <input id="sound-volume-range" type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" class="volume-slider" />
                             <div class="volume-labels">
                                 <span>Silent</span>
                                 <span>Normal</span>
@@ -178,7 +178,7 @@
                     <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">This may take a few seconds on first generation.</div>
                 </div>
             </div>
-            <section class="hero-banner" style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <section class="hero-banner dashboard-top-banner">
                 <div>
                     <span class="eyebrow">Admin Workspace</span>
                     <h2>{{ viewTitle }}</h2>
@@ -821,7 +821,7 @@ const adminSoundFile = ref(null);
 const adminSoundPreview = ref('');
 const adminSoundUploading = ref(false);
 const adminSoundMessage = ref('');
-const soundVolume = ref(1.0);
+const soundVolume = ref(1);
 const soundLoop = ref(true);
 const soundTesting = ref(false);
 const soundSettingsModalOpen = ref(false);
@@ -830,7 +830,7 @@ const soundSettingsModalOpen = ref(false);
 const initSoundSettings = () => {
     const cfg = getCustomSoundConfig();
     if (cfg) {
-        soundVolume.value = cfg.volume || 1.0;
+        soundVolume.value = cfg.volume || 1;
         soundLoop.value = cfg.loop !== false;
     }
 };
@@ -838,10 +838,28 @@ const initSoundSettings = () => {
 const onAdminSoundChange = (evt) => {
     const f = evt.target.files && evt.target.files[0];
     if (!f) return;
+    if (adminSoundPreview.value) {
+        try { URL.revokeObjectURL(adminSoundPreview.value); } catch {}
+    }
     adminSoundFile.value = f;
     try {
         adminSoundPreview.value = URL.createObjectURL(f);
     } catch {}
+};
+
+const deleteStoredSound = async (soundUrl) => {
+    if (!soundUrl) {
+        return;
+    }
+
+    try {
+        await apiFetch('/admin/delete-sound', {
+            method: 'POST',
+            body: JSON.stringify({ url: soundUrl })
+        });
+    } catch (error) {
+        console.warn('Unable to delete previous sound file:', error);
+    }
 };
 
 const uploadAdminSound = async () => {
@@ -849,6 +867,9 @@ const uploadAdminSound = async () => {
         adminSoundMessage.value = 'Choose a sound file first.';
         return;
     }
+
+    const previousSound = getCustomSoundConfig();
+    const previousUrl = previousSound?.url || '';
 
     adminSoundUploading.value = true;
     adminSoundMessage.value = '';
@@ -859,8 +880,14 @@ const uploadAdminSound = async () => {
         const res = await apiFetch('/admin/upload-sound', { method: 'POST', body: fd });
         if (res && res.url) {
             setCustomSound(res.url, { loop: soundLoop.value, volume: soundVolume.value });
+            if (previousUrl && previousUrl !== res.url) {
+                await deleteStoredSound(previousUrl);
+            }
             adminSoundMessage.value = 'Upload successful. Sound configured for alerts.';
             adminSoundFile.value = null;
+            if (adminSoundPreview.value) {
+                try { URL.revokeObjectURL(adminSoundPreview.value); } catch {}
+            }
             adminSoundPreview.value = '';
             initSoundSettings();
         } else {
@@ -911,12 +938,17 @@ const testSound = async () => {
     }
 };
 
-const resetSound = () => {
+const resetSound = async () => {
     if (confirm('Remove custom alert sound and revert to default tones?')) {
+        const cfg = getCustomSoundConfig();
+        await deleteStoredSound(cfg?.url);
         setCustomSound(null);
-        soundVolume.value = 1.0;
+        soundVolume.value = 1;
         soundLoop.value = true;
         adminSoundFile.value = null;
+        if (adminSoundPreview.value) {
+            try { URL.revokeObjectURL(adminSoundPreview.value); } catch {}
+        }
         adminSoundPreview.value = '';
         adminSoundMessage.value = 'Custom sound removed. Using default alert tones.';
         setTimeout(() => { adminSoundMessage.value = ''; }, 3000);
@@ -927,7 +959,7 @@ const { residents, documentRequests, reservations, reports, appointments, offici
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);
-const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports, setCustomSound, getCustomSoundConfig } = useReportNotifications();
+const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports, setCustomSound, getCustomSoundConfig, stopAlertSound } = useReportNotifications();
 // Local state
 const sidebarOpen = ref(false);
 const showAdminPassword = ref(false);
@@ -1564,6 +1596,7 @@ const loadSMSLogs = async (page = 1) => {
 };
 
 const dismissReportAlert = () => {
+    stopAlertSound();
     reportAlertVisible.value = false;
     reportAlertReports.value = [];
     clearUnreadReports();
@@ -1572,6 +1605,7 @@ const dismissReportAlert = () => {
 const viewReportsFromAlert = async () => {
     reportAlertBusy.value = true;
     try {
+        stopAlertSound();
         await loadAll();
         currentView.value = 'reports';
         dismissReportAlert();
@@ -1647,9 +1681,10 @@ onMounted(() => {
 .app-shell {
     position: relative;
     background:
-        radial-gradient(circle at top left, rgba(37, 127, 73, 0.08), transparent 32%),
-        radial-gradient(circle at top right, rgba(181, 136, 56, 0.08), transparent 28%),
-        linear-gradient(180deg, #f6f8f4 0%, #eef3ef 100%);
+    radial-gradient(circle at top left, rgba(37, 127, 73, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(35, 91, 130, 0.10), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(181, 136, 56, 0.08), transparent 24%),
+    linear-gradient(180deg, #f3f7f4 0%, #e8efe9 100%);
 }
 
 .app-shell::before {
@@ -1669,29 +1704,60 @@ onMounted(() => {
 }
 
 .hero-banner {
-    padding: 18px 22px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(242, 247, 243, 0.9));
-    border: 1px solid rgba(58, 78, 67, 0.08);
-    box-shadow: 0 18px 50px rgba(28, 39, 33, 0.08);
+    padding: 20px 24px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 246, 243, 0.96));
+    border: 1px solid rgba(58, 78, 67, 0.10);
+    box-shadow: 0 18px 50px rgba(28, 39, 33, 0.09);
+    backdrop-filter: blur(14px);
+}
+
+.dashboard-top-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 18px;
+}
+
+.sound-settings-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 24px rgba(12, 34, 23, 0.16);
+}
+
+.sound-settings-btn i {
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.sound-settings-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 14px 28px rgba(12, 34, 23, 0.20);
 }
 
 /* Sound Settings Modal Styles */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(11, 22, 18, 0.56);
     display: grid;
     place-items: center;
     z-index: 1000;
     padding: 20px;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(10px);
 }
 
 .sound-settings-modal {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 249, 246, 0.96));
+    border-radius: 20px;
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.20);
     width: 100%;
     max-width: 420px;
     max-height: 90vh;
@@ -1717,8 +1783,8 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #e5e5e5;
-    background: linear-gradient(135deg, rgba(44, 62, 80, 0.02), rgba(52, 152, 219, 0.02));
+    border-bottom: 1px solid rgba(58, 78, 67, 0.08);
+    background: linear-gradient(135deg, rgba(37, 127, 73, 0.04), rgba(35, 91, 130, 0.04));
 }
 
 .modal-header h3 {
@@ -1731,7 +1797,7 @@ onMounted(() => {
 }
 
 .modal-header i {
-    color: #3498db;
+    color: #257f49;
 }
 
 .modal-close-btn {
@@ -1748,7 +1814,7 @@ onMounted(() => {
 }
 
 .modal-close-btn:hover {
-    background: #ecf0f1;
+    background: rgba(37, 127, 73, 0.10);
     color: #2c3e50;
 }
 
@@ -1782,19 +1848,19 @@ onMounted(() => {
     justify-content: center;
     gap: 8px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    background: linear-gradient(135deg, #235b82 0%, #1f4e6b 100%);
     color: white;
     border-radius: 10px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 2px solid #3498db;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .file-input-label:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #1f618d 100%);
+    background: linear-gradient(135deg, #1f4e6b 0%, #173a51 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 10px 22px rgba(31, 78, 107, 0.28);
 }
 
 .file-input-label:active {
@@ -1820,7 +1886,7 @@ onMounted(() => {
     width: 20px;
     height: 20px;
     cursor: pointer;
-    accent-color: #3498db;
+    accent-color: #257f49;
 }
 
 /* Volume Control */
@@ -1838,7 +1904,7 @@ onMounted(() => {
 
 .volume-value {
     font-weight: 700;
-    color: #3498db;
+    color: #257f49;
     font-size: 1.1rem;
 }
 
@@ -1859,7 +1925,7 @@ onMounted(() => {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3498db, #2980b9);
+    background: linear-gradient(135deg, #257f49, #235b82);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
     transition: all 0.2s ease;
@@ -1867,14 +1933,14 @@ onMounted(() => {
 
 .volume-slider::-webkit-slider-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.5);
+    box-shadow: 0 4px 16px rgba(37, 127, 73, 0.36);
 }
 
 .volume-slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3498db, #2980b9);
+    background: linear-gradient(135deg, #257f49, #235b82);
     cursor: pointer;
     border: none;
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
@@ -1883,7 +1949,7 @@ onMounted(() => {
 
 .volume-slider::-moz-range-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.5);
+    box-shadow: 0 4px 16px rgba(37, 127, 73, 0.36);
 }
 
 .volume-labels {
@@ -1917,23 +1983,23 @@ onMounted(() => {
 }
 
 .primary-button {
-    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    background: linear-gradient(135deg, #257f49 0%, #1f6a3b 100%);
     color: white;
 }
 
 .primary-button:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+    box-shadow: 0 8px 20px rgba(37, 127, 73, 0.28);
 }
 
 .secondary-button {
-    background: #ecf0f1;
-    color: #2c3e50;
-    border: 1px solid #bdc3c7;
+    background: #edf3ef;
+    color: #234033;
+    border: 1px solid rgba(58, 78, 67, 0.12);
 }
 
 .secondary-button:hover:not(:disabled) {
-    background: #d5dbde;
+    background: #e1e8e3;
     transform: translateY(-1px);
 }
 
@@ -1953,26 +2019,26 @@ onMounted(() => {
 }
 
 .alert-message.success {
-    background: #d5f4e6;
-    color: #27ae60;
-    border-left-color: #27ae60;
+    background: #e2f3e8;
+    color: #257f49;
+    border-left-color: #257f49;
 }
 
 .alert-message.error {
-    background: #fadbd8;
-    color: #c0392b;
-    border-left-color: #c0392b;
+    background: #f9e6e5;
+    color: #a83d35;
+    border-left-color: #a83d35;
 }
 
 /* Current Sound Display */
 .current-sound {
     margin-top: 12px;
     padding: 10px 12px;
-    background: #ecf0f1;
+    background: rgba(37, 127, 73, 0.08);
     border-radius: 6px;
-    color: #34495e;
+    color: #234033;
     font-size: 0.85rem;
-    border-left: 3px solid #3498db;
+    border-left: 3px solid #257f49;
 }
 
 /* Empty State */
@@ -2012,8 +2078,24 @@ onMounted(() => {
 }
 
 .dashboard-hero-card {
-    background: linear-gradient(135deg, rgba(37, 127, 73, 0.96), rgba(23, 74, 46, 0.95));
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(37, 127, 73, 0.98), rgba(23, 74, 46, 0.96));
     color: #f6fbf7;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-hero-card::after {
+    content: '';
+    position: absolute;
+    inset: auto -12% -35% auto;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 68%);
+    pointer-events: none;
 }
 
 .dashboard-hero-card .eyebrow,
@@ -2042,7 +2124,16 @@ onMounted(() => {
 .dashboard-summary-card,
 .dashboard-chart-card,
 .dashboard-feed-card {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.96));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 250, 248, 0.97));
+}
+
+.dashboard-summary-card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dashboard-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 42px rgba(28, 39, 33, 0.10);
 }
 
 .dashboard-summary-card.accent {

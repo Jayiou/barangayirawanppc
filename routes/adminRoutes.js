@@ -30,6 +30,35 @@ const audioFileFilter = (req, file, cb) => {
     return cb(new Error('Invalid audio file type. Use MP3/OGG/WAV formats.'));
 };
 
+const resolveAdminSoundFilePath = (value) => {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+        return '';
+    }
+
+    const filename = path.basename(rawValue.split('?')[0].split('#')[0]);
+    if (!filename.startsWith('adminSound-')) {
+        return '';
+    }
+
+    const filePath = path.join(publicUploadDirectory, filename);
+    if (!filePath.startsWith(publicUploadDirectory)) {
+        return '';
+    }
+
+    return filePath;
+};
+
+const deleteAdminSoundFile = (value) => {
+    const filePath = resolveAdminSoundFilePath(value);
+    if (!filePath || !fs.existsSync(filePath)) {
+        return false;
+    }
+
+    fs.unlinkSync(filePath);
+    return true;
+};
+
 const upload = multer({
     storage,
     fileFilter: audioFileFilter,
@@ -46,6 +75,15 @@ router.post('/upload-sound', authMiddleware, roleMiddleware('admin'), upload.sin
     const url = `/uploads/${encodeURI(filename)}`;
 
     res.json({ success: true, url });
+});
+
+router.post('/delete-sound', authMiddleware, roleMiddleware('admin'), (req, res) => {
+    const deleted = deleteAdminSoundFile(req.body?.url || req.body?.fileUrl || req.body?.filename);
+    if (!deleted) {
+        return res.json({ success: true, deleted: false });
+    }
+
+    res.json({ success: true, deleted: true });
 });
 
 module.exports = router;
