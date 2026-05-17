@@ -317,6 +317,13 @@
                             <button type="button" class="ghost-button" @click="captureCurrentLocation" :disabled="locatingPosition">
                                 {{ locatingPosition ? 'Getting location...' : 'Use My Current Location' }}
                             </button>
+                            <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;">
+                                <strong style="color: #3a4e43;">How it works:</strong><br>
+                                1️⃣ Click the button above<br>
+                                2️⃣ A popup will appear asking for permission<br>
+                                3️⃣ Tap <strong>Allow</strong><br>
+                                💡 If it doesn't work, make sure <strong>Location Services is ON</strong> in your phone settings first.
+                            </small>
                             <small v-if="hasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ reportForm.locationLatitude }}, {{ reportForm.locationLongitude }} (±{{ reportForm.locationAccuracy || 'N/A' }}m)</small>
                             <iframe
                                 v-if="reportMapEmbedUrl"
@@ -595,29 +602,49 @@ const captureCurrentLocation = async () => {
         return;
     }
 
+    const requestLocation = () => new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 5000
+        });
+    });
+
+    const readPermissionState = async () => {
+        try {
+            if (!navigator.permissions?.query) {
+                return 'unknown';
+            }
+
+            const permission = await navigator.permissions.query({ name: 'geolocation' });
+            return permission.state;
+        } catch {
+            return 'unknown';
+        }
+    };
+
     locatingPosition.value = true;
-    let attemptedHighAccuracy = true;
 
     try {
-        // Try with high accuracy first (for better results)
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 30000, // Increased timeout for mobile networks
-                maximumAge: 5000 // Allow cached position within 5 seconds
-            });
-        });
+        const permissionState = await readPermissionState();
+
+        if (permissionState === 'denied') {
+            setStatus('🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.', true);
+            return;
+        }
+
+        // Calling geolocation here triggers the browser permission popup when needed.
+        const position = await requestLocation();
 
         reportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
         reportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
         reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
         setStatus('Current location captured.');
     } catch (error) {
-        // If high accuracy fails, try without it
-        if (attemptedHighAccuracy) {
+        // If GPS/high accuracy fails, try a network-based fallback.
+        if (error?.code !== 1) {
             try {
-                attemptedHighAccuracy = false;
-                const position = await new Promise((resolve, reject) => {
+                const fallbackPosition = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: false,
                         timeout: 10000,
@@ -625,9 +652,9 @@ const captureCurrentLocation = async () => {
                     });
                 });
 
-                reportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
-                reportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
-                reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
+                reportForm.locationLatitude = String(fallbackPosition.coords.latitude.toFixed(6));
+                reportForm.locationLongitude = String(fallbackPosition.coords.longitude.toFixed(6));
+                reportForm.locationAccuracy = String(Math.round(fallbackPosition.coords.accuracy || 0));
                 setStatus('Location captured (lower accuracy mode).');
                 return;
             } catch (fallbackError) {
@@ -638,11 +665,11 @@ const captureCurrentLocation = async () => {
         // Provide helpful error messages based on error code
         let errorMsg = 'Unable to capture your location.';
         if (error?.code === 1) {
-            errorMsg = 'Permission denied. Please enable location access in your browser settings and try again.';
+            errorMsg = '❌ Permission Denied: When you clicked the button, you might have tapped "Block" instead of "Allow". Try again and tap Allow when the popup appears. OR check your browser settings to allow location access for this site.';
         } else if (error?.code === 2) {
-            errorMsg = 'Position unavailable. Please check your GPS/network connection and try again.';
+            errorMsg = '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
         } else if (error?.code === 3) {
-            errorMsg = 'Location request timed out. Please ensure GPS/network is enabled and try again.';
+            errorMsg = '⏱️ Timeout: Getting your location is taking too long. Check that Location Services is ON and your network is working, then try again.';
         } else if (error?.message) {
             errorMsg = error.message;
         }
