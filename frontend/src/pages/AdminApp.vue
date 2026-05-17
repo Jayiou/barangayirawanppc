@@ -80,57 +80,91 @@
                     <strong class="user-name">{{ user.username }}</strong>
                     <div class="user-email">{{ user.email }}</div>
                 </div>
-                <button type="button" class="logout-btn" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
-                <div class="admin-sound-upload" style="margin-top: 12px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa;">
-                    <div style="margin-bottom: 12px;">
-                        <span style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 8px;">Alert Sound Settings</span>
-                        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-                            <input type="file" accept="audio/*" @change="onAdminSoundChange" style="flex: 1;" />
-                            <button class="ghost-button" type="button" @click="uploadAdminSound" :disabled="adminSoundUploading" style="white-space: nowrap;">
-                                <i :class="adminSoundUploading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'"></i>
-                                {{ adminSoundUploading ? 'Uploading...' : 'Upload' }}
-                            </button>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+                    <button type="button" class="ghost-button" @click="soundSettingsModalOpen = true" title="Alert sound settings" style="padding: 0.6rem; width: 44px; height: 44px; display: grid; place-items: center;">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sound Settings Modal -->
+        <div v-if="soundSettingsModalOpen" class="modal-overlay" @click.self="soundSettingsModalOpen = false">
+            <div class="sound-settings-modal">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-volume"></i> Alert Sound Settings</h3>
+                    <button type="button" class="modal-close-btn" @click="soundSettingsModalOpen = false">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Upload Section -->
+                    <div class="settings-section">
+                        <label class="file-input-group">
+                            <input type="file" accept="audio/*" @change="onAdminSoundChange" />
+                            <span class="file-input-label">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                Choose Audio File
+                            </span>
                         </label>
-                        <div v-if="adminSoundMessage" style="color: #2c7; font-size: 0.85rem; margin-bottom: 8px;">{{ adminSoundMessage }}</div>
+                        <button v-if="adminSoundFile" class="primary-button" type="button" @click="uploadAdminSound" :disabled="adminSoundUploading" style="width: 100%; margin-top: 8px;">
+                            <i :class="adminSoundUploading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'"></i>
+                            {{ adminSoundUploading ? 'Uploading...' : 'Upload Sound' }}
+                        </button>
+                        <div v-if="adminSoundMessage" :class="['alert-message', adminSoundMessage.includes('successful') ? 'success' : 'error']">
+                            {{ adminSoundMessage }}
+                        </div>
                     </div>
 
-                    <div v-if="getCustomSoundConfig() || adminSoundPreview" style="border-top: 1px solid #ddd; padding-top: 12px;">
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                    <!-- Settings Controls (show only if custom sound is set) -->
+                    <div v-if="getCustomSoundConfig() || adminSoundFile" class="settings-section">
+                        <div class="control-group">
+                            <label class="checkbox-label">
                                 <input type="checkbox" v-model="soundLoop" @change="updateSoundConfig" />
                                 <span>Loop alert sound</span>
                             </label>
                         </div>
 
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
-                                <span>Volume: <strong>{{ soundVolume.toFixed(1) }}</strong></span>
-                                <input type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" style="width: 100%;" />
-                                <small style="color: #666;">0 = silent, 1 = normal, 2 = extra loud</small>
-                            </label>
+                        <div class="control-group">
+                            <div class="volume-header">
+                                <label>Volume</label>
+                                <span class="volume-value">{{ soundVolume.toFixed(1) }}x</span>
+                            </div>
+                            <input type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" class="volume-slider" />
+                            <div class="volume-labels">
+                                <span>Silent</span>
+                                <span>Normal</span>
+                                <span>Loud</span>
+                            </div>
                         </div>
 
-                        <div style="display: flex; gap: 8px;">
-                            <button class="ghost-button" type="button" @click="testSound" :disabled="soundTesting" style="flex: 1;">
+                        <div class="button-group">
+                            <button class="secondary-button" type="button" @click="testSound" :disabled="soundTesting">
                                 <i :class="soundTesting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-play'"></i>
-                                {{ soundTesting ? 'Playing...' : 'Test Sound' }}
+                                {{ soundTesting ? 'Playing...' : 'Test' }}
                             </button>
-                            <button class="ghost-button" type="button" @click="resetSound" style="flex: 1;">
+                            <button class="secondary-button" type="button" @click="resetSound">
                                 <i class="fa-solid fa-rotate-right"></i>
                                 Reset
                             </button>
                         </div>
 
-                        <div style="margin-top: 8px; font-size: 0.85rem; color: #666;">
-                            <small v-if="getCustomSoundConfig()">Current: {{ getCustomSoundConfig().url }}</small>
+                        <div class="current-sound" v-if="getCustomSoundConfig()">
+                            <small>📁 {{ getCustomSoundConfig().url.split('/').pop() }}</small>
                         </div>
                     </div>
-                    <div v-else style="font-size: 0.85rem; color: #999; font-style: italic;">
-                        Using default alert tones
+
+                    <!-- No Sound Message -->
+                    <div v-else class="empty-state">
+                        <i class="fa-solid fa-volume-mute"></i>
+                        <p>Using default alert tones</p>
+                        <small>Upload a custom audio file to change</small>
                     </div>
                 </div>
             </div>
-        </aside>
+        </div>
 
         <main class="app-main" :class="{ 'notifications-blurred': reportAlertVisible }">
             <header class="mobile-app-header">
@@ -790,6 +824,7 @@ const adminSoundMessage = ref('');
 const soundVolume = ref(1.0);
 const soundLoop = ref(true);
 const soundTesting = ref(false);
+const soundSettingsModalOpen = ref(false);
 
 // Initialize sound settings from localStorage
 const initSoundSettings = () => {
@@ -1639,6 +1674,329 @@ onMounted(() => {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(242, 247, 243, 0.9));
     border: 1px solid rgba(58, 78, 67, 0.08);
     box-shadow: 0 18px 50px rgba(28, 39, 33, 0.08);
+}
+
+/* Sound Settings Modal Styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: grid;
+    place-items: center;
+    z-index: 1000;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+}
+
+.sound-settings-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    background: linear-gradient(135deg, rgba(44, 62, 80, 0.02), rgba(52, 152, 219, 0.02));
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header i {
+    color: #3498db;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #7f8c8d;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: grid;
+    place-items: center;
+}
+
+.modal-close-btn:hover {
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.settings-section {
+    margin-bottom: 24px;
+}
+
+.settings-section:last-of-type {
+    margin-bottom: 0;
+}
+
+/* File Input Styling */
+.file-input-group {
+    display: block;
+    position: relative;
+}
+
+.file-input-group input[type="file"] {
+    display: none;
+}
+
+.file-input-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #3498db;
+}
+
+.file-input-label:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #1f618d 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+}
+
+.file-input-label:active {
+    transform: translateY(0);
+}
+
+/* Control Groups */
+.control-group {
+    margin-bottom: 16px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #3498db;
+}
+
+/* Volume Control */
+.volume-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.volume-header label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.volume-value {
+    font-weight: 700;
+    color: #3498db;
+    font-size: 1.1rem;
+}
+
+.volume-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #ecf0f1 0%, #bdc3c7 100%);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 12px 0;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.5);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.5);
+}
+
+.volume-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    padding: 0 4px;
+}
+
+/* Button Group */
+.button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.primary-button,
+.secondary-button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.primary-button {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+}
+
+.primary-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+}
+
+.secondary-button {
+    background: #ecf0f1;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+}
+
+.secondary-button:hover:not(:disabled) {
+    background: #d5dbde;
+    transform: translateY(-1px);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Alert Messages */
+.alert-message {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border-left: 4px solid;
+}
+
+.alert-message.success {
+    background: #d5f4e6;
+    color: #27ae60;
+    border-left-color: #27ae60;
+}
+
+.alert-message.error {
+    background: #fadbd8;
+    color: #c0392b;
+    border-left-color: #c0392b;
+}
+
+/* Current Sound Display */
+.current-sound {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #ecf0f1;
+    border-radius: 6px;
+    color: #34495e;
+    font-size: 0.85rem;
+    border-left: 3px solid #3498db;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    color: #bdc3c7;
+}
+
+.empty-state p {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    color: #34495e;
+}
+
+.empty-state small {
+    color: #95a5a6;
+}
     backdrop-filter: blur(10px);
 }
 
