@@ -1400,11 +1400,11 @@ watch(loginStatus, (message) => {
 });
 
 watch(dashboardStatus, (message) => {
-    if (!message) {
+    if (!message || !dashboardError.value) {
         return;
     }
 
-    showToast(message, dashboardError.value);
+    showToast(message, true);
 });
 
 watch(unreadReports, (newReports) => {
