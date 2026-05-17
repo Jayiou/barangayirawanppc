@@ -1452,6 +1452,126 @@ onMounted(initSession);
     transition: filter 0.2s ease;
 }
 
+.app-shell {
+    position: relative;
+    background:
+        radial-gradient(circle at top left, rgba(37, 127, 73, 0.08), transparent 32%),
+        radial-gradient(circle at top right, rgba(181, 136, 56, 0.08), transparent 28%),
+        linear-gradient(180deg, #f6f8f4 0%, #eef3ef 100%);
+}
+
+.app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 70%);
+    opacity: 0.55;
+}
+
+.app-main {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-banner {
+    padding: 18px 22px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(242, 247, 243, 0.9));
+    border: 1px solid rgba(58, 78, 67, 0.08);
+    box-shadow: 0 18px 50px rgba(28, 39, 33, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.hero-banner h2 {
+    margin: 4px 0 0;
+    letter-spacing: -0.02em;
+    color: #1a2a22;
+}
+
+.content-card {
+    border-radius: 22px;
+    border: 1px solid rgba(58, 78, 67, 0.08);
+    box-shadow: 0 16px 40px rgba(28, 39, 33, 0.08);
+    overflow: hidden;
+}
+
+.dashboard-hero-card {
+    background: linear-gradient(135deg, rgba(37, 127, 73, 0.96), rgba(23, 74, 46, 0.95));
+    color: #f6fbf7;
+}
+
+.dashboard-hero-card .eyebrow,
+.dashboard-hero-card h3,
+.dashboard-hero-card p,
+.dashboard-hero-card span,
+.dashboard-hero-card strong {
+    color: inherit;
+}
+
+.dashboard-hero-card p {
+    opacity: 0.9;
+}
+
+.dashboard-ring-panel {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 18px;
+    backdrop-filter: blur(8px);
+}
+
+.dashboard-ring-caption {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.dashboard-summary-card,
+.dashboard-chart-card,
+.dashboard-feed-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.96));
+}
+
+.dashboard-summary-card.accent {
+    background: linear-gradient(180deg, rgba(37, 127, 73, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.dashboard-summary-card.blue {
+    background: linear-gradient(180deg, rgba(35, 91, 130, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.dashboard-summary-card.gold {
+    background: linear-gradient(180deg, rgba(181, 136, 56, 0.12), rgba(255, 255, 255, 0.96));
+}
+
+.dashboard-section-head h3 {
+    letter-spacing: -0.015em;
+    color: #1b2a22;
+}
+
+.dashboard-chip {
+    background: rgba(37, 127, 73, 0.1);
+    color: #257f49;
+    border: 1px solid rgba(37, 127, 73, 0.16);
+}
+
+.dashboard-bar-track {
+    background: rgba(58, 78, 67, 0.08);
+}
+
+.dashboard-feed-item {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(58, 78, 67, 0.08);
+    border-radius: 16px;
+    padding: 14px 16px;
+}
+
+.dashboard-empty-state {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px dashed rgba(58, 78, 67, 0.16);
+    border-radius: 16px;
+}
+
 .report-alert-overlay {
     position: fixed;
     inset: 0;

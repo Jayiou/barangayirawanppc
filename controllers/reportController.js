@@ -37,6 +37,20 @@ const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
 const normalizeText = (value) => String(value || '').trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
 const formatReportTypeLabel = (value) => normalizeText(value).replaceAll('_', ' ');
+const buildReportTitle = (reportType, title) => {
+    const manualTitle = normalizeText(title);
+
+    if (manualTitle) {
+        return manualTitle;
+    }
+
+    const typeLabel = formatReportTypeLabel(reportType);
+    if (!typeLabel) {
+        return 'Incident Report';
+    }
+
+    return `${typeLabel.charAt(0).toUpperCase()}${typeLabel.slice(1)} Report`;
+};
 
 const toNullableNumber = (value) => {
     if (value === undefined || value === null || value === '') {
