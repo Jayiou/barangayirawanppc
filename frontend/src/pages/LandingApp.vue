@@ -1558,6 +1558,7 @@ onMounted(() => {
 
     const hasReset = hydrateResetPasswordFromUrl();
     if (hasReset) {
+        activeModal.value = 'reset-password';
         setStatus('Create a new password to finish resetting your account.', false);
     }
     
