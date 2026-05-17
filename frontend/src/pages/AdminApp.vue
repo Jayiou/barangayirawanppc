@@ -1997,8 +1997,6 @@ onMounted(() => {
 .empty-state small {
     color: #95a5a6;
 }
-    backdrop-filter: blur(10px);
-}
 
 .hero-banner h2 {
     margin: 4px 0 0;
