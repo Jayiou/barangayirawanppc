@@ -7,6 +7,7 @@ export function useReportNotifications() {
     let pollInterval = null;
     let sharedAudioContext = null;
     let audioListenersAttached = false;
+    let customAudioElement = null;
 
     const getAudioContext = () => {
         if (!sharedAudioContext) {
@@ -54,10 +55,99 @@ export function useReportNotifications() {
         });
     };
 
+    // Custom sound config stored in localStorage so admin can provide their own file/url.
+    const getCustomSoundConfig = () => {
+        try {
+            const url = window.localStorage.getItem('adminAlertSoundUrl');
+            const loopRaw = window.localStorage.getItem('adminAlertSoundLoop');
+            const volumeRaw = window.localStorage.getItem('adminAlertSoundVolume');
+            const loop = loopRaw === 'true';
+            const volume = volumeRaw ? Math.max(0, Math.min(2, Number(volumeRaw))) : 1.0;
+            if (url) {
+                return { url, loop, volume };
+            }
+        } catch (e) {
+            // ignore
+        }
+        return null;
+    };
+
+    const setCustomSound = (url, { loop = true, volume = 1.0 } = {}) => {
+        try {
+            if (!url) {
+                window.localStorage.removeItem('adminAlertSoundUrl');
+                window.localStorage.removeItem('adminAlertSoundLoop');
+                window.localStorage.removeItem('adminAlertSoundVolume');
+                if (customAudioElement) {
+                    try { customAudioElement.pause(); } catch {}
+                    customAudioElement = null;
+                }
+                return true;
+            }
+            window.localStorage.setItem('adminAlertSoundUrl', url);
+            window.localStorage.setItem('adminAlertSoundLoop', String(Boolean(loop)));
+            window.localStorage.setItem('adminAlertSoundVolume', String(Number(volume) || 1));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
+
     // Create a stronger notification sound pattern.
     const playAlertSound = () => {
         try {
             const audioContext = getAudioContext();
+
+            // If admin provided a custom sound URL, try to play that (with loop/volume).
+            const cfg = getCustomSoundConfig();
+            if (cfg && cfg.url) {
+                try {
+                    awaitPrime: {
+                        if (audioContext && audioContext.state === 'suspended') {
+                            audioContext.resume().catch(() => {});
+                        }
+                    }
+
+                    // Reuse element when looping to avoid multiple sources.
+                    if (customAudioElement && customAudioElement.src !== cfg.url) {
+                        try { customAudioElement.pause(); } catch {}
+                        customAudioElement = null;
+                    }
+
+                    if (!customAudioElement) {
+                        customAudioElement = new Audio(cfg.url);
+                        customAudioElement.loop = Boolean(cfg.loop);
+                        customAudioElement.preload = 'auto';
+                        customAudioElement.crossOrigin = 'anonymous';
+
+                        // If WebAudio is available, route through AudioContext to allow gain control.
+                        if (audioContext) {
+                            try {
+                                const source = audioContext.createMediaElementSource(customAudioElement);
+                                const gainNode = audioContext.createGain();
+                                // Clamp volume to [0,2] but HTML element volume is [0,1]. Use gain for extra loudness.
+                                const gainVal = Math.max(0, Math.min(2, cfg.volume || 1));
+                                gainNode.gain.value = gainVal;
+                                source.connect(gainNode);
+                                gainNode.connect(audioContext.destination);
+                            } catch (e) {
+                                // fall back to element volume if source creation fails
+                                customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
+                            }
+                        } else {
+                            customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
+                        }
+                    }
+
+                    // Play (may be blocked until user interacts; primeAudioContext handles that)
+                    customAudioElement.play().catch(() => {});
+                    return;
+                } catch (err) {
+                    // if custom sound fails, fallback to tone sequence below
+                    console.warn('Custom alert sound failed, falling back to tones', err && err.message);
+                }
+            }
+
             if (!audioContext) {
                 return;
             }
@@ -165,6 +255,10 @@ export function useReportNotifications() {
         }
 
         detachAudioListeners();
+        if (customAudioElement) {
+            try { customAudioElement.pause(); } catch {}
+            customAudioElement = null;
+        }
     };
 
     const clearUnreadReports = () => {
@@ -182,6 +276,8 @@ export function useReportNotifications() {
         checkForNewReports,
         startNotificationPolling,
         stopNotificationPolling,
-        clearUnreadReports
+        clearUnreadReports,
+        setCustomSound,
+        getCustomSoundConfig
     };
 }

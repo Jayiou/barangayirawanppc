@@ -81,6 +81,54 @@
                     <div class="user-email">{{ user.email }}</div>
                 </div>
                 <button type="button" class="logout-btn" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+                <div class="admin-sound-upload" style="margin-top: 12px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa;">
+                    <div style="margin-bottom: 12px;">
+                        <span style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 8px;">Alert Sound Settings</span>
+                        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                            <input type="file" accept="audio/*" @change="onAdminSoundChange" style="flex: 1;" />
+                            <button class="ghost-button" type="button" @click="uploadAdminSound" :disabled="adminSoundUploading" style="white-space: nowrap;">
+                                <i :class="adminSoundUploading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'"></i>
+                                {{ adminSoundUploading ? 'Uploading...' : 'Upload' }}
+                            </button>
+                        </label>
+                        <div v-if="adminSoundMessage" style="color: #2c7; font-size: 0.85rem; margin-bottom: 8px;">{{ adminSoundMessage }}</div>
+                    </div>
+
+                    <div v-if="getCustomSoundConfig() || adminSoundPreview" style="border-top: 1px solid #ddd; padding-top: 12px;">
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                                <input type="checkbox" v-model="soundLoop" @change="updateSoundConfig" />
+                                <span>Loop alert sound</span>
+                            </label>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
+                                <span>Volume: <strong>{{ soundVolume.toFixed(1) }}</strong></span>
+                                <input type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" style="width: 100%;" />
+                                <small style="color: #666;">0 = silent, 1 = normal, 2 = extra loud</small>
+                            </label>
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button class="ghost-button" type="button" @click="testSound" :disabled="soundTesting" style="flex: 1;">
+                                <i :class="soundTesting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-play'"></i>
+                                {{ soundTesting ? 'Playing...' : 'Test Sound' }}
+                            </button>
+                            <button class="ghost-button" type="button" @click="resetSound" style="flex: 1;">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                Reset
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 8px; font-size: 0.85rem; color: #666;">
+                            <small v-if="getCustomSoundConfig()">Current: {{ getCustomSoundConfig().url }}</small>
+                        </div>
+                    </div>
+                    <div v-else style="font-size: 0.85rem; color: #999; font-style: italic;">
+                        Using default alert tones
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -734,11 +782,117 @@ const confirmLogout = () => {
         logout();
     }
 };
+// Admin sound upload state
+const adminSoundFile = ref(null);
+const adminSoundPreview = ref('');
+const adminSoundUploading = ref(false);
+const adminSoundMessage = ref('');
+const soundVolume = ref(1.0);
+const soundLoop = ref(true);
+const soundTesting = ref(false);
+
+// Initialize sound settings from localStorage
+const initSoundSettings = () => {
+    const cfg = getCustomSoundConfig();
+    if (cfg) {
+        soundVolume.value = cfg.volume || 1.0;
+        soundLoop.value = cfg.loop !== false;
+    }
+};
+
+const onAdminSoundChange = (evt) => {
+    const f = evt.target.files && evt.target.files[0];
+    if (!f) return;
+    adminSoundFile.value = f;
+    try {
+        adminSoundPreview.value = URL.createObjectURL(f);
+    } catch {}
+};
+
+const uploadAdminSound = async () => {
+    if (!adminSoundFile.value) {
+        adminSoundMessage.value = 'Choose a sound file first.';
+        return;
+    }
+
+    adminSoundUploading.value = true;
+    adminSoundMessage.value = '';
+    const fd = new FormData();
+    fd.append('sound', adminSoundFile.value);
+
+    try {
+        const res = await apiFetch('/admin/upload-sound', { method: 'POST', body: fd });
+        if (res && res.url) {
+            setCustomSound(res.url, { loop: soundLoop.value, volume: soundVolume.value });
+            adminSoundMessage.value = 'Upload successful. Sound configured for alerts.';
+            adminSoundFile.value = null;
+            adminSoundPreview.value = '';
+            initSoundSettings();
+        } else {
+            adminSoundMessage.value = 'Upload succeeded but no URL returned.';
+        }
+    } catch (err) {
+        adminSoundMessage.value = err.message || 'Upload failed';
+    } finally {
+        adminSoundUploading.value = false;
+    }
+};
+
+const updateSoundConfig = () => {
+    const cfg = getCustomSoundConfig();
+    if (cfg) {
+        setCustomSound(cfg.url, { loop: soundLoop.value, volume: soundVolume.value });
+        adminSoundMessage.value = 'Sound settings updated.';
+        setTimeout(() => { adminSoundMessage.value = ''; }, 2000);
+    }
+};
+
+const testSound = async () => {
+    soundTesting.value = true;
+    try {
+        // Import and call the playAlertSound from useReportNotifications
+        // Since we already have access to the composable functions, we can trigger a test
+        const testAudio = new Audio();
+        const cfg = getCustomSoundConfig();
+        
+        if (cfg && cfg.url) {
+            testAudio.src = cfg.url;
+            testAudio.volume = Math.max(0, Math.min(1, cfg.volume || 1));
+            await testAudio.play();
+            
+            // Wait for audio to finish or timeout after 10 seconds
+            await new Promise(resolve => {
+                const timeout = setTimeout(resolve, 10000);
+                testAudio.onended = () => {
+                    clearTimeout(timeout);
+                    resolve();
+                };
+            });
+        }
+    } catch (err) {
+        console.warn('Test sound failed:', err);
+    } finally {
+        soundTesting.value = false;
+    }
+};
+
+const resetSound = () => {
+    if (confirm('Remove custom alert sound and revert to default tones?')) {
+        setCustomSound(null);
+        soundVolume.value = 1.0;
+        soundLoop.value = true;
+        adminSoundFile.value = null;
+        adminSoundPreview.value = '';
+        adminSoundMessage.value = 'Custom sound removed. Using default alert tones.';
+        setTimeout(() => { adminSoundMessage.value = ''; }, 3000);
+    }
+};
+
 const { residents, documentRequests, reservations, reports, appointments, officials, announcements, dashboardStatus, dashboardError, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);
-const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports } = useReportNotifications();
+const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports, setCustomSound, getCustomSoundConfig } = useReportNotifications();
 // Local state
 const sidebarOpen = ref(false);
 const showAdminPassword = ref(false);
@@ -1439,7 +1593,10 @@ watch(isAuthenticated, async (authed) => {
     }
 }, { immediate: true });
 
-onMounted(initSession);
+onMounted(() => {
+    initSession();
+    initSoundSettings();
+});
 </script>
 
 <style scoped>

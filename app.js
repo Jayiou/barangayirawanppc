@@ -223,6 +223,13 @@ app.use('/api/sms-logs', require('./routes/smsRoutes'));
     app.use('/api/manpower-requests', require('./routes/manpowerRequestRoutes'));
 app.use('/api/status-audit', require('./routes/statusAuditRoutes'));
 
+// Admin utilities (file upload for admin assets)
+try {
+    app.use('/api/admin', require('./routes/adminRoutes'));
+} catch (err) {
+    console.error('ERROR loading admin routes:', err.message);
+}
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(frontendDirectory, 'index.html'));
 });
