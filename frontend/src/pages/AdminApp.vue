@@ -37,7 +37,22 @@
 
     <div class="page-shell app-shell" v-else>
         <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
-        <aside class="app-sidebar" :class="{ open: sidebarOpen }">
+        <div v-if="reportAlertVisible" class="report-alert-overlay" role="dialog" aria-modal="true" aria-live="assertive">
+            <div class="report-alert-card">
+                <span class="report-alert-eyebrow">New Incident Report</span>
+                <h3>{{ reportAlertHeading }}</h3>
+                <p>{{ reportAlertMessage }}</p>
+                <div class="report-alert-actions">
+                    <button type="button" class="ghost-button" @click="dismissReportAlert" :disabled="reportAlertBusy">Dismiss</button>
+                    <button type="button" class="primary-button" @click="viewReportsFromAlert" :disabled="reportAlertBusy">
+                        <i :class="reportAlertBusy ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-flag'"></i>
+                        {{ reportAlertBusy ? 'Loading reports...' : 'View Reports' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <aside class="app-sidebar" :class="{ open: sidebarOpen, 'notifications-blurred': reportAlertVisible }">
             <button class="sidebar-close-btn" @click="sidebarOpen = false"><i class="fa-solid fa-xmark"></i></button>
             
             <!-- Sidebar Header -->
@@ -69,7 +84,7 @@
             </div>
         </aside>
 
-        <main class="app-main">
+        <main class="app-main" :class="{ 'notifications-blurred': reportAlertVisible }">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
             </header>
@@ -738,6 +753,9 @@ const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
 const isSubmitting = ref(false);
 const previewLoading = ref(false);
+const reportAlertVisible = ref(false);
+const reportAlertBusy = ref(false);
+const reportAlertReports = ref([]);
 // Persist view state on change
 watch(currentView, (newView) => {
     localStorage.setItem('admin_current_view', newView);
@@ -880,6 +898,33 @@ const workloadRingStyle = computed(() => {
 const latestAnnouncements = computed(() => [...announcements.value]
     .sort((left, right) => new Date(right.createdAt || right.startDate || 0) - new Date(left.createdAt || left.startDate || 0))
     .slice(0, 3));
+
+const reportAlertHeading = computed(() => {
+    if (reportAlertReports.value.length <= 1) {
+        return 'A new report just arrived.';
+    }
+    return `${reportAlertReports.value.length} new reports just arrived.`;
+});
+
+const reportAlertMessage = computed(() => {
+    if (reportAlertReports.value.length === 0) {
+        return 'Please review the reports list for details.';
+    }
+
+    const names = reportAlertReports.value
+        .map((report) => report?.title)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(', ');
+
+    if (reportAlertReports.value.length === 1) {
+        return names ? `Report received: ${names}` : 'A new report is waiting for review.';
+    }
+
+    return names
+        ? `Latest reports: ${names}${reportAlertReports.value.length > 2 ? '...' : ''}`
+        : 'Multiple reports are waiting for review.';
+});
 
 const currentList = computed(() => {
     switch (currentView.value) {
@@ -1330,6 +1375,23 @@ const loadSMSLogs = async (page = 1) => {
     }
 };
 
+const dismissReportAlert = () => {
+    reportAlertVisible.value = false;
+    reportAlertReports.value = [];
+    clearUnreadReports();
+};
+
+const viewReportsFromAlert = async () => {
+    reportAlertBusy.value = true;
+    try {
+        await loadAll();
+        currentView.value = 'reports';
+        dismissReportAlert();
+    } finally {
+        reportAlertBusy.value = false;
+    }
+};
+
 watch(loginStatus, (message) => {
     if (!message) {
         return;
@@ -1348,11 +1410,14 @@ watch(dashboardStatus, (message) => {
 
 watch(unreadReports, (newReports) => {
     if (newReports.length > 0) {
-        const reportTitles = newReports.map(r => r.title).join(', ');
-        showToast(`🚨 New Report Received: ${reportTitles}`);
-        
-        // Auto-switch to reports view
-        currentView.value = 'reports';
+        reportAlertReports.value = [...newReports];
+        reportAlertVisible.value = true;
+        reportAlertBusy.value = true;
+        loadAll()
+            .catch(() => {})
+            .finally(() => {
+                reportAlertBusy.value = false;
+            });
     }
 });
 
@@ -1380,6 +1445,69 @@ onMounted(initSession);
 
 <style scoped>
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.notifications-blurred {
+    filter: blur(5px);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.2s ease;
+}
+
+.report-alert-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2600;
+    display: grid;
+    place-items: center;
+    background: rgba(20, 33, 30, 0.38);
+    padding: 20px;
+}
+
+.report-alert-card {
+    width: min(520px, 100%);
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(58, 78, 67, 0.16);
+    padding: 22px;
+    display: grid;
+    gap: 10px;
+}
+
+.report-alert-eyebrow {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.11em;
+    color: #8b4c1e;
+    font-weight: 700;
+}
+
+.report-alert-card h3 {
+    margin: 0;
+    color: #243b31;
+    font-size: 1.3rem;
+}
+
+.report-alert-card p {
+    margin: 0;
+    color: #53675d;
+    line-height: 1.45;
+}
+
+.report-alert-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.report-alert-actions .primary-button,
+.report-alert-actions .ghost-button {
+    min-width: 140px;
+    justify-content: center;
+}
+
 .status-btn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
 .status-btn { padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; font-size: 0.8rem; text-transform: capitalize; transition: all 0.2s; color: #555; }
 .status-btn:hover { background: #f8f9fa; border-color: #ccc; }

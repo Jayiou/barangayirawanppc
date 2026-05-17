@@ -1,65 +1,99 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { apiFetch } from '@/shared/client';
 
 export function useReportNotifications() {
     const lastCheckTime = ref(new Date());
     const unreadReports = ref([]);
     let pollInterval = null;
+    let sharedAudioContext = null;
 
-    // Create a sound alert (using Web Audio API)
+    const getAudioContext = () => {
+        if (!sharedAudioContext) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+                return null;
+            }
+            sharedAudioContext = new AudioContextClass();
+        }
+        return sharedAudioContext;
+    };
+
+    // Create a stronger notification sound pattern.
     const playAlertSound = () => {
         try {
-            // Create an audio context
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+            const audioContext = getAudioContext();
+            if (!audioContext) {
+                return;
+            }
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
 
-            // Set up a two-tone alert sound
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+            const sequence = [
+                { at: 0.0, frequency: 880, duration: 0.2, gain: 0.22 },
+                { at: 0.28, frequency: 1047, duration: 0.2, gain: 0.24 },
+                { at: 0.56, frequency: 1318, duration: 0.24, gain: 0.26 }
+            ];
 
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            sequence.forEach((tone) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
 
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(tone.frequency, audioContext.currentTime + tone.at);
+                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime + tone.at);
+                gainNode.gain.linearRampToValueAtTime(tone.gain, audioContext.currentTime + tone.at + 0.03);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + tone.at + tone.duration);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.start(audioContext.currentTime + tone.at);
+                oscillator.stop(audioContext.currentTime + tone.at + tone.duration + 0.02);
+            });
         } catch (error) {
             console.log('Could not play notification sound:', error.message);
         }
     };
 
-    // Check for new reports since last check
+    const getLatestCreatedAt = (reports = []) => {
+        let latest = null;
+        reports.forEach((report) => {
+            const createdAt = report?.createdAt ? new Date(report.createdAt) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) {
+                return;
+            }
+            if (!latest || createdAt > latest) {
+                latest = createdAt;
+            }
+        });
+        return latest;
+    };
+
+    // Check for new reports since last check.
     const checkForNewReports = async () => {
         try {
             const now = new Date();
             const response = await apiFetch('/reports');
             
             if (!Array.isArray(response)) {
-                return;
+                return [];
             }
 
-            // Find reports created after last check time
             const newReports = response.filter(report => {
                 const createdAt = new Date(report.createdAt);
                 return createdAt > lastCheckTime.value && report.status === 'pending';
             });
 
+            const latestCreatedAt = getLatestCreatedAt(response);
+            lastCheckTime.value = latestCreatedAt || now;
+
             if (newReports.length > 0) {
-                // Play sound
                 playAlertSound();
-                
-                // Store unread reports
                 unreadReports.value = newReports;
-                
-                // Return the new reports for the caller to handle (show toast, highlight, etc)
                 return newReports;
             }
 
-            lastCheckTime.value = now;
             return [];
         } catch (error) {
             console.error('Error checking for new reports:', error);
@@ -67,18 +101,26 @@ export function useReportNotifications() {
         }
     };
 
-    // Start polling for new reports (every 5 seconds while admin is on site)
-    const startNotificationPolling = () => {
-        // Do first check immediately
-        checkForNewReports();
+    // Start polling for new reports while admin is authenticated.
+    const startNotificationPolling = async () => {
+        const currentReports = await apiFetch('/reports').catch(() => []);
+        if (Array.isArray(currentReports)) {
+            const latestCreatedAt = getLatestCreatedAt(currentReports);
+            if (latestCreatedAt) {
+                lastCheckTime.value = latestCreatedAt;
+            }
+        }
 
-        // Then poll every 5 seconds
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+
         pollInterval = setInterval(() => {
             checkForNewReports();
         }, 5000);
     };
 
-    // Stop polling when admin leaves
     const stopNotificationPolling = () => {
         if (pollInterval) {
             clearInterval(pollInterval);
@@ -86,7 +128,6 @@ export function useReportNotifications() {
         }
     };
 
-    // Clear unread reports after admin views them
     const clearUnreadReports = () => {
         unreadReports.value = [];
     };
