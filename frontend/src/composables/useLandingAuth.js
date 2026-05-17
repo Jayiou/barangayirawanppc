@@ -111,7 +111,7 @@ export function useLandingAuth() {
             const data = await response.json();
             
             if (response.ok) {
-                return { success: true, email: registerForm.email, message: 'Registration successful! Please check your email for the OTP code.' };
+                return { success: true, email: registerForm.email, message: 'Registration successful! Please check your email for the OTP code. If you do not see it in your inbox, please check your Spam folder.' };
             } else {
                 return { success: false, message: data.message || 'Registration failed. Please try again.' };
             }
@@ -153,7 +153,7 @@ export function useLandingAuth() {
                 body: JSON.stringify({ email: otpForm.email })
             });
             setPendingOtpEmail(otpForm.email);
-            return { success: true, message: 'If your email has a pending verification, a new OTP has been sent.' };
+            return { success: true, message: 'If your email has a pending verification, a new OTP has been sent. If you do not see it in your inbox, please check your Spam folder.' };
         } catch (error) {
             return { success: false, message: error.message || 'Unable to resend OTP right now.' };
         }

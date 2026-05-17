@@ -213,7 +213,7 @@ exports.register = asyncHandler(async (req, res) => {
     console.log(`==============================================\n`);
 
     res.status(201).json({
-        message: 'Registration initiated. Please check your email for the OTP.',
+        message: 'Registration initiated. Please check your email for the OTP. If you do not see it in your inbox, please check your Spam folder.',
         user: { id: user._id, email: user.email }
     });
 });
@@ -303,7 +303,7 @@ exports.resendOtp = asyncHandler(async (req, res) => {
     console.log(`==============================================\n`);
 
     res.json({
-        message: 'A new OTP has been successfully sent to your email.'
+        message: 'A new OTP has been successfully sent to your email. If you do not see it in your inbox, please check your Spam folder.'
     });
 });
 
