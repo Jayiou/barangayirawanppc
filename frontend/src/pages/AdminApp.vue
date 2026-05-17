@@ -178,131 +178,175 @@
                     <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">This may take a few seconds on first generation.</div>
                 </div>
             </div>
-            <section class="hero-banner dashboard-top-banner">
-                <div>
-                    <span class="eyebrow">Admin Workspace</span>
-                    <h2>{{ viewTitle }}</h2>
-                </div>
-            </section>
-
             <!-- Dashboard View -->
             <section class="app-view" :class="{ active: currentView === 'dashboard' }">
-                <article class="content-card dashboard-hero-card">
-                    <div class="dashboard-hero-copy">
-                        <span class="eyebrow">Operations Overview</span>
-                        <h3>Barangay control center</h3>
-                        <p>Monitor requests, approvals, and announcements from a single command view built for daily admin work.</p>
-                        <div class="dashboard-pulse-grid">
-                            <div class="dashboard-pulse-item">
-                                <span>Total residents</span>
-                                <strong>{{ totalResidentsCount }}</strong>
-                            </div>
-                            <div class="dashboard-pulse-item">
-                                <span>Pending queue</span>
-                                <strong>{{ pendingWorkload }}</strong>
-                            </div>
-                            <div class="dashboard-pulse-item">
-                                <span>Live announcements</span>
-                                <strong>{{ activeAnnouncementsCount }}</strong>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="dashboard-ring-panel">
-                        <div class="dashboard-ring" :style="workloadRingStyle">
-                            <div class="dashboard-ring-inner">
-                                <strong>{{ pendingWorkload }}</strong>
-                                <span>Pending</span>
-                            </div>
-                        </div>
-                        <div class="dashboard-ring-caption">
-                            <strong>Portal activity</strong>
-                            <span>Queue distribution across the main admin services.</span>
-                        </div>
-                    </div>
-                </article>
-
-                <div class="summary-grid dashboard-metrics-grid">
-                    <article
-                        v-for="metric in dashboardMetrics"
-                        :key="metric.label"
-                        class="summary-card dashboard-summary-card"
-                        :class="metric.tone"
-                    >
-                        <span><i :class="metric.icon"></i> {{ metric.label }}</span>
-                        <strong>{{ metric.value }}</strong>
-                        <div class="fine-print">{{ metric.detail }}</div>
-                    </article>
-                </div>
-
-                <div class="portal-grid dashboard-panels">
-                    <article class="content-card dashboard-chart-card">
-                        <div class="section-head dashboard-section-head">
-                            <div>
-                                <span class="eyebrow">Workload Mix</span>
-                                <h3>Pending requests by service</h3>
-                            </div>
-                            <div class="dashboard-chip">{{ pendingWorkload }} total</div>
-                        </div>
-                        <div class="dashboard-bar-chart">
-                            <div v-for="item in workloadBars" :key="item.key" class="dashboard-bar-row">
-                                <div class="dashboard-bar-meta">
-                                    <strong>{{ item.label }}</strong>
-                                    <span>{{ item.value }} items • {{ item.percentLabel }}</span>
-                                </div>
-                                <div class="dashboard-bar-track">
-                                    <div class="dashboard-bar-fill" :class="item.tone" :style="{ width: item.width }"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
-
-                    <article class="content-card dashboard-chart-card">
-                        <div class="section-head dashboard-section-head">
-                            <div>
-                                <span class="eyebrow">Community Pulse</span>
-                                <h3>Active records snapshot</h3>
-                            </div>
-                        </div>
-                        <div class="dashboard-insight-grid">
-                            <div class="dashboard-insight">
-                                <span>Residents approved</span>
-                                <strong>{{ approvedResidentsCount }}</strong>
-                                <small>{{ totalResidentsCount }} total profiles</small>
-                            </div>
-                            <div class="dashboard-insight">
-                                <span>Public announcements</span>
-                                <strong>{{ activeAnnouncementsCount }}</strong>
-                                <small>{{ announcements.length }} stored posts</small>
-                            </div>
-                            <div class="dashboard-insight">
-                                <span>Open reports</span>
-                                <strong>{{ pendingCounts.reports }}</strong>
-                                <small>For follow-up</small>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <article class="content-card dashboard-feed-card">
-                    <div class="section-head dashboard-section-head">
+                <div class="ops-dashboard-shell">
+                    <div class="ops-dashboard-header">
                         <div>
-                            <span class="eyebrow">Latest Posts</span>
-                            <h3>Announcements appearing on the homepage</h3>
+                            <span class="eyebrow">Municipal Operations Command</span>
+                            <h1>Barangay Operations Dashboard</h1>
+                        </div>
+                        <div class="ops-live-status">
+                            <span class="live-dot"></span>
+                            <span>Live operations feed</span>
                         </div>
                     </div>
-                    <div class="dashboard-feed-list">
-                        <div v-for="announcement in latestAnnouncements" :key="announcement._id" class="dashboard-feed-item">
-                            <div>
-                                <strong>{{ announcement.title }}</strong>
-                                <p>{{ announcement.description }}</p>
+
+                    <div class="ops-dashboard-layout">
+                        <section class="ops-left-section">
+                            <div class="ops-stat-grid">
+                                <button
+                                    v-for="card in dashboardCards"
+                                    :key="card.key"
+                                    type="button"
+                                    class="ops-stat-card"
+                                    :class="[`tone-${card.tone}`, { active: selectedDashboardCard === card.key }]"
+                                    @click="selectedDashboardCard = card.key"
+                                >
+                                    <span class="ops-card-glow"></span>
+                                    <span class="ops-stat-icon"><i :class="card.icon"></i></span>
+                                    <span class="ops-stat-meta">
+                                        <span class="ops-stat-label">{{ card.label }}</span>
+                                        <strong>{{ card.value }}</strong>
+                                        <small>{{ card.caption }}</small>
+                                    </span>
+                                </button>
                             </div>
-                            <StatusBadge :status="announcement.isActive ? 'active' : 'inactive'" />
-                        </div>
-                        <div v-if="latestAnnouncements.length === 0" class="dashboard-empty-state">
-                            No announcements yet.
-                        </div>
+
+                            <div class="ops-side-panels">
+                                <article class="ops-mini-panel">
+                                    <div class="ops-panel-heading">
+                                        <h3>Recent Activity</h3>
+                                        <span>{{ getRecentActivityItems.length }} latest</span>
+                                    </div>
+                                    <div v-if="getRecentActivityItems.length" class="ops-timeline">
+                                        <button
+                                            v-for="item in getRecentActivityItems"
+                                            :key="item.id"
+                                            type="button"
+                                            class="ops-timeline-item"
+                                            @click="currentView = item.view"
+                                        >
+                                            <span class="ops-timeline-icon" :class="`activity-${item.type}`">
+                                                <i :class="item.icon"></i>
+                                            </span>
+                                            <span>
+                                                <strong>{{ item.title }}</strong>
+                                                <small>{{ item.timeAgo }}</small>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div v-else class="dashboard-empty-state">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <p>No recent activity</p>
+                                    </div>
+                                </article>
+
+                                <article class="ops-mini-panel">
+                                    <div class="ops-panel-heading">
+                                        <h3>Quick Actions</h3>
+                                        <span>Priority paths</span>
+                                    </div>
+                                    <div class="ops-quick-actions">
+                                        <button type="button" @click="currentView = 'reports'"><i class="fa-solid fa-shield-halved"></i><span>Review reports</span></button>
+                                        <button type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i><span>Process requests</span></button>
+                                        <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Manage bookings</span></button>
+                                        <button type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-bullhorn"></i><span>Publish advisory</span></button>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+
+                        <section class="ops-analytics-panel" :key="selectedDashboardCard">
+                            <div class="ops-analytics-top">
+                                <div>
+                                    <span class="ops-kicker">{{ activeAnalyticsData.kicker }}</span>
+                                    <h2>{{ activeAnalyticsData.title }}</h2>
+                                </div>
+                                <div class="ops-range-tabs" role="tablist" aria-label="Analytics range">
+                                    <button
+                                        v-for="range in analyticsRanges"
+                                        :key="range.key"
+                                        type="button"
+                                        :class="{ active: analyticsRange === range.key }"
+                                        @click="analyticsRange = range.key"
+                                    >
+                                        {{ range.label }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="ops-summary-strip">
+                                <div v-for="summary in activeAnalyticsData.summaries" :key="summary.label" class="ops-summary-item">
+                                    <span>{{ summary.label }}</span>
+                                    <strong>{{ summary.value }}</strong>
+                                    <small>{{ summary.detail }}</small>
+                                </div>
+                            </div>
+
+                            <div class="ops-chart-zone">
+                                <div class="ops-bar-chart" :aria-label="`${activeAnalyticsData.title} chart`">
+                                    <div v-for="row in activeAnalyticsData.trend" :key="row.label" class="ops-bar-column">
+                                        <div class="ops-bar-value">{{ row.value }}</div>
+                                        <div class="ops-bar-track">
+                                            <span :style="{ height: row.height }"></span>
+                                        </div>
+                                        <small>{{ row.label }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="ops-distribution-card">
+                                    <div class="ops-distribution-ring" :style="activeAnalyticsData.ringStyle">
+                                        <div>
+                                            <strong>{{ activeAnalyticsData.total }}</strong>
+                                            <span>Total</span>
+                                        </div>
+                                    </div>
+                                    <div class="ops-distribution-list">
+                                        <div v-for="item in activeAnalyticsData.distribution" :key="item.label">
+                                            <span><i :style="{ background: item.color }"></i>{{ item.label }}</span>
+                                            <strong>{{ item.value }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ops-insight-grid">
+                                <article v-for="insight in activeAnalyticsData.insights" :key="insight.label" class="ops-insight-card">
+                                    <span>{{ insight.label }}</span>
+                                    <strong>{{ insight.value }}</strong>
+                                    <small>{{ insight.detail }}</small>
+                                </article>
+                            </div>
+                        </section>
                     </div>
-                </article>
+
+                    <section class="ops-community-band">
+                        <article class="ops-mini-panel community-insights-panel">
+                            <div class="ops-panel-heading">
+                                <h3>Community Insights</h3>
+                                <span>Operational signals</span>
+                            </div>
+                            <div class="community-insight-grid">
+                                <div>
+                                    <span>Resident verification</span>
+                                    <strong>{{ approvedResidentsCount }}/{{ totalResidentsCount }}</strong>
+                                    <small>Approved account coverage</small>
+                                </div>
+                                <div>
+                                    <span>Resolution load</span>
+                                    <strong>{{ pendingCounts.reports }}</strong>
+                                    <small>Reports needing review</small>
+                                </div>
+                                <div>
+                                    <span>Public advisories</span>
+                                    <strong>{{ activeAnnouncementsCount }}</strong>
+                                    <small>Currently active posts</small>
+                                </div>
+                            </div>
+                        </article>
+                    </section>
+                </div>
             </section>
 
             <!-- Data Table Generic Loop For Other Views -->
@@ -967,6 +1011,8 @@ const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
 const currentView = ref(localStorage.getItem('admin_current_view') || 'dashboard');
+const selectedDashboardCard = ref('reports');
+const analyticsRange = ref('monthly');
 const documentRequestTab = ref('all');
 const activeModal = ref(null);
 const confirmingAction = ref(null);
@@ -1053,6 +1099,355 @@ const documentRequestCounts = computed(() => ({
     nonResidents: documentRequests.value.filter((request) => request.requesterType === 'non_resident').length
 }));
 
+const analyticsRanges = [
+    { key: 'daily', label: 'Daily' },
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'monthly', label: 'Monthly' },
+    { key: 'yearly', label: 'Yearly' }
+];
+
+const dashboardCards = computed(() => ([
+    {
+        key: 'residents',
+        label: 'Total Residents',
+        value: totalResidentsCount.value,
+        caption: `${residentsThisWeek.value} this week`,
+        icon: 'fa-solid fa-users',
+        tone: 'emerald'
+    },
+    {
+        key: 'pending',
+        label: 'Pending Requests',
+        value: pendingWorkload.value,
+        caption: `${pendingCounts.value.docs} documents queued`,
+        icon: 'fa-solid fa-inbox',
+        tone: 'blue'
+    },
+    {
+        key: 'reports',
+        label: 'Open Reports',
+        value: pendingCounts.value.reports,
+        caption: `${reportsToday.value} submitted today`,
+        icon: 'fa-solid fa-shield-halved',
+        tone: 'red'
+    },
+    {
+        key: 'appointments',
+        label: 'Scheduled Appointments',
+        value: scheduledAppointmentsCount.value,
+        caption: `${appointmentsThisWeek.value} this week`,
+        icon: 'fa-solid fa-calendar-check',
+        tone: 'cyan'
+    },
+    {
+        key: 'reservations',
+        label: 'Facility Reservations',
+        value: activeReservationsCount.value,
+        caption: `${topFacilityLabel.value} most active`,
+        icon: 'fa-solid fa-building-columns',
+        tone: 'violet'
+    },
+    {
+        key: 'announcements',
+        label: 'Active Announcements',
+        value: activeAnnouncementsCount.value,
+        caption: `${announcements.value.length} total advisories`,
+        icon: 'fa-solid fa-tower-broadcast',
+        tone: 'gold'
+    }
+]));
+
+const oneWeekAgo = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return date;
+};
+
+const isToday = (value) => {
+    const date = new Date(value);
+    const today = new Date();
+    return !Number.isNaN(date.getTime())
+        && date.getFullYear() === today.getFullYear()
+        && date.getMonth() === today.getMonth()
+        && date.getDate() === today.getDate();
+};
+
+const isThisWeek = (value) => {
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime()) && date >= oneWeekAgo();
+};
+
+const residentsThisWeek = computed(() => residents.value.filter((resident) => isThisWeek(resident.createdAt || resident.updatedAt)).length);
+const reportsToday = computed(() => reports.value.filter((report) => isToday(report.createdAt || report.incidentDate)).length);
+const appointmentsThisWeek = computed(() => appointments.value.filter((appointment) => isThisWeek(appointment.appointmentDate || appointment.createdAt)).length);
+const scheduledAppointmentsCount = computed(() => appointments.value.length);
+const activeReservationsCount = computed(() => reservations.value.filter((reservation) => !['rejected', 'cancelled'].includes(reservation.status)).length);
+
+const topFacilityLabel = computed(() => {
+    const top = buildDistribution(reservations.value, (reservation) => normalizeLabel(reservation.facilityName), ['No reservations'])[0];
+    return top?.label || 'Facility';
+});
+
+const normalizeLabel = (value) => {
+    if (!value) return 'Unspecified';
+    return String(value)
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const countByStatus = (records, statusList) => statusList.reduce((total, status) => total + records.filter((record) => record.status === status).length, 0);
+
+const buildDistribution = (records, getLabel, fallbackLabels = ['No data']) => {
+    const counts = records.reduce((acc, record) => {
+        const label = getLabel(record);
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+    }, {});
+
+    const colors = ['#0d4a2a', '#b91c1c', '#15803d', '#dc2626', '#166534', '#991b1b'];
+    const rows = Object.entries(counts)
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 5)
+        .map(([label, value], index) => ({ label, value, color: colors[index % colors.length] }));
+
+    if (rows.length) {
+        return rows;
+    }
+
+    return fallbackLabels.map((label, index) => ({ label, value: 0, color: colors[index % colors.length] }));
+};
+
+const buildRingStyle = (rows) => {
+    const total = rows.reduce((sum, row) => sum + row.value, 0);
+    if (!total) {
+        return { background: 'conic-gradient(#d9e2dc 0deg 360deg)' };
+    }
+
+    let cursor = 0;
+    const stops = rows.map((row) => {
+        const start = cursor;
+        const end = start + (row.value / total) * 360;
+        cursor = end;
+        return `${row.color} ${start}deg ${end}deg`;
+    });
+
+    return { background: `conic-gradient(${stops.join(', ')})` };
+};
+
+const getRecordDate = (record, key) => {
+    const date = new Date(record?.[key] || record?.createdAt || record?.updatedAt);
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getPeriodBuckets = (range) => {
+    const now = new Date();
+
+    if (range === 'daily') {
+        return Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(now);
+            date.setDate(now.getDate() - (6 - index));
+            return {
+                label: date.toLocaleDateString([], { weekday: 'short' }),
+                matches: (recordDate) => recordDate.toDateString() === date.toDateString()
+            };
+        });
+    }
+
+    if (range === 'weekly') {
+        return Array.from({ length: 6 }, (_, index) => {
+            const start = new Date(now);
+            start.setDate(now.getDate() - ((5 - index) * 7 + 6));
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+            return {
+                label: `W${index + 1}`,
+                matches: (recordDate) => recordDate >= start && recordDate <= end
+            };
+        });
+    }
+
+    if (range === 'yearly') {
+        return Array.from({ length: 4 }, (_, index) => {
+            const year = now.getFullYear() - (3 - index);
+            return {
+                label: String(year),
+                matches: (recordDate) => recordDate.getFullYear() === year
+            };
+        });
+    }
+
+    return Array.from({ length: 6 }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+        return {
+            label: date.toLocaleDateString([], { month: 'short' }),
+            matches: (recordDate) => recordDate.getFullYear() === date.getFullYear() && recordDate.getMonth() === date.getMonth()
+        };
+    });
+};
+
+const buildTrend = (records, dateKey) => {
+    const buckets = getPeriodBuckets(analyticsRange.value).map((bucket) => {
+        const value = records.filter((record) => {
+            const recordDate = getRecordDate(record, dateKey);
+            return recordDate && bucket.matches(recordDate);
+        }).length;
+        return { label: bucket.label, value };
+    });
+    const max = Math.max(...buckets.map((bucket) => bucket.value), 1);
+
+    return buckets.map((bucket) => ({
+        ...bucket,
+        height: `${Math.max(10, Math.round((bucket.value / max) * 100))}%`
+    }));
+};
+
+const activeAnalyticsData = computed(() => {
+    const pendingRecords = [
+        ...documentRequests.value.filter((request) => ['pending', 'processing'].includes(request.status)).map((request) => ({ ...request, queueType: 'Documents' })),
+        ...reservations.value.filter((reservation) => reservation.status === 'pending').map((reservation) => ({ ...reservation, queueType: 'Facilities' })),
+        ...appointments.value.filter((appointment) => appointment.status === 'pending').map((appointment) => ({ ...appointment, queueType: 'Appointments' })),
+        ...reports.value.filter((report) => ['pending', 'reviewing'].includes(report.status)).map((report) => ({ ...report, queueType: 'Reports' }))
+    ];
+
+    const configs = {
+        residents: {
+            kicker: 'Population registry',
+            title: 'Resident Enrollment Analytics',
+            records: residents.value,
+            dateKey: 'createdAt',
+            distribution: buildDistribution(residents.value, (resident) => normalizeLabel(resident.userId?.accountStatus || 'registered'), ['No residents']),
+            summaries: [
+                { label: 'Total Profiles', value: totalResidentsCount.value, detail: 'Resident records' },
+                { label: 'Approved', value: approvedResidentsCount.value, detail: 'Verified accounts' },
+                { label: 'Pending', value: pendingCounts.value.accs, detail: 'For validation' }
+            ],
+            insights: [
+                { label: 'Approval Rate', value: `${totalResidentsCount.value ? Math.round((approvedResidentsCount.value / totalResidentsCount.value) * 100) : 0}%`, detail: 'Verified resident coverage' },
+                { label: 'New This Week', value: residentsThisWeek.value, detail: 'Recent registrations' },
+                { label: 'Most Active', value: 'Registry', detail: 'Citizen profile operations' }
+            ]
+        },
+        pending: {
+            kicker: 'Service queue',
+            title: 'Pending Request Operations',
+            records: pendingRecords,
+            dateKey: 'createdAt',
+            distribution: buildDistribution(pendingRecords, (record) => record.queueType, ['No pending queue']),
+            summaries: [
+                { label: 'Total Queue', value: pendingWorkload.value, detail: 'Awaiting action' },
+                { label: 'Documents', value: pendingCounts.value.docs, detail: 'Review required' },
+                { label: 'Citizen Reports', value: pendingCounts.value.reports, detail: 'Operational review' }
+            ],
+            insights: [
+                { label: 'Queue Pressure', value: pendingWorkload.value ? 'Active' : 'Clear', detail: 'Current workload state' },
+                { label: 'Top Queue', value: buildDistribution(pendingRecords, (record) => record.queueType)[0]?.label || 'None', detail: 'Largest pending category' },
+                { label: 'Awaiting Review', value: `${pendingCounts.value.docs + pendingCounts.value.reports}`, detail: 'Document and report actions' }
+            ]
+        },
+        reports: {
+            kicker: 'Incident response',
+            title: 'Open Report Intelligence',
+            records: reports.value,
+            dateKey: 'createdAt',
+            distribution: buildDistribution(reports.value, (report) => normalizeLabel(report.reportType), ['No reports']),
+            summaries: [
+                { label: 'Open Reports', value: pendingCounts.value.reports, detail: 'Pending or reviewing' },
+                { label: 'Resolved', value: countByStatus(reports.value, ['resolved', 'closed']), detail: 'Completed cases' },
+                { label: 'High Priority', value: reports.value.filter((report) => ['high', 'emergency'].includes(report.priority)).length, detail: 'Priority reports' }
+            ],
+            insights: [
+                { label: 'Complaint Mix', value: buildDistribution(reports.value, (report) => normalizeLabel(report.reportType))[0]?.label || 'None', detail: 'Top submitted category' },
+                { label: 'Resolved vs Unresolved', value: `${countByStatus(reports.value, ['resolved', 'closed'])}/${reports.value.length}`, detail: 'Closure progress' },
+                { label: 'Today', value: reportsToday.value, detail: 'Reports submitted today' }
+            ]
+        },
+        appointments: {
+            kicker: 'Civic scheduling',
+            title: 'Appointment Booking Analytics',
+            records: appointments.value,
+            dateKey: 'appointmentDate',
+            distribution: buildDistribution(appointments.value, (appointment) => normalizeLabel(appointment.purpose), ['No appointments']),
+            summaries: [
+                { label: 'Pending', value: pendingCounts.value.appointments, detail: 'Awaiting approval' },
+                { label: 'Approved', value: countByStatus(appointments.value, ['approved']), detail: 'Confirmed bookings' },
+                { label: 'Completed', value: countByStatus(appointments.value, ['completed']), detail: 'Served appointments' },
+                { label: 'Rejected', value: countByStatus(appointments.value, ['rejected']), detail: 'Declined requests' },
+                { label: 'Expired', value: countByStatus(appointments.value, ['expired']), detail: 'Missed schedule window' }
+            ],
+            insights: [
+                { label: 'Peak Booking Day', value: peakDayLabel.value.appointments, detail: 'Most frequent appointment date' },
+                { label: 'Top Service', value: buildDistribution(appointments.value, (appointment) => normalizeLabel(appointment.purpose))[0]?.label || 'None', detail: 'Most requested service' },
+                { label: 'This Week', value: appointmentsThisWeek.value, detail: 'Scheduled activity' }
+            ]
+        },
+        reservations: {
+            kicker: 'Facility utilization',
+            title: 'Facility Reservation Analytics',
+            records: reservations.value,
+            dateKey: 'reservationDate',
+            distribution: buildDistribution(reservations.value, (reservation) => normalizeLabel(reservation.facilityName), ['No reservations']),
+            summaries: [
+                { label: 'Pending', value: pendingCounts.value.reserves, detail: 'Awaiting approval' },
+                { label: 'Approved', value: countByStatus(reservations.value, ['approved']), detail: 'Confirmed usage' },
+                { label: 'Completed', value: countByStatus(reservations.value, ['completed']), detail: 'Finished events' }
+            ],
+            insights: [
+                { label: 'Most Reserved', value: topFacilityLabel.value, detail: 'Highest facility demand' },
+                { label: 'Peak Day', value: peakDayLabel.value.reservations, detail: 'Frequent reservation day' },
+                { label: 'Monthly Usage', value: buildTrend(reservations.value, 'reservationDate').reduce((sum, row) => sum + row.value, 0), detail: 'Current tab volume' }
+            ]
+        },
+        announcements: {
+            kicker: 'Public information',
+            title: 'Announcement Reach Monitor',
+            records: announcements.value,
+            dateKey: 'createdAt',
+            distribution: buildDistribution(announcements.value, (announcement) => announcement.isActive === false ? 'Inactive' : 'Active', ['No advisories']),
+            summaries: [
+                { label: 'Active', value: activeAnnouncementsCount.value, detail: 'Live on portal' },
+                { label: 'Stored', value: announcements.value.length, detail: 'Total advisories' },
+                { label: 'Recent', value: latestAnnouncements.value.length, detail: 'Latest posts' }
+            ],
+            insights: [
+                { label: 'Publishing State', value: activeAnnouncementsCount.value ? 'Broadcasting' : 'Quiet', detail: 'Public advisory status' },
+                { label: 'Latest Advisory', value: latestAnnouncements.value[0]?.title || 'None', detail: 'Newest public post' },
+                { label: 'Active Ratio', value: `${announcements.value.length ? Math.round((activeAnnouncementsCount.value / announcements.value.length) * 100) : 0}%`, detail: 'Live advisory share' }
+            ]
+        }
+    };
+
+    const active = configs[selectedDashboardCard.value] || configs.reports;
+    const distribution = active.distribution;
+    const total = active.records.length;
+
+    return {
+        ...active,
+        distribution,
+        total,
+        ringStyle: buildRingStyle(distribution),
+        trend: buildTrend(active.records, active.dateKey)
+    };
+});
+
+const peakDayLabel = computed(() => ({
+    appointments: getPeakWeekday(appointments.value, 'appointmentDate'),
+    reservations: getPeakWeekday(reservations.value, 'reservationDate')
+}));
+
+const getPeakWeekday = (records, dateKey) => {
+    const counts = records.reduce((acc, record) => {
+        const date = getRecordDate(record, dateKey);
+        if (!date) return acc;
+        const label = date.toLocaleDateString([], { weekday: 'short' });
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+    }, {});
+
+    return Object.entries(counts).sort((left, right) => right[1] - left[1])[0]?.[0] || 'None';
+};
+
 const dashboardMetrics = computed(() => ([
     {
         label: 'Pending workload',
@@ -1119,6 +1514,112 @@ const workloadRingStyle = computed(() => {
 const latestAnnouncements = computed(() => [...announcements.value]
     .sort((left, right) => new Date(right.createdAt || right.startDate || 0) - new Date(left.createdAt || left.startDate || 0))
     .slice(0, 3));
+
+const latestDocuments = computed(() => [...documentRequests.value]
+    .filter(d => d.status === 'pending' || d.status === 'processing')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 3));
+
+const latestReports = computed(() => [...reports.value]
+    .filter(r => r.status === 'pending' || r.status === 'reviewing')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 3));
+
+const latestAppointments = computed(() => [...appointments.value]
+    .filter(a => a.status === 'pending')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 3));
+
+const getRecentActivityItems = computed(() => {
+    const items = [];
+    
+    // Add recent documents
+    latestDocuments.value.forEach(doc => {
+        items.push({
+            id: `doc-${doc._id}`,
+            type: 'document',
+            title: `Document request: ${doc.documentType?.replaceAll('_', ' ')}`,
+            icon: 'fa-solid fa-file',
+            view: 'documents',
+            timeAgo: getTimeAgo(doc.createdAt),
+            status: doc.status
+        });
+    });
+
+    // Add recent reports
+    latestReports.value.forEach(report => {
+        items.push({
+            id: `report-${report._id}`,
+            type: 'report',
+            title: `Report: ${report.title}`,
+            icon: 'fa-solid fa-exclamation-circle',
+            view: 'reports',
+            timeAgo: getTimeAgo(report.createdAt),
+            status: report.status
+        });
+    });
+
+    // Add recent appointments
+    latestAppointments.value.forEach(appt => {
+        items.push({
+            id: `appt-${appt._id}`,
+            type: 'appointment',
+            title: `Appointment: ${appt.officialId?.name || 'Official'}`,
+            icon: 'fa-solid fa-calendar-check',
+            view: 'appointments',
+            timeAgo: getTimeAgo(appt.createdAt),
+            status: appt.status
+        });
+    });
+
+    // Sort by date and return latest 5
+    return items
+        .sort((a, b) => {
+            const aTime = getTimeValue(a.timeAgo);
+            const bTime = getTimeValue(b.timeAgo);
+            return aTime - bTime;
+        })
+        .slice(0, 5);
+});
+
+const getTimeAgo = (date) => {
+    if (!date) return 'Just now';
+    
+    const now = new Date();
+    const past = new Date(date);
+    const diff = now - past;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (seconds < 60) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return formatDate(date);
+};
+
+const getTimeValue = (timeAgo) => {
+    const num = parseInt(timeAgo);
+    if (isNaN(num)) return 0;
+    if (timeAgo.includes('Just now')) return 0;
+    if (timeAgo.includes('m ago')) return num * 60;
+    if (timeAgo.includes('h ago')) return num * 3600;
+    if (timeAgo.includes('d ago')) return num * 86400;
+    return 999999;
+};
+
+const getWorkloadColor = (tone) => {
+    const colors = {
+        'docs': '#2563eb',
+        'reserves': '#0891b2',
+        'blue': '#1b7347',
+        'reports': '#d97706'
+    };
+    return colors[tone] || '#1b7347';
+};
 
 const reportAlertHeading = computed(() => {
     if (reportAlertReports.value.length <= 1) {
@@ -1670,6 +2171,16 @@ onMounted(() => {
 
 <style scoped>
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 .notifications-blurred {
     filter: blur(5px);
@@ -1681,10 +2192,10 @@ onMounted(() => {
 .app-shell {
     position: relative;
     background:
-    radial-gradient(circle at top left, rgba(37, 127, 73, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(35, 91, 130, 0.10), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(181, 136, 56, 0.08), transparent 24%),
-    linear-gradient(180deg, #f3f7f4 0%, #e8efe9 100%);
+    radial-gradient(circle at top left, rgba(27, 115, 71, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(31, 90, 138, 0.06), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(181, 136, 56, 0.05), transparent 24%),
+    linear-gradient(180deg, #f4f8f7 0%, #ebf2f0 100%);
 }
 
 .app-shell::before {
@@ -1696,6 +2207,1139 @@ onMounted(() => {
     background-size: 42px 42px;
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 70%);
     opacity: 0.55;
+}
+
+/* Dashboard Welcome Section */
+.dashboard-welcome {
+    margin-bottom: 32px;
+    animation: slideIn 0.5s ease;
+}
+
+.dashboard-welcome-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 8px;
+    font-family: "Fraunces", serif;
+}
+
+.dashboard-welcome-subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Statistics Cards Grid */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+    animation: slideIn 0.6s ease 0.1s both;
+}
+
+.dashboard-stat-card {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.dashboard-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+    border-color: var(--accent);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.stat-icon-residents {
+    background: rgba(27, 115, 71, 0.12);
+    color: var(--accent);
+}
+
+.stat-icon-pending {
+    background: rgba(37, 164, 160, 0.12);
+    color: #25a4a0;
+}
+
+.stat-icon-announcements {
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
+}
+
+.stat-icon-reports {
+    background: rgba(229, 62, 62, 0.12);
+    color: #e53e3e;
+}
+
+.stat-icon-appointments {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+
+.stat-icon-facilities {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 4px 0 0;
+    font-family: "Manrope", sans-serif;
+}
+
+/* Main Dashboard Grid */
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+    animation: slideIn 0.6s ease 0.2s both;
+}
+
+.dashboard-panel {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.dashboard-panel:hover {
+    box-shadow: var(--shadow);
+}
+
+.panel-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 16px;
+}
+
+.panel-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--ink);
+}
+
+.panel-subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+/* Activity Feed */
+.activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--clay);
+    transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+    background: rgba(27, 115, 71, 0.08);
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.activity-document {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.activity-report {
+    background: rgba(229, 62, 62, 0.15);
+    color: #e53e3e;
+}
+
+.activity-appointment {
+    background: rgba(37, 164, 160, 0.15);
+    color: #25a4a0;
+}
+
+.activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    margin: 0 0 2px;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0;
+}
+
+.activity-badge {
+    flex-shrink: 0;
+}
+
+.activity-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+}
+
+.activity-empty i {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+    opacity: 0.5;
+}
+
+/* Pending Actions Panel */
+.pending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pending-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pending-section {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--clay);
+    border: 1px solid rgba(27, 115, 71, 0.1);
+}
+
+.pending-category {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pending-action-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: white;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.pending-action-btn:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateX(4px);
+}
+
+.pending-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+}
+
+.pending-empty i {
+    font-size: 2.5rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.pending-empty p {
+    font-weight: 600;
+    margin: 8px 0 4px;
+    color: var(--ink);
+}
+
+.pending-empty small {
+    display: block;
+    font-size: 0.85rem;
+}
+
+/* Analytics Grid */
+.dashboard-analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+    animation: slideIn 0.6s ease 0.3s both;
+}
+
+.dashboard-workload-panel,
+.dashboard-metrics-panel {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Workload Chart */
+.workload-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.workload-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.workload-bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.workload-bar-label strong {
+    font-size: 0.95rem;
+    color: var(--ink);
+}
+
+.workload-bar-count {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.workload-bar-track {
+    height: 12px;
+    border-radius: 999px;
+    background: var(--clay);
+    overflow: hidden;
+}
+
+.workload-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.3s ease;
+}
+
+.workload-bar-percent {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.metric-box {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    background: var(--clay);
+    border: 1px solid rgba(27, 115, 71, 0.1);
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 8px;
+    font-weight: 600;
+}
+
+.metric-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+}
+
+.metric-total {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 500;
+    margin-left: 4px;
+}
+
+/* Announcements Section */
+.dashboard-announcements-panel {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    animation: slideIn 0.6s ease 0.4s both;
+}
+
+.announcements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.announcement-card {
+    background: linear-gradient(135deg, var(--accent-light) 0%, rgba(255, 255, 255, 0.8) 100%);
+    border: 1px solid rgba(27, 115, 71, 0.2);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.announcement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(27, 115, 71, 0.12);
+    border-color: var(--accent);
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.announcement-header h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--ink);
+    flex: 1;
+}
+
+.announcement-summary {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.announcement-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(27, 115, 71, 0.1);
+}
+
+.announcement-date {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.announcement-edit-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.announcement-edit-btn:hover {
+    background: var(--accent-deep);
+    transform: translateX(2px);
+}
+
+.announcements-empty {
+    text-align: center;
+    padding: 60px 40px;
+    color: var(--muted);
+}
+
+.announcements-empty i {
+    font-size: 3rem;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0.8;
+}
+
+.announcements-empty p {
+    font-weight: 600;
+    margin: 8px 0;
+    color: var(--ink);
+    font-size: 1rem;
+}
+
+/* Modern Operations Dashboard */
+.ops-dashboard-shell {
+    display: grid;
+    gap: 18px;
+}
+
+.ops-dashboard-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 4px 2px 2px;
+}
+
+.ops-dashboard-header h1 {
+    margin-top: 4px;
+    font-family: "Manrope", sans-serif;
+    font-size: clamp(1.6rem, 2.8vw, 2.55rem);
+    line-height: 1.05;
+    color: #0b1f1c;
+}
+
+.ops-live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    border: 1px solid rgba(13, 74, 42, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #174a2e;
+    font-size: 0.82rem;
+    font-weight: 800;
+    box-shadow: 0 10px 22px rgba(12, 32, 27, 0.08);
+}
+
+.live-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #10b981;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.14);
+}
+
+.ops-dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1.18fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.ops-left-section,
+.ops-side-panels {
+    display: grid;
+    gap: 14px;
+}
+
+.ops-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ops-stat-card {
+    position: relative;
+    min-height: 142px;
+    padding: 15px;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(15, 31, 27, 0.1);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 247, 0.92));
+    box-shadow: 0 14px 32px rgba(15, 31, 27, 0.09);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ops-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 42px rgba(15, 31, 27, 0.14);
+}
+
+.ops-stat-card.active {
+    color: #f8fffc;
+    border-color: rgba(255, 255, 255, 0.26);
+    background: linear-gradient(145deg, #0d4a2a, #a1121c);
+}
+
+.ops-card-glow {
+    position: absolute;
+    inset: auto -28px -36px auto;
+    width: 92px;
+    height: 92px;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.16);
+    pointer-events: none;
+}
+
+.ops-stat-card.active .ops-card-glow {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.ops-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.11);
+}
+
+.ops-stat-card.active .ops-stat-icon {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.ops-stat-meta {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 2px;
+}
+
+.ops-stat-label {
+    color: #5f706b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.ops-stat-meta strong {
+    color: #0f1f1b;
+    font-size: clamp(1.55rem, 3vw, 2.15rem);
+    line-height: 1;
+}
+
+.ops-stat-meta small {
+    color: #60756d;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.ops-stat-card.active .ops-stat-label,
+.ops-stat-card.active .ops-stat-meta strong,
+.ops-stat-card.active .ops-stat-meta small {
+    color: inherit;
+}
+
+.tone-blue .ops-stat-icon { color: #0d4a2a; background: rgba(13, 74, 42, 0.1); }
+.tone-red .ops-stat-icon { color: #be123c; background: rgba(190, 18, 60, 0.1); }
+.tone-cyan .ops-stat-icon { color: #15803d; background: rgba(21, 128, 61, 0.1); }
+.tone-violet .ops-stat-icon { color: #991b1b; background: rgba(153, 27, 27, 0.1); }
+.tone-gold .ops-stat-icon { color: #b91c1c; background: rgba(185, 28, 28, 0.1); }
+
+.ops-analytics-panel,
+.ops-mini-panel {
+    border: 1px solid rgba(15, 31, 27, 0.1);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 16px 40px rgba(15, 31, 27, 0.1);
+}
+
+.ops-analytics-panel {
+    min-height: 604px;
+    padding: 20px;
+    display: grid;
+    gap: 16px;
+    animation: analyticsIn 0.24s ease;
+}
+
+.ops-analytics-top,
+.ops-panel-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.ops-kicker,
+.ops-panel-heading span {
+    color: #0f766e;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ops-analytics-top h2,
+.ops-panel-heading h3 {
+    margin: 2px 0 0;
+    font-family: "Manrope", sans-serif;
+    color: #0f1f1b;
+}
+
+.ops-analytics-top h2 {
+    font-size: clamp(1.35rem, 2.3vw, 2rem);
+}
+
+.ops-range-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #edf4f1;
+}
+
+.ops-range-tabs button {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: transparent;
+    color: #48625a;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.ops-range-tabs button.active {
+    background: linear-gradient(135deg, #0d4a2a, #a1121c);
+    color: white;
+    box-shadow: 0 8px 18px rgba(112, 24, 24, 0.18);
+}
+
+.ops-summary-strip,
+.ops-insight-grid,
+.community-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.ops-summary-item,
+.ops-insight-card,
+.community-insight-grid div {
+    padding: 13px;
+    border: 1px solid rgba(15, 31, 27, 0.08);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(248, 252, 250, 0.96), rgba(255, 255, 255, 0.94));
+}
+
+.ops-summary-item span,
+.ops-insight-card span,
+.community-insight-grid span {
+    display: block;
+    color: #5f706b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.ops-summary-item strong,
+.ops-insight-card strong,
+.community-insight-grid strong {
+    display: block;
+    margin-top: 4px;
+    color: #0d4a2a;
+    font-size: 1.45rem;
+    line-height: 1.1;
+}
+
+.ops-summary-item small,
+.ops-insight-card small,
+.community-insight-grid small {
+    display: block;
+    margin-top: 4px;
+    color: #667b73;
+    font-size: 0.78rem;
+}
+
+.ops-chart-zone {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.7fr);
+    gap: 14px;
+    min-height: 250px;
+}
+
+.ops-bar-chart,
+.ops-distribution-card {
+    border-radius: 18px;
+    border: 1px solid rgba(15, 31, 27, 0.08);
+    background:
+        linear-gradient(rgba(15, 31, 27, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 31, 27, 0.035) 1px, transparent 1px),
+        #fbfefd;
+    background-size: 42px 42px;
+}
+
+.ops-bar-chart {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: end;
+    gap: 10px;
+    padding: 16px 16px 12px;
+}
+
+.ops-bar-column {
+    min-width: 0;
+    height: 210px;
+    display: grid;
+    grid-template-rows: 24px 1fr 22px;
+    gap: 7px;
+    align-items: end;
+    text-align: center;
+}
+
+.ops-bar-value {
+    color: #19463a;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.ops-bar-track {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(13, 74, 42, 0.07);
+    overflow: hidden;
+}
+
+.ops-bar-track span {
+    width: 100%;
+    min-height: 10px;
+    border-radius: inherit;
+    background: linear-gradient(180deg, #16a34a, #a1121c);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    animation: barGrow 0.38s ease both;
+}
+
+.ops-bar-column small {
+    color: #60756d;
+    font-size: 0.75rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.ops-distribution-card {
+    padding: 16px;
+    display: grid;
+    place-items: center;
+    gap: 14px;
+}
+
+.ops-distribution-ring {
+    width: 146px;
+    height: 146px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(15, 31, 27, 0.08);
+}
+
+.ops-distribution-ring div {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    box-shadow: 0 8px 20px rgba(15, 31, 27, 0.12);
+}
+
+.ops-distribution-ring strong {
+    font-size: 1.6rem;
+    color: #0d4a2a;
+    line-height: 1;
+}
+
+.ops-distribution-ring span {
+    color: #60756d;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.ops-distribution-list {
+    width: 100%;
+    display: grid;
+    gap: 8px;
+}
+
+.ops-distribution-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: #20342d;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.ops-distribution-list span {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ops-distribution-list i {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+}
+
+.ops-mini-panel {
+    padding: 16px;
+}
+
+.ops-timeline,
+.ops-quick-actions {
+    display: grid;
+    gap: 9px;
+    margin-top: 12px;
+}
+
+.ops-timeline-item,
+.ops-quick-actions button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 13px;
+    border: 1px solid rgba(15, 31, 27, 0.08);
+    background: rgba(248, 252, 250, 0.86);
+    color: #18342b;
+    text-align: left;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.ops-timeline-item:hover,
+.ops-quick-actions button:hover {
+    transform: translateX(3px);
+    border-color: rgba(13, 74, 42, 0.22);
+    background: #ffffff;
+}
+
+.ops-timeline-icon,
+.ops-quick-actions i {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.1);
+}
+
+.ops-timeline-item strong {
+    display: block;
+    color: #18342b;
+    font-size: 0.86rem;
+    line-height: 1.2;
+}
+
+.ops-timeline-item small {
+    color: #60756d;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.ops-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-quick-actions button {
+    min-height: 76px;
+    flex-direction: column;
+    align-items: flex-start;
+    font-weight: 900;
+}
+
+.ops-community-band {
+    display: grid;
+}
+
+.community-insights-panel {
+    background: linear-gradient(135deg, rgba(13, 74, 42, 0.97), rgba(161, 18, 28, 0.92));
+}
+
+.community-insights-panel .ops-panel-heading h3,
+.community-insights-panel .ops-panel-heading span {
+    color: #f8fffc;
+}
+
+.community-insight-grid div {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.community-insight-grid span,
+.community-insight-grid strong,
+.community-insight-grid small {
+    color: #f8fffc;
+}
+
+@keyframes analyticsIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes barGrow {
+    from { height: 10px; opacity: 0.65; }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .ops-dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .ops-analytics-panel {
+        min-height: auto;
+    }
+
+    .dashboard-main-grid,
+    .dashboard-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .ops-dashboard-header,
+    .ops-analytics-top,
+    .ops-panel-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ops-stat-grid,
+    .ops-summary-strip,
+    .ops-insight-grid,
+    .community-insight-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ops-chart-zone {
+        grid-template-columns: 1fr;
+    }
+
+    .ops-bar-chart {
+        gap: 6px;
+        padding: 12px;
+    }
+
+    .ops-bar-column {
+        height: 176px;
+    }
+
+    .ops-range-tabs,
+    .ops-quick-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-welcome-title {
+        font-size: 1.8rem;
+    }
+    
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .dashboard-stat-card {
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .announcements-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .app-main {

@@ -9,6 +9,7 @@ exports.getAnnouncements = asyncHandler(async (req, res) => {
         startDate: { $lte: new Date() },
         $or: [
             { endDate: { $gte: new Date() } },
+            { endDate: null },
             { endDate: { $exists: false } }
         ]
     })
@@ -68,7 +69,7 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
         startDate: startDateObj,
         endDate: endDateObj,
         createdBy: req.user._id,
-        isActive: isActive === 'true' || isActive === true || true
+        isActive: isActive === 'true' || isActive === true
     });
 
     if (req.file) {

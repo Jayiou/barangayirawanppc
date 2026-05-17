@@ -474,7 +474,7 @@
                                     <div class="input-group">
                                         <label for="guest-facility-name">Facility</label>
                                         <div class="custom-select">
-                                            <select id="guest-facility-name" v-model="guestReservationForm.facilityName" required>
+                                            <select id="guest-facility-name" v-model="guestReservationForm.facilityName" required @change="loadGuestFacilityAvailability">
                                                 <option value="barangay_hall">Barangay Hall</option>
                                                 <option value="covered_court">Covered Court</option>
                                                 <option value="multi_purpose_hall">Multi-Purpose Hall</option>
@@ -484,18 +484,41 @@
                                     </div>
                                     <div class="input-group">
                                         <label for="guest-facility-date">Reservation Date</label>
-                                        <input id="guest-facility-date" v-model="guestReservationForm.reservationDate" type="date" required>
+                                        <input id="guest-facility-date" v-model="guestReservationForm.reservationDate" type="date" required @change="loadGuestFacilityAvailability">
                                     </div>
                                 </div>
 
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="guest-facility-start">Start Time</label>
-                                        <input id="guest-facility-start" v-model="guestReservationForm.startTime" type="time" required>
+                                <div class="facility-slot-picker" v-if="guestReservationForm.facilityName && guestReservationForm.reservationDate">
+                                    <div class="facility-slot-head">
+                                        <span>Facility Time Slot</span>
+                                        <small>Open {{ guestFacilityTimeOptions.operatingHoursLabel }}</small>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="guest-facility-end">End Time</label>
-                                        <input id="guest-facility-end" v-model="guestReservationForm.endTime" type="time" required>
+                                    <div v-if="isGuestFacilityAvailabilityLoading" class="facility-slot-note">Loading facility schedule...</div>
+                                    <div v-else class="facility-slot-grid">
+                                        <div class="input-group">
+                                            <label for="guest-facility-start">Start Time</label>
+                                            <div class="custom-select">
+                                                <select id="guest-facility-start" v-model="guestReservationForm.startTime" required @change="guestReservationForm.endTime = ''">
+                                                    <option disabled value="">Select start</option>
+                                                    <option v-for="slot in guestFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
+                                                </select>
+                                                <i class="fa-solid fa-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                        <div class="input-group">
+                                            <label for="guest-facility-end">End Time</label>
+                                            <div class="custom-select">
+                                                <select id="guest-facility-end" v-model="guestReservationForm.endTime" required :disabled="!guestReservationForm.startTime">
+                                                    <option disabled value="">Select end</option>
+                                                    <option v-for="slot in guestFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
+                                                </select>
+                                                <i class="fa-solid fa-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="facility-reserved-list" v-if="guestFacilityTimeOptions.reservedSlots.length">
+                                        <span>Reserved ranges</span>
+                                        <small v-for="slot in guestFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved</small>
                                     </div>
                                 </div>
 
@@ -542,7 +565,7 @@
                                     </label>
                                 </div>
 
-                                <button type="submit" class="auth-submit-btn" :disabled="isGuestReservationLoading || !guestReservationForm.agreePrivacy">
+                                <button type="submit" class="auth-submit-btn" :disabled="isGuestReservationLoading || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime">
                                     {{ isGuestReservationLoading ? 'Submitting...' : 'Submit Request' }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
@@ -953,6 +976,7 @@ import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
+import { buildFacilityTimeOptions, formatFacilityRange } from '@/shared/facilityTimeSlots';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
@@ -1015,6 +1039,33 @@ const guestReservationFormDefaults = {
     agreePrivacy: false
 };
 const guestReservationForm = reactive({ ...guestReservationFormDefaults });
+const guestFacilityAvailability = ref(null);
+const isGuestFacilityAvailabilityLoading = ref(false);
+const guestFacilityTimeOptions = computed(() => buildFacilityTimeOptions(guestFacilityAvailability.value, guestReservationForm.startTime));
+
+const loadGuestFacilityAvailability = async () => {
+    guestReservationForm.startTime = '';
+    guestReservationForm.endTime = '';
+
+    if (!guestReservationForm.facilityName || !guestReservationForm.reservationDate) {
+        guestFacilityAvailability.value = null;
+        return;
+    }
+
+    isGuestFacilityAvailabilityLoading.value = true;
+    try {
+        const query = new URLSearchParams({
+            facilityName: guestReservationForm.facilityName,
+            date: guestReservationForm.reservationDate
+        }).toString();
+        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability?' + query);
+    } catch (error) {
+        guestFacilityAvailability.value = null;
+        setStatus(error.message || 'Failed to load facility schedule.', true);
+    } finally {
+        isGuestFacilityAvailabilityLoading.value = false;
+    }
+};
 
 // Ensure privacy flag exists on register form (composable may not include it)
 if (registerForm.agreePrivacy === undefined) {
@@ -1395,6 +1446,7 @@ const resetGuestReportForm = () => {
 
 const resetGuestReservationForm = () => {
     Object.assign(guestReservationForm, guestReservationFormDefaults);
+    guestFacilityAvailability.value = null;
 };
 
 const isGuestDocumentLoading = ref(false);

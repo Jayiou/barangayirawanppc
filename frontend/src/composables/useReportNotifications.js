@@ -8,6 +8,8 @@ export function useReportNotifications() {
     let sharedAudioContext = null;
     let audioListenersAttached = false;
     let customAudioElement = null;
+    let playbackSessionId = 0;
+    let fallbackOscillators = [];
 
     const getAudioContext = () => {
         if (!sharedAudioContext) {
@@ -78,8 +80,11 @@ export function useReportNotifications() {
                 globalThis.localStorage.removeItem('adminAlertSoundUrl');
                 globalThis.localStorage.removeItem('adminAlertSoundLoop');
                 globalThis.localStorage.removeItem('adminAlertSoundVolume');
+                playbackSessionId += 1;
+                stopFallbackPlayback();
                 if (customAudioElement) {
                     try { customAudioElement.pause(); } catch {}
+                    try { customAudioElement.currentTime = 0; } catch {}
                     customAudioElement = null;
                 }
                 return true;
@@ -93,7 +98,118 @@ export function useReportNotifications() {
         }
     };
 
-    const playFallbackToneSequence = (audioContext) => {
+    const stopFallbackPlayback = () => {
+        if (fallbackOscillators.length > 0) {
+            fallbackOscillators.forEach(({ oscillator }) => {
+                try {
+                    oscillator.stop();
+                } catch {}
+                try {
+                    oscillator.disconnect();
+                } catch {}
+            });
+            fallbackOscillators = [];
+        }
+    };
+
+    const createFallbackTone = (audioContext, tone) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(tone.frequency, audioContext.currentTime + tone.at);
+        gainNode.gain.setValueAtTime(0.001, audioContext.currentTime + tone.at);
+        gainNode.gain.linearRampToValueAtTime(tone.gain, audioContext.currentTime + tone.at + 0.03);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + tone.at + tone.duration);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start(audioContext.currentTime + tone.at);
+        oscillator.stop(audioContext.currentTime + tone.at + tone.duration + 0.02);
+
+        fallbackOscillators.push({ oscillator });
+    };
+
+    const stopCustomAudioPlayback = () => {
+        if (!customAudioElement) {
+            return;
+        }
+
+        try { customAudioElement.pause(); } catch {}
+        try { customAudioElement.currentTime = 0; } catch {}
+    };
+
+    const clearCustomAudioElement = () => {
+        stopCustomAudioPlayback();
+        customAudioElement = null;
+    };
+
+    const ensureCustomAudioElement = (cfg, audioContext) => {
+        if (customAudioElement && customAudioElement.src !== cfg.url) {
+            clearCustomAudioElement();
+        }
+
+        if (customAudioElement) {
+            return;
+        }
+
+        customAudioElement = new Audio(cfg.url);
+        customAudioElement.loop = Boolean(cfg.loop);
+        customAudioElement.preload = 'auto';
+        customAudioElement.playsInline = true;
+        customAudioElement.crossOrigin = 'anonymous';
+
+        if (audioContext) {
+            try {
+                const source = audioContext.createMediaElementSource(customAudioElement);
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = Math.max(0, Math.min(2, cfg.volume || 1));
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                return;
+            } catch {
+                // Fall back to the element volume if the audio graph is unavailable.
+            }
+        }
+
+        customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
+    };
+
+    const resumeAudioContextIfNeeded = async (audioContext) => {
+        if (audioContext?.state === 'suspended') {
+            await audioContext.resume().catch(() => {});
+        }
+    };
+
+    const applyCustomAudioSettings = (cfg) => {
+        customAudioElement.loop = Boolean(cfg.loop);
+        customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
+        customAudioElement.currentTime = 0;
+    };
+
+    const playPreparedCustomAudio = async (sessionId) => {
+        try {
+            await customAudioElement.play();
+            return finalizeCustomAudioPlayback(sessionId);
+        } catch (error) {
+            clearCustomAudioElement();
+            console.warn('Custom alert sound play blocked or failed:', error?.message || error);
+            return false;
+        }
+    };
+
+    const isCurrentPlaybackSession = (sessionId) => sessionId === playbackSessionId;
+
+    const finalizeCustomAudioPlayback = (sessionId) => {
+        if (isCurrentPlaybackSession(sessionId)) {
+            return true;
+        }
+
+        stopCustomAudioPlayback();
+        return false;
+    };
+
+    const playFallbackToneSequence = (audioContext, sessionId) => {
         if (!audioContext) {
             return;
         }
@@ -102,6 +218,8 @@ export function useReportNotifications() {
             audioContext.resume().catch(() => {});
         }
 
+        stopFallbackPlayback();
+
         const sequence = [
             { at: 0, frequency: 784, duration: 0.25, gain: 0.36 },
             { at: 0.28, frequency: 988, duration: 0.25, gain: 0.44 },
@@ -109,98 +227,70 @@ export function useReportNotifications() {
         ];
 
         sequence.forEach((tone) => {
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(tone.frequency, audioContext.currentTime + tone.at);
-            gainNode.gain.setValueAtTime(0.001, audioContext.currentTime + tone.at);
-            gainNode.gain.linearRampToValueAtTime(tone.gain, audioContext.currentTime + tone.at + 0.03);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + tone.at + tone.duration);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.start(audioContext.currentTime + tone.at);
-            oscillator.stop(audioContext.currentTime + tone.at + tone.duration + 0.02);
+            if (sessionId === playbackSessionId) {
+                createFallbackTone(audioContext, tone);
+            }
         });
     };
 
-    const playCustomAlertSound = async (cfg, audioContext) => {
+    const playCustomAlertSound = async (cfg, audioContext, sessionId) => {
         if (!cfg?.url) {
             return false;
         }
 
-        if (audioContext?.state === 'suspended') {
-            await audioContext.resume().catch(() => {});
-        }
-
-        if (customAudioElement && customAudioElement.src !== cfg.url) {
-            try { customAudioElement.pause(); } catch {}
-            customAudioElement = null;
-        }
-
-        if (!customAudioElement) {
-            customAudioElement = new Audio(cfg.url);
-            customAudioElement.loop = Boolean(cfg.loop);
-            customAudioElement.preload = 'auto';
-            customAudioElement.playsInline = true;
-            customAudioElement.crossOrigin = 'anonymous';
-
-            if (audioContext) {
-                try {
-                    const source = audioContext.createMediaElementSource(customAudioElement);
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = Math.max(0, Math.min(2, cfg.volume || 1));
-                    source.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                } catch {
-                    customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
-                }
-            } else {
-                customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
-            }
-        }
-
-        customAudioElement.loop = Boolean(cfg.loop);
-        customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
-        customAudioElement.currentTime = 0;
-        try {
-            await customAudioElement.play();
-            return true;
-        } catch (error) {
-            try { customAudioElement.pause(); } catch {}
-            customAudioElement = null;
-            console.warn('Custom alert sound play blocked or failed:', error?.message || error);
-            return false;
-        }
+        await resumeAudioContextIfNeeded(audioContext);
+        ensureCustomAudioElement(cfg, audioContext);
+        applyCustomAudioSettings(cfg);
+        return playPreparedCustomAudio(sessionId);
     };
 
     // Create a stronger notification sound pattern.
     const playAlertSound = async () => {
+        const sessionId = ++playbackSessionId;
+        stopFallbackPlayback();
+        stopCustomAudioPlayback();
+
         try {
             const audioContext = getAudioContext();
             const cfg = getCustomSoundConfig();
 
+            // If admin provided a custom sound, prefer it and do NOT play
+            // the fallback oscillator tones. Retry once briefly if the
+            // initial play attempt is blocked, but avoid falling back to
+            // the tone sequence so the uploaded audio is the single source.
             if (cfg?.url) {
-                const played = await playCustomAlertSound(cfg, audioContext);
+                const played = await playCustomAlertSound(cfg, audioContext, sessionId);
                 if (played) {
                     return;
                 }
+
+                // short retry window for transient resume/autoplay issues
+                await new Promise((res) => setTimeout(res, 250));
+                if (isCurrentPlaybackSession(sessionId)) {
+                    const retried = await playCustomAlertSound(cfg, audioContext, sessionId);
+                    if (retried) {
+                        return;
+                    }
+                }
+
+                // If custom audio cannot be played after retries, stop here
+                // instead of playing the fallback tone so admin-uploaded
+                // audio remains the authoritative alert.
+                return;
             }
 
-            playFallbackToneSequence(audioContext);
+            if (sessionId === playbackSessionId) {
+                playFallbackToneSequence(audioContext, sessionId);
+            }
         } catch (error) {
             console.log('Could not play notification sound:', error.message);
         }
     };
 
     const stopAlertSound = () => {
-        if (customAudioElement) {
-            try {
-                customAudioElement.pause();
-                customAudioElement.currentTime = 0;
-            } catch {}
-        }
+        playbackSessionId += 1;
+        stopFallbackPlayback();
+        stopCustomAudioPlayback();
     };
 
     const getLatestCreatedAt = (reports = []) => {
@@ -275,11 +365,10 @@ export function useReportNotifications() {
             pollInterval = null;
         }
 
+        playbackSessionId += 1;
+        stopFallbackPlayback();
         detachAudioListeners();
-        if (customAudioElement) {
-            try { customAudioElement.pause(); } catch {}
-            customAudioElement = null;
-        }
+        clearCustomAudioElement();
     };
 
     const clearUnreadReports = () => {

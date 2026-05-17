@@ -12,6 +12,7 @@ export function usePortalData() {
     const appointments = ref([]);
     const officials = ref([]);
     const facilityAvailability = ref('Pick a facility and date to load available slots.');
+    const facilityAvailabilityDetails = ref(null);
 
     const profile = reactive({
         firstName: '', lastName: '', middleName: '', suffix: '', sex: 'male', birthDate: '', civilStatus: 'single',
@@ -118,17 +119,20 @@ export function usePortalData() {
     const loadFacilityAvailability = async (facilityName, reservationDate) => {
         if (!facilityName || !reservationDate) {
             facilityAvailability.value = 'Pick a facility and date to load available slots.';
+            facilityAvailabilityDetails.value = null;
             return;
         }
         try {
             const query = new URLSearchParams({ facilityName, date: reservationDate }).toString();
             const response = await apiFetch('/facility-reservations/availability?' + query);
+            facilityAvailabilityDetails.value = response;
             const available = response.availableSlots?.length > 0 ? response.availableSlots.map((slot) => slot.startTime + '-' + slot.endTime).join(', ') : 'No open slots';
             const reserved = response.reservedSlots?.length > 0 ? response.reservedSlots.map((slot) => slot.startTime + '-' + slot.endTime + ' (' + slot.status + ')').join(', ') : 'None';
             facilityAvailability.value = 'Available: ' + available + '. Reserved: ' + reserved;
         } catch (error) {
             console.error('Failed to load facility availability:', error);
             facilityAvailability.value = 'Failed to load availability.';
+            facilityAvailabilityDetails.value = null;
         }
     };
 
@@ -141,6 +145,7 @@ export function usePortalData() {
         appointments,
         officials,
         facilityAvailability,
+        facilityAvailabilityDetails,
         profile,
         setStatus,
         applyValues,

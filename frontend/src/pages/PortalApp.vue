@@ -287,15 +287,40 @@
                     <h2>Reserve Facility</h2>
                     <p class="fine-print">Book a barangay facility for your event.</p>
                     <form class="stack" @submit.prevent="handleSubmitReservation">
-                        <label><span>Facility</span><select v-model="reservationForm.facilityName" required @change="loadFacilityAvailability"><option value="barangay_hall">Barangay Hall</option><option value="covered_court">Covered Court</option><option value="multi_purpose_hall">Multi Purpose Hall</option></select></label>
-                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadFacilityAvailability"></label>
-                        <label><span>Start time</span><input v-model="reservationForm.startTime" type="time" required></label>
-                        <label><span>End time</span><input v-model="reservationForm.endTime" type="time" required></label>
+                        <label><span>Facility</span><select v-model="reservationForm.facilityName" required @change="handleReservationAvailabilityChange"><option value="barangay_hall">Barangay Hall</option><option value="covered_court">Covered Court</option><option value="multi_purpose_hall">Multi Purpose Hall</option></select></label>
+                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="handleReservationAvailabilityChange"></label>
+                        <div class="facility-slot-picker" v-if="reservationForm.facilityName && reservationForm.reservationDate">
+                            <div class="facility-slot-head">
+                                <span>Facility Time Slot</span>
+                                <small>Open {{ portalFacilityTimeOptions.operatingHoursLabel }}</small>
+                            </div>
+                            <div v-if="isFetchingFacilityAvailability" class="facility-slot-note">Loading facility schedule...</div>
+                            <div v-else class="facility-slot-grid">
+                                <label>
+                                    <span>Start Time</span>
+                                    <select v-model="reservationForm.startTime" required @change="reservationForm.endTime = ''">
+                                        <option disabled value="">Select start</option>
+                                        <option v-for="slot in portalFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>End Time</span>
+                                    <select v-model="reservationForm.endTime" required :disabled="!reservationForm.startTime">
+                                        <option disabled value="">Select end</option>
+                                        <option v-for="slot in portalFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="facility-reserved-list" v-if="portalFacilityTimeOptions.reservedSlots.length">
+                                <span>Reserved ranges</span>
+                                <small v-for="slot in portalFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved</small>
+                            </div>
+                        </div>
                         <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting || !reservationForm.startTime || !reservationForm.endTime">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
-                    <div style="margin-top: 15px; padding: 10px; background: rgba(58,78,67,0.05); color: #3a4e43; border-radius: 6px; font-size: 0.85rem; font-weight: 500;" v-if="facilityAvailability">{{ facilityAvailability }}</div>
+                    <div class="facility-slot-note" v-if="facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
 
                 <div v-if="activeModal === 'report'">
@@ -405,6 +430,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { formatDate } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
+import { buildFacilityTimeOptions, formatFacilityRange } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
@@ -418,7 +444,7 @@ const confirmLogout = () => {
         logout();
     }
 };
-const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, facilityAvailability, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
+const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
 const { documentForm, reservationForm, reportForm, reportProofFiles, submitDocumentRequest, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
 // Local state
@@ -438,6 +464,7 @@ const appointmentForm = ref({
 });
 const availableSlots = ref([]);
 const isFetchingSlots = ref(false);
+const isFetchingFacilityAvailability = ref(false);
 const viewingAppointment = ref(null);
 const locatingPosition = ref(false);
 
@@ -462,6 +489,19 @@ const loadAvailableSlots = async () => {
 const selectSlot = (slot) => {
     appointmentForm.value.startTime = slot.startTime;
     appointmentForm.value.endTime = slot.endTime;
+};
+
+const portalFacilityTimeOptions = computed(() => buildFacilityTimeOptions(facilityAvailabilityDetails.value, reservationForm.startTime));
+
+const handleReservationAvailabilityChange = async () => {
+    reservationForm.startTime = '';
+    reservationForm.endTime = '';
+    isFetchingFacilityAvailability.value = true;
+    try {
+        await loadFacilityAvailability(reservationForm.facilityName, reservationForm.reservationDate);
+    } finally {
+        isFetchingFacilityAvailability.value = false;
+    }
 };
 
 const handleSubmitAppointment = async () => {

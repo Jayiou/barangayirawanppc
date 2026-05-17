@@ -14,6 +14,7 @@ router.get('/', asyncHandler(async (req, res) => {
         startDate: { $lte: new Date() },
         $or: [
             { endDate: { $gte: new Date() } },
+            { endDate: null },
             { endDate: { $exists: false } }
         ]
     })
