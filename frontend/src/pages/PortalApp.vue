@@ -589,14 +589,22 @@ const captureCurrentLocation = async () => {
         return;
     }
 
+    // Check if HTTPS is used (required for geolocation on production)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        setStatus('Geolocation requires a secure connection (HTTPS). Please ensure you\'re using HTTPS on this site.', true);
+        return;
+    }
+
     locatingPosition.value = true;
+    let attemptedHighAccuracy = true;
 
     try {
+        // Try with high accuracy first (for better results)
         const position = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
                 enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
+                timeout: 30000, // Increased timeout for mobile networks
+                maximumAge: 5000 // Allow cached position within 5 seconds
             });
         });
 
@@ -605,7 +613,40 @@ const captureCurrentLocation = async () => {
         reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
         setStatus('Current location captured.');
     } catch (error) {
-        setStatus(error?.message || 'Unable to capture your location.', true);
+        // If high accuracy fails, try without it
+        if (attemptedHighAccuracy) {
+            try {
+                attemptedHighAccuracy = false;
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
+                reportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
+                reportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
+                reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
+                setStatus('Location captured (lower accuracy mode).');
+                return;
+            } catch (fallbackError) {
+                error = fallbackError;
+            }
+        }
+
+        // Provide helpful error messages based on error code
+        let errorMsg = 'Unable to capture your location.';
+        if (error?.code === 1) {
+            errorMsg = 'Permission denied. Please enable location access in your browser settings and try again.';
+        } else if (error?.code === 2) {
+            errorMsg = 'Position unavailable. Please check your GPS/network connection and try again.';
+        } else if (error?.code === 3) {
+            errorMsg = 'Location request timed out. Please ensure GPS/network is enabled and try again.';
+        } else if (error?.message) {
+            errorMsg = error.message;
+        }
+        setStatus(errorMsg, true);
     } finally {
         locatingPosition.value = false;
     }

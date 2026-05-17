@@ -2066,12 +2066,28 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     grid-column: 1 / -1;
     width: 100%;
     min-height: 78px;
+    overflow: hidden;
 }
 
 .recaptcha-shell {
     display: grid;
     gap: 8px;
     grid-column: 1 / -1;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 480px) {
+    .recaptcha-container {
+        transform: scale(0.9);
+        transform-origin: center;
+        margin: 0;
+        min-height: 90px;
+    }
+    
+    .recaptcha-shell {
+        padding: 0 5px;
+    }
 }
 
 .recaptcha-loading {
