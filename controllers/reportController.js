@@ -36,6 +36,7 @@ const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
 const normalizeText = (value) => String(value || '').trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
+const formatReportTypeLabel = (value) => normalizeText(value).replaceAll('_', ' ');
 
 const toNullableNumber = (value) => {
     if (value === undefined || value === null || value === '') {
@@ -154,9 +155,6 @@ const validateReportData = (payload) => {
         return 'Please provide a valid reportType';
     }
 
-    if (payload.title !== undefined && !hasText(payload.title)) {
-        return 'Please provide a valid title';
-    }
 
     if (payload.description !== undefined && !hasText(payload.description)) {
         return 'Please provide a valid description';
@@ -226,10 +224,11 @@ exports.createReport = asyncHandler(async (req, res) => {
     }
 
     const reportData = normalized.payload;
+    reportData.title = buildReportTitle(reportData.reportType, reportData.title);
     const validationError = validateReportData(reportData);
 
-    if (!reportData.reportType || !reportData.title || !reportData.description || !reportData.locationText) {
-        throw createHttpError(400, 'reportType, title, description, and locationText are required', {
+    if (!reportData.reportType || !reportData.description || !reportData.locationText) {
+        throw createHttpError(400, 'reportType, description, and locationText are required', {
             code: 'REPORT_VALIDATION_ERROR'
         });
     }
@@ -269,10 +268,11 @@ exports.createPublicReport = asyncHandler(async (req, res) => {
     }
 
     const reportData = normalized.payload;
+    reportData.title = buildReportTitle(reportData.reportType, reportData.title);
     const validationError = validateReportData(reportData) || validateGuestReportData(reportData);
 
-    if (!reportData.reportType || !reportData.title || !reportData.description || !reportData.locationText) {
-        throw createHttpError(400, 'reportType, title, description, and locationText are required', {
+    if (!reportData.reportType || !reportData.description || !reportData.locationText) {
+        throw createHttpError(400, 'reportType, description, and locationText are required', {
             code: 'REPORT_VALIDATION_ERROR'
         });
     }

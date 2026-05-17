@@ -6,6 +6,7 @@ export function useReportNotifications() {
     const unreadReports = ref([]);
     let pollInterval = null;
     let sharedAudioContext = null;
+    let audioListenersAttached = false;
 
     const getAudioContext = () => {
         if (!sharedAudioContext) {
@@ -16,6 +17,41 @@ export function useReportNotifications() {
             sharedAudioContext = new AudioContextClass();
         }
         return sharedAudioContext;
+    };
+
+    const primeAudioContext = async () => {
+        try {
+            const audioContext = getAudioContext();
+            if (!audioContext || audioContext.state === 'running') {
+                return;
+            }
+
+            await audioContext.resume();
+        } catch {
+            // Ignore autoplay policy failures; the next interaction may unlock audio.
+        }
+    };
+
+    const attachAudioListeners = () => {
+        if (audioListenersAttached) {
+            return;
+        }
+
+        audioListenersAttached = true;
+        ['pointerdown', 'touchstart', 'keydown', 'mousedown'].forEach((eventName) => {
+            window.addEventListener(eventName, primeAudioContext, { passive: true, once: false });
+        });
+    };
+
+    const detachAudioListeners = () => {
+        if (!audioListenersAttached) {
+            return;
+        }
+
+        audioListenersAttached = false;
+        ['pointerdown', 'touchstart', 'keydown', 'mousedown'].forEach((eventName) => {
+            window.removeEventListener(eventName, primeAudioContext);
+        });
     };
 
     // Create a stronger notification sound pattern.
@@ -103,6 +139,7 @@ export function useReportNotifications() {
 
     // Start polling for new reports while admin is authenticated.
     const startNotificationPolling = async () => {
+        attachAudioListeners();
         const currentReports = await apiFetch('/reports').catch(() => []);
         if (Array.isArray(currentReports)) {
             const latestCreatedAt = getLatestCreatedAt(currentReports);
@@ -126,6 +163,8 @@ export function useReportNotifications() {
             clearInterval(pollInterval);
             pollInterval = null;
         }
+
+        detachAudioListeners();
     };
 
     const clearUnreadReports = () => {
@@ -139,6 +178,7 @@ export function useReportNotifications() {
     return {
         unreadReports,
         playAlertSound,
+        primeAudioContext,
         checkForNewReports,
         startNotificationPolling,
         stopNotificationPolling,

@@ -308,7 +308,6 @@
                                 <option v-for="option in reportTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                         </label>
-                        <label><span>Title</span><input v-model="reportForm.title" type="text" required :placeholder="currentReportTypeConfig.titlePlaceholder"></label>
                         <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
                         <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
                         <label v-if="currentReportTypeConfig.requireIncidentDate"><span>Incident date</span><input v-model="reportForm.incidentDate" type="date" required></label>

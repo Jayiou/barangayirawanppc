@@ -7,7 +7,6 @@ export function usePortalForms() {
     const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', purpose: '', reservationDetails: '' });
     const reportForm = reactive({
         reportType: 'noise_complaint',
-        title: '',
         description: '',
         locationText: '',
         locationLatitude: '',
@@ -93,7 +92,6 @@ export function usePortalForms() {
         reportForm,
         {
             reportType: 'noise_complaint',
-            title: '',
             description: '',
             locationText: '',
             locationLatitude: '',

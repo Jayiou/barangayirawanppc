@@ -408,11 +408,6 @@
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-report-title">Title</label>
-                                    <input id="guest-report-title" v-model="guestReportForm.title" type="text" placeholder="Short summary of the issue" required>
-                                </div>
-
-                                <div class="input-group">
                                     <label for="guest-report-description">Description</label>
                                     <textarea id="guest-report-description" v-model="guestReportForm.description" rows="4" placeholder="Describe what happened" required></textarea>
                                 </div>
@@ -989,7 +984,6 @@ const guestDocumentFormDefaults = {
 const guestDocumentForm = reactive({ ...guestDocumentFormDefaults });
 const guestReportFormDefaults = {
     reportType: 'noise_complaint',
-    title: '',
     description: '',
     locationText: '',
     incidentDate: '',
@@ -1456,7 +1450,6 @@ const handleGuestReportRequest = async () => {
         const payload = {
             ...guestReportForm,
             reportType: String(guestReportForm.reportType || '').trim(),
-            title: String(guestReportForm.title || '').trim(),
             description: String(guestReportForm.description || '').trim(),
             locationText: String(guestReportForm.locationText || '').trim(),
             incidentDate: guestReportForm.incidentDate || undefined,

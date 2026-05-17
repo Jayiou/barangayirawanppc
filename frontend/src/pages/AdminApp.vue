@@ -534,8 +534,8 @@
                 </div>
 
                 <div v-if="['document', 'reservation', 'report', 'appointment'].includes(activeModal)">
-                    <h2><i class="fa-solid fa-eye"></i> View Request</h2>
-                    <p class="fine-print">Review complete request details, then apply a status action.</p>
+                    <h2><i class="fa-solid fa-eye"></i> View Report</h2>
+                    <p class="fine-print">Review complete report details, then apply a status action.</p>
 
                     <div class="stack" style="background: #f9f9f9; padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0;">
                         <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
@@ -1030,16 +1030,15 @@ const getRequestDetails = (item) => {
             { label: 'Contact Number', value: item.contactNumber || item.residentId?.contactNumber },
             { label: 'Email', value: item.email || item.residentId?.email },
             { label: 'Address', value: item.address || item.residentId?.address },
-            { label: 'Issue Title', value: item.title },
             { label: 'Report Type', value: item.reportType?.replaceAll('_', ' ') },
             { label: 'Priority', value: item.priority?.toUpperCase() },
             { label: 'Incident Date', value: formatDate(item.incidentDate) },
             { label: 'Location', value: item.locationText },
+            { label: 'Description', value: item.description },
             {
                 label: 'Proof Uploaded',
                 value: Array.isArray(item.proofFiles) && item.proofFiles.length ? `${item.proofFiles.length} file(s)` : 'No files'
             },
-            { label: 'Description', value: item.description },
             { label: 'Submitted On', value: formatDate(item.createdAt) }
         ];
     }
