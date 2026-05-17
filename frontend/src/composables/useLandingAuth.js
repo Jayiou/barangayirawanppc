@@ -37,9 +37,11 @@ export function useLandingAuth() {
     const registerForm = reactive({ 
         username: '', email: '', password: '', confirmPassword: '',
         firstName: '', lastName: '', sex: 'male', 
-        birthDate: '', contactNumber: '', address: '', purok: '' 
+        birthDate: '', contactNumber: '', address: '', purok: '',
+        isSeniorCitizen: false, isPWD: false, vulnerabilityType: '', verificationPending: false
     });
     const proofOfResidencyFile = ref(null);
+    const vulnerabilityProofFile = ref(null);
     const otpForm = reactive({ email: '', code: '' });
 
     const handleResidentAuth = async (path, payload) => {
@@ -102,6 +104,9 @@ export function useLandingAuth() {
             
             formData.append('recaptchaToken', recaptchaToken);
             formData.append('proofOfResidency', proofOfResidencyFile);
+            if (vulnerabilityProofFile.value) {
+                formData.append('vulnerabilityProof', vulnerabilityProofFile.value);
+            }
 
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -163,9 +168,13 @@ export function useLandingAuth() {
         proofOfResidencyFile.value = event.target.files[0];
     };
 
+    const handleVulnerabilityProofUpload = (event) => {
+        vulnerabilityProofFile.value = event.target.files[0] || null;
+    };
+
     return {
-        loginForm, registerForm, proofOfResidencyFile, otpForm,
-        loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload,
+        loginForm, registerForm, proofOfResidencyFile, vulnerabilityProofFile, otpForm,
+        loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, handleVulnerabilityProofUpload,
         getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail
     };
 }

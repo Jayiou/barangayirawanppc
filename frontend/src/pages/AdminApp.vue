@@ -70,6 +70,7 @@
                 <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i> Documents <span class="badge" v-if="pendingCounts.docs">{{ pendingCounts.docs }}</span></button>
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facilities <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster Management</button>
                 <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> SMS Logs</button>
             </nav>
 
@@ -346,6 +347,83 @@
                             </div>
                         </article>
                     </section>
+                </div>
+            </section>
+
+            <section class="app-view" :class="{ active: currentView === 'disaster' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+                            <div>
+                                <span class="eyebrow">Disaster Management</span>
+                                <h3>Incidents and response monitoring</h3>
+                            </div>
+                            <button class="primary-button" type="button" @click="createDisasterIncident"><i class="fa-solid fa-plus"></i> Create Incident</button>
+                        </div>
+                        <div class="summary-grid" style="margin-bottom:14px;">
+                            <article class="summary-card"><span>Active Incidents</span><strong>{{ disasterSummary.activeIncidents }}</strong></article>
+                            <article class="summary-card"><span>Evacuated Households</span><strong>{{ disasterSummary.evacuees }}</strong></article>
+                            <article class="summary-card"><span>Injured / Missing</span><strong>{{ disasterSummary.injured }} / {{ disasterSummary.missing }}</strong></article>
+                            <article class="summary-card"><span>Seniors / PWD</span><strong>{{ disasterSummary.seniors }} / {{ disasterSummary.pwds }}</strong></article>
+                        </div>
+                        <div class="portal-grid" style="grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.3fr);">
+                            <article class="content-card" style="padding:16px;">
+                                <label><span>Status Filter</span>
+                                    <select v-model="disasterFilterStatus">
+                                        <option value="all">All</option>
+                                        <option value="active">Active</option>
+                                        <option value="monitoring">Monitoring</option>
+                                        <option value="resolved">Resolved</option>
+                                    </select>
+                                </label>
+                                <div style="margin-top:10px; display:grid; gap:8px;">
+                                    <button v-for="incident in filteredDisasterIncidents" :key="incident._id" type="button" class="ghost-button" style="justify-content:space-between;" @click="selectDisasterIncident(incident)">
+                                        <span>{{ incident.title }}</span>
+                                        <StatusBadge :status="incident.status" />
+                                    </button>
+                                </div>
+                            </article>
+                            <article class="content-card" style="padding:16px;">
+                                <div v-if="selectedDisasterIncident">
+                                    <div class="section-head" style="margin-bottom:10px;">
+                                        <h3 style="margin:0;">{{ selectedDisasterIncident.incident.title }}</h3>
+                                        <span class="fine-print">{{ selectedDisasterIncident.incident.disasterType?.replaceAll('_', ' ') }} | {{ formatDate(selectedDisasterIncident.incident.occurredAt) }}</span>
+                                    </div>
+                                    <p class="fine-print">{{ selectedDisasterIncident.incident.description || 'No description yet.' }}</p>
+                                    <div class="status-btn-grid">
+                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'active' }" @click="updateDisasterStatus('active')">active</button>
+                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'monitoring' }" @click="updateDisasterStatus('monitoring')">monitoring</button>
+                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'resolved' }" @click="updateDisasterStatus('resolved')">resolved</button>
+                                    </div>
+                                    <div style="margin-top:12px;">
+                                        <h4 style="margin:0 0 8px;">Affected Residents / Families</h4>
+                                        <div v-if="selectedDisasterIncident.affectedRecords.length" style="display:grid;gap:8px;">
+                                            <div v-for="record in selectedDisasterIncident.affectedRecords" :key="record._id" class="record-item" style="padding:10px;">
+                                                <strong>{{ getAffectedDisplayName(record) }}</strong>
+                                                <div class="fine-print">Household: {{ record.householdSize }} | Evacuated: {{ record.isEvacuated ? 'Yes' : 'No' }} | Injured: {{ record.injuredCount }} | Missing: {{ record.missingCount }}</div>
+                                            </div>
+                                        </div>
+                                        <div v-else class="fine-print">No affected records yet.</div>
+                                        <form class="stack" style="margin-top:10px;" @submit.prevent="addAffectedToSelectedIncident">
+                                            <label><span>Family Head Name</span><input v-model="disasterAffectedForm.familyHeadName" type="text" required></label>
+                                            <label><span>Household Size</span><input v-model.number="disasterAffectedForm.householdSize" type="number" min="1"></label>
+                                            <label><span>Urgent Needs (comma separated)</span><input v-model="disasterAffectedForm.urgentNeeds" type="text" placeholder="Food, medicine, rescue"></label>
+                                            <button class="primary-button" type="submit" :disabled="isSubmitting"><i class="fa-solid fa-user-plus"></i> Add Affected Record</button>
+                                        </form>
+                                    </div>
+                                    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                                        <select v-model="selectedDisasterReportId" style="min-width: 220px;">
+                                            <option value="">Select disaster report to link</option>
+                                            <option v-for="report in disasterReports" :key="report._id" :value="report._id">{{ report.title }}</option>
+                                        </select>
+                                        <button class="ghost-button" type="button" @click="prefillDisasterAdvisory"><i class="fa-solid fa-bullhorn"></i> Publish Advisory</button>
+                                        <button class="ghost-button" type="button" @click="linkSelectedDisasterReport"><i class="fa-solid fa-link"></i> Link Selected Disaster Report</button>
+                                    </div>
+                                </div>
+                                <div v-else class="fine-print">Select an incident to view details.</div>
+                            </article>
+                        </div>
+                    </article>
                 </div>
             </section>
 
@@ -999,7 +1077,7 @@ const resetSound = async () => {
     }
 };
 
-const { residents, documentRequests, reservations, reports, appointments, officials, announcements, dashboardStatus, dashboardError, msg, loadAll } = useAdminData();
+const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);
@@ -1026,6 +1104,9 @@ const reportAlertReports = ref([]);
 // Persist view state on change
 watch(currentView, (newView) => {
     localStorage.setItem('admin_current_view', newView);
+    if (newView === 'disaster' && disasterIncidents.value.length > 0 && !selectedDisasterIncidentId.value) {
+        selectDisasterIncident(disasterIncidents.value[0]);
+    }
 });
 const selectedItem = ref({});
 const editForm = reactive({});
@@ -1037,6 +1118,15 @@ const smsLogsLoading = ref(false);
 const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
+const disasterFilterStatus = ref('all');
+const selectedDisasterIncidentId = ref('');
+const selectedDisasterReportId = ref('');
+const selectedDisasterIncident = ref(null);
+const disasterAffectedForm = reactive({
+    familyHeadName: '',
+    householdSize: 1,
+    urgentNeeds: ''
+});
 
 const todayDate = computed(() => {
     const d = new Date();
@@ -1086,6 +1176,7 @@ const viewTitle = computed(() => ({
     documents: 'Document Requests',
     reservations: 'Facility Reservations',
     reports: 'Resident Reports',
+    disaster: 'Disaster Management',
     'sms-logs': 'SMS Logs'
 }[currentView.value]));
 
@@ -1186,6 +1277,33 @@ const activeReservationsCount = computed(() => reservations.value.filter((reserv
 const topFacilityLabel = computed(() => {
     const top = buildDistribution(reservations.value, (reservation) => normalizeLabel(reservation.facilityName), ['No reservations'])[0];
     return top?.label || 'Facility';
+});
+
+const filteredDisasterIncidents = computed(() => {
+    if (disasterFilterStatus.value === 'all') {
+        return disasterIncidents.value;
+    }
+    return disasterIncidents.value.filter((incident) => incident.status === disasterFilterStatus.value);
+});
+
+const disasterReports = computed(() => reports.value.filter((report) => report.reportType === 'disaster'));
+
+const disasterSummary = computed(() => {
+    const seed = {
+        activeIncidents: 0,
+        evacuees: 0,
+        injured: 0,
+        missing: 0,
+        seniors: 0,
+        pwds: 0
+    };
+
+    return disasterIncidents.value.reduce((summary, incident) => {
+        if (incident.status === 'active' || incident.status === 'monitoring') {
+            summary.activeIncidents += 1;
+        }
+        return summary;
+    }, seed);
 });
 
 const normalizeLabel = (value) => {
@@ -1647,6 +1765,131 @@ const reportAlertMessage = computed(() => {
         ? `Latest reports: ${names}${reportAlertReports.value.length > 2 ? '...' : ''}`
         : 'Multiple reports are waiting for review.';
 });
+
+const selectDisasterIncident = async (incident) => {
+    if (!incident?._id) return;
+    selectedDisasterIncidentId.value = incident._id;
+    try {
+        selectedDisasterIncident.value = await apiFetch(`/disaster-incidents/${incident._id}`);
+    } catch (error) {
+        showToast(error.message || 'Failed to load disaster incident detail.', true);
+    }
+};
+
+const createDisasterIncident = async () => {
+    const title = prompt('Disaster incident title:');
+    if (!title) return;
+
+    try {
+        const created = await apiFetch('/disaster-incidents', {
+            method: 'POST',
+            body: JSON.stringify({
+                title: String(title).trim(),
+                disasterType: 'other',
+                status: 'active',
+                severity: 'medium',
+                source: 'manual'
+            })
+        });
+        disasterIncidents.value.unshift(created);
+        await selectDisasterIncident(created);
+        showToast('Disaster incident created.');
+    } catch (error) {
+        showToast(error.message || 'Failed to create disaster incident.', true);
+    }
+};
+
+const addAffectedToSelectedIncident = async () => {
+    if (!selectedDisasterIncidentId.value) return;
+    if (!disasterAffectedForm.familyHeadName.trim()) {
+        showToast('Family head name is required.', true);
+        return;
+    }
+
+    try {
+        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}/affected-records`, {
+            method: 'POST',
+            body: JSON.stringify({
+                familyHeadName: disasterAffectedForm.familyHeadName.trim(),
+                householdSize: disasterAffectedForm.householdSize || 1,
+                urgentNeeds: disasterAffectedForm.urgentNeeds
+            })
+        });
+        disasterAffectedForm.familyHeadName = '';
+        disasterAffectedForm.householdSize = 1;
+        disasterAffectedForm.urgentNeeds = '';
+        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
+        showToast('Affected record added.');
+    } catch (error) {
+        showToast(error.message || 'Failed to add affected record.', true);
+    }
+};
+
+const updateDisasterStatus = async (status) => {
+    if (!selectedDisasterIncidentId.value) return;
+    try {
+        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status })
+        });
+        await loadAll();
+        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
+        showToast('Disaster incident status updated.');
+    } catch (error) {
+        showToast(error.message || 'Failed to update incident status.', true);
+    }
+};
+
+const getAffectedDisplayName = (record) => {
+    if (record.residentId) {
+        return [
+            record.residentId.firstName,
+            record.residentId.middleName,
+            record.residentId.lastName,
+            record.residentId.suffix
+        ].filter(Boolean).join(' ');
+    }
+    return record.familyHeadName || 'Unnamed Household';
+};
+
+const prefillDisasterAdvisory = () => {
+    if (!selectedDisasterIncident.value?.incident) {
+        showToast('Select an incident first.', true);
+        return;
+    }
+
+    const incident = selectedDisasterIncident.value.incident;
+    openModal('announcement', {
+        title: `[Disaster Advisory] ${incident.title}`,
+        description: `Advisory for ${incident.affectedArea || 'affected area'}.\nCurrent status: ${incident.status}.`,
+        startDate: new Date().toISOString().slice(0, 16),
+        endDate: '',
+        isActive: true
+    });
+};
+
+const linkSelectedDisasterReport = async () => {
+    if (!selectedDisasterIncidentId.value) {
+        showToast('Select an incident first.', true);
+        return;
+    }
+    if (!selectedDisasterReportId.value) {
+        showToast('Select a disaster report from table list first.', true);
+        return;
+    }
+    try {
+        const detail = selectedDisasterIncident.value?.incident;
+        const nextLinks = [...new Set([...(detail?.linkedReportIds || []), selectedDisasterReportId.value])];
+        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ linkedReportIds: nextLinks })
+        });
+        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
+        showToast('Disaster report linked.');
+    } catch (error) {
+        showToast(error.message || 'Failed to link disaster report.', true);
+    }
+};
 
 const currentList = computed(() => {
     switch (currentView.value) {

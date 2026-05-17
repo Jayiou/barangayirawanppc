@@ -218,6 +218,7 @@ app.use('/api/document-requests', require('./routes/documentRequestRoutes'));
 app.use('/api/facility-reservations', require('./routes/facilityReservationRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/disaster-incidents', require('./routes/disasterIncidentRoutes'));
 app.use('/api/sms-logs', require('./routes/smsRoutes'));
     app.use('/api/blotters', require('./routes/blotterRoutes'));
     app.use('/api/manpower-requests', require('./routes/manpowerRequestRoutes'));

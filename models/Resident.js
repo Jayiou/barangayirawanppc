@@ -87,6 +87,28 @@ const residentSchema = new mongoose.Schema(
             type: String,
             required: true,
             trim: true
+        },
+        isSeniorCitizen: {
+            type: Boolean,
+            default: false
+        },
+        isPWD: {
+            type: Boolean,
+            default: false
+        },
+        vulnerabilityType: {
+            type: String,
+            enum: ['', 'senior', 'pwd', 'both'],
+            default: ''
+        },
+        vulnerabilityProofPath: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        verificationPending: {
+            type: Boolean,
+            default: false
         }
     },
     {

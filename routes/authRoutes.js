@@ -31,7 +31,10 @@ const passwordResetLimiter = createRateLimiter({
     message: 'Too many password reset attempts. Please try again later.'
 });
 
-router.post('/register', registerLimiter, upload.single('proofOfResidency'), register);
+router.post('/register', registerLimiter, upload.fields([
+    { name: 'proofOfResidency', maxCount: 1 },
+    { name: 'vulnerabilityProof', maxCount: 1 }
+]), register);
 router.post('/verify-otp', otpLimiter, verifyOtp);
 router.post('/resend-otp', otpLimiter, resendOtp);
 router.post('/login', loginLimiter, login);

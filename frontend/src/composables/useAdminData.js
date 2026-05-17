@@ -9,6 +9,7 @@ export function useAdminData() {
     const announcements = ref([]);
     const appointments = ref([]);
     const officials = ref([]);
+    const disasterIncidents = ref([]);
 
     const dashboardStatus = ref('Loading portal...');
     const dashboardError = ref(false);
@@ -28,7 +29,8 @@ export function useAdminData() {
                 apiFetch('/reports'),
                 apiFetch('/announcements/admin/all').then(res => res.data || res),
                 apiFetch('/appointments/admin/all-appointments').then(res => res.data || res),
-                apiFetch('/appointments/officials').then(res => res.data || res)
+                apiFetch('/appointments/officials').then(res => res.data || res),
+                apiFetch('/disaster-incidents')
             ]);
 
             [
@@ -38,7 +40,8 @@ export function useAdminData() {
                 reports.value, 
                 announcements.value,
                 appointments.value,
-                officials.value
+                officials.value,
+                disasterIncidents.value
             ] = results;
             msg('Dashboard ready.', false);
         } catch (error) {
@@ -55,6 +58,7 @@ export function useAdminData() {
         announcements,
         appointments,
         officials,
+        disasterIncidents,
         dashboardStatus,
         dashboardError,
         msg,

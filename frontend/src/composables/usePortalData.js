@@ -16,7 +16,8 @@ export function usePortalData() {
 
     const profile = reactive({
         firstName: '', lastName: '', middleName: '', suffix: '', sex: 'male', birthDate: '', civilStatus: 'single',
-        contactNumber: '', email: '', address: '', purok: '', citizenship: '', occupation: '', voterStatus: 'not_registered', profileImage: ''
+        contactNumber: '', email: '', address: '', purok: '', citizenship: '', occupation: '', voterStatus: 'not_registered', profileImage: '',
+        isSeniorCitizen: false, isPWD: false, vulnerabilityType: '', vulnerabilityProofPath: '', verificationPending: false
     });
 
     const setStatus = (message, isError = false) => {

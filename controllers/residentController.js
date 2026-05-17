@@ -22,7 +22,12 @@ const residentProfileFields = [
     'citizenship',
     'occupation',
     'voterStatus',
-    'profileImage'
+    'profileImage',
+    'isSeniorCitizen',
+    'isPWD',
+    'vulnerabilityType',
+    'vulnerabilityProofPath',
+    'verificationPending'
 ];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,6 +54,10 @@ const validateResidentData = (payload) => {
 
     if (payload.birthDate !== undefined && Number.isNaN(new Date(payload.birthDate).getTime())) {
         return 'Please provide a valid birthDate';
+    }
+
+    if (payload.vulnerabilityType !== undefined && !['', 'senior', 'pwd', 'both'].includes(String(payload.vulnerabilityType))) {
+        return 'Please provide a valid vulnerabilityType';
     }
 
     return null;

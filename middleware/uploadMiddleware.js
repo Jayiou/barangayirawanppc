@@ -11,7 +11,7 @@ const ensureDirectory = (directory) => {
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const destination = file.fieldname === 'proofOfResidency'
+        const destination = ['proofOfResidency', 'vulnerabilityProof'].includes(file.fieldname)
             ? privateProofDirectory
             : publicUploadDirectory;
 
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const validMimes = file.fieldname === 'proofOfResidency'
+    const validMimes = ['proofOfResidency', 'vulnerabilityProof'].includes(file.fieldname)
         ? ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
         : ['image/jpeg', 'image/png', 'image/jpg'];
 

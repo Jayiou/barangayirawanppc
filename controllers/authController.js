@@ -41,6 +41,10 @@ const generateOtp = () => crypto.randomInt(100000, 999999).toString();
 const generateResetToken = () => crypto.randomBytes(32).toString('hex');
 
 const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+const toBoolean = (value) => {
+    if (typeof value === 'boolean') return value;
+    return String(value).toLowerCase() === 'true';
+};
 
 const getAppOrigin = (req) => {
     const bodyOrigin = String(req.body?.appUrl || '').trim().replace(/\/$/, '');
@@ -127,10 +131,15 @@ exports.register = asyncHandler(async (req, res) => {
     // 1. Separate user core fields from resident details
     const { 
         username, email, password, role,
-        firstName, lastName, sex, birthDate, contactNumber, address, purok, recaptchaToken
+        firstName, lastName, sex, birthDate, contactNumber, address, purok, recaptchaToken,
+        isSeniorCitizen, isPWD, vulnerabilityType, verificationPending
     } = req.body;
 
-    const proofOfResidency = req.file ? req.file.filename : null;
+    const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || null;
+    const vulnerabilityProofPath = req.files?.vulnerabilityProof?.[0]?.filename || '';
+    const seniorFlag = toBoolean(isSeniorCitizen);
+    const pwdFlag = toBoolean(isPWD);
+    const pendingVerificationFlag = toBoolean(verificationPending);
 
     // 1.5. Verify reCaptcha token
     await verifyRecaptcha(recaptchaToken);
@@ -199,7 +208,12 @@ exports.register = asyncHandler(async (req, res) => {
             contactNumber: String(contactNumber).trim(),
             address,
             purok: purok || '',
-            proofOfResidency
+            proofOfResidency,
+            isSeniorCitizen: seniorFlag,
+            isPWD: pwdFlag,
+            vulnerabilityType: vulnerabilityType || '',
+            vulnerabilityProofPath,
+            verificationPending: pendingVerificationFlag
         },
         isActive: false // Explicitly inactive until OTP -> Admin Approval
     });
@@ -258,7 +272,12 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
                 contactNumber: pendingProfile.contactNumber || '',
                 address: pendingProfile.address,
                 purok: pendingProfile.purok || '',
-                proofOfResidency: pendingProfile.proofOfResidency || ''
+                proofOfResidency: pendingProfile.proofOfResidency || '',
+                isSeniorCitizen: Boolean(pendingProfile.isSeniorCitizen),
+                isPWD: Boolean(pendingProfile.isPWD),
+                vulnerabilityType: pendingProfile.vulnerabilityType || '',
+                vulnerabilityProofPath: pendingProfile.vulnerabilityProofPath || '',
+                verificationPending: Boolean(pendingProfile.verificationPending)
             });
         }
     }

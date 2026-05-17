@@ -648,6 +648,34 @@
                                     <label for="reg-purok">Purok / Zone</label>
                                     <input id="reg-purok" name="purok" v-model="registerForm.purok" type="text" placeholder="Purok 1" required>
                                 </div>
+                                <div class="two-col-grid">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.isSeniorCitizen">
+                                        <span>Senior Citizen</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.isPWD">
+                                        <span>PWD</span>
+                                    </label>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-vulnerability-type">Vulnerability Type</label>
+                                        <div class="custom-select">
+                                            <select id="reg-vulnerability-type" v-model="registerForm.vulnerabilityType">
+                                                <option value="">None</option>
+                                                <option value="senior">Senior</option>
+                                                <option value="pwd">PWD</option>
+                                                <option value="both">Senior + PWD</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.verificationPending">
+                                        <span>Verification pending (no ID yet)</span>
+                                    </label>
+                                </div>
                                 <div class="input-group">
                                     <label for="reg-username">Username</label>
                                     <div class="input-wrapper">
@@ -706,6 +734,14 @@
                                         <input id="reg-proof" name="proofOfResidency" type="file" @change="handleFileUpload" accept="image/*,application/pdf" required class="file-input">
                                         <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
                                         <span class="file-name">{{ proofOfResidencyFile ? proofOfResidencyFile.name : 'No file chosen' }}</span>
+                                    </div>
+                                </div>
+                                <div class="input-group file-upload-group">
+                                    <label for="reg-vulnerability-proof">Senior/PWD Proof (Optional)</label>
+                                    <div class="file-upload-wrapper">
+                                        <input id="reg-vulnerability-proof" name="vulnerabilityProof" type="file" @change="handleVulnerabilityProofUpload" accept="image/*,application/pdf" class="file-input">
+                                        <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
+                                        <span class="file-name">{{ vulnerabilityProofFile ? vulnerabilityProofFile.name : 'No file chosen' }}</span>
                                     </div>
                                 </div>
 
@@ -982,7 +1018,7 @@ import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
 
 // Composables
-const { loginForm, registerForm, proofOfResidencyFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail } = useLandingAuth();
+const { loginForm, registerForm, proofOfResidencyFile, vulnerabilityProofFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, handleVulnerabilityProofUpload, getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail } = useLandingAuth();
 const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanupRecaptchaWidget } = useRecaptcha();
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
 
