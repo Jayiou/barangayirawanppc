@@ -103,16 +103,16 @@ export function useReportNotifications() {
         }
 
         const sequence = [
-            { at: 0, frequency: 880, duration: 0.2, gain: 0.22 },
-            { at: 0.28, frequency: 1047, duration: 0.2, gain: 0.24 },
-            { at: 0.56, frequency: 1318, duration: 0.24, gain: 0.26 }
+            { at: 0, frequency: 784, duration: 0.25, gain: 0.36 },
+            { at: 0.28, frequency: 988, duration: 0.25, gain: 0.44 },
+            { at: 0.56, frequency: 1175, duration: 0.3, gain: 0.5 }
         ];
 
         sequence.forEach((tone) => {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 
-            oscillator.type = 'triangle';
+            oscillator.type = 'square';
             oscillator.frequency.setValueAtTime(tone.frequency, audioContext.currentTime + tone.at);
             gainNode.gain.setValueAtTime(0.001, audioContext.currentTime + tone.at);
             gainNode.gain.linearRampToValueAtTime(tone.gain, audioContext.currentTime + tone.at + 0.03);
@@ -164,8 +164,15 @@ export function useReportNotifications() {
         customAudioElement.loop = Boolean(cfg.loop);
         customAudioElement.volume = Math.max(0, Math.min(1, cfg.volume || 1));
         customAudioElement.currentTime = 0;
-        await customAudioElement.play();
-        return true;
+        try {
+            await customAudioElement.play();
+            return true;
+        } catch (error) {
+            try { customAudioElement.pause(); } catch {}
+            customAudioElement = null;
+            console.warn('Custom alert sound play blocked or failed:', error?.message || error);
+            return false;
+        }
     };
 
     // Create a stronger notification sound pattern.
@@ -174,8 +181,11 @@ export function useReportNotifications() {
             const audioContext = getAudioContext();
             const cfg = getCustomSoundConfig();
 
-            if (await playCustomAlertSound(cfg, audioContext)) {
-                return;
+            if (cfg?.url) {
+                const played = await playCustomAlertSound(cfg, audioContext);
+                if (played) {
+                    return;
+                }
             }
 
             playFallbackToneSequence(audioContext);
@@ -279,6 +289,10 @@ export function useReportNotifications() {
     onUnmounted(() => {
         stopNotificationPolling();
     });
+
+    // Register unlock listeners immediately so the first admin interaction can
+    // prime audio before the first report notification arrives.
+    attachAudioListeners();
 
     return {
         unreadReports,
