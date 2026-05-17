@@ -709,6 +709,7 @@ import { useAdminData } from '@/composables/useAdminData';
 import { useAnnouncements } from '@/composables/useAnnouncements';
 import { useAppointments } from '@/composables/useAppointments';
 import { useResidents } from '@/composables/useResidents';
+import { useReportNotifications } from '@/composables/useReportNotifications';
 
 // Composables
 const { isAuthenticated, user, loginForm, loginStatus, loginError, loginLoading, initializing, loginAdmin, logout, initSession } = useAdminAuth();
@@ -722,6 +723,7 @@ const { residents, documentRequests, reservations, reports, appointments, offici
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);
+const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports } = useReportNotifications();
 // Local state
 const sidebarOpen = ref(false);
 const showAdminPassword = ref(false);
@@ -1344,8 +1346,19 @@ watch(dashboardStatus, (message) => {
     showToast(message, dashboardError.value);
 });
 
+watch(unreadReports, (newReports) => {
+    if (newReports.length > 0) {
+        const reportTitles = newReports.map(r => r.title).join(', ');
+        showToast(`🚨 New Report Received: ${reportTitles}`);
+        
+        // Auto-switch to reports view
+        currentView.value = 'reports';
+    }
+});
+
 onBeforeUnmount(() => {
     clearToast();
+    stopNotificationPolling();
 });
 
 watch(isAuthenticated, async (authed) => {
@@ -1354,6 +1367,11 @@ watch(isAuthenticated, async (authed) => {
             loadAll(),
             loadSMSLogs()
         ]);
+        
+        // Start real-time report notifications
+        startNotificationPolling();
+    } else {
+        stopNotificationPolling();
     }
 }, { immediate: true });
 

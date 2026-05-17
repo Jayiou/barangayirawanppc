@@ -104,15 +104,6 @@ const reportSchema = new mongoose.Schema(
             enum: ['low', 'medium', 'high', 'emergency'],
             default: 'medium'
         },
-        isAnonymous: {
-            type: Boolean,
-            default: false
-        },
-        contactPreference: {
-            type: String,
-            enum: ['phone', 'email', 'in_app', 'none'],
-            default: 'in_app'
-        },
         status: {
             type: String,
             enum: ['pending', 'reviewing', 'in_progress', 'resolved', 'rejected', 'closed'],

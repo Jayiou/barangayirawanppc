@@ -100,9 +100,7 @@ export function usePortalForms() {
             locationLongitude: '',
             locationAccuracy: '',
             incidentDate: '',
-            priority: 'medium',
-            contactPreference: 'in_app',
-            isAnonymous: false
+            priority: 'medium'
         },
         async () => {
             reportProofFiles.value = [];

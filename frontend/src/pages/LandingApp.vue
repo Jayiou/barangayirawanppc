@@ -456,18 +456,6 @@
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-report-contact-pref">Preferred Contact</label>
-                                    <div class="custom-select">
-                                        <select id="guest-report-contact-pref" v-model="guestReportForm.contactPreference" required>
-                                            <option value="email">Email</option>
-                                            <option value="phone">Phone</option>
-                                            <option value="none">No follow-up needed</option>
-                                        </select>
-                                        <i class="fa-solid fa-chevron-down"></i>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
                                     <label class="checkbox-label">
                                         <input type="checkbox" v-model="guestReportForm.agreePrivacy"> I agree to the <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
                                     </label>
@@ -1006,7 +994,6 @@ const guestReportFormDefaults = {
     locationText: '',
     incidentDate: '',
     priority: 'medium',
-    contactPreference: 'email',
     firstName: '',
     middleName: '',
     lastName: '',
@@ -1474,7 +1461,6 @@ const handleGuestReportRequest = async () => {
             locationText: String(guestReportForm.locationText || '').trim(),
             incidentDate: guestReportForm.incidentDate || undefined,
             priority: guestReportForm.priority,
-            contactPreference: guestReportForm.contactPreference,
             firstName: String(guestReportForm.firstName || '').trim(),
             middleName: String(guestReportForm.middleName || '').trim(),
             lastName: String(guestReportForm.lastName || '').trim(),

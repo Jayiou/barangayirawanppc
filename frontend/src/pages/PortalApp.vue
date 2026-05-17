@@ -340,8 +340,6 @@
                         </label>
                         <small v-if="reportProofFiles.length" style="color: #4f6b5d;">{{ reportProofFiles.length }} file(s) selected</small>
                         <label><span>Priority</span><select v-model="reportForm.priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label>
-                        <label><span>Contact preference</span><select v-model="reportForm.contactPreference"><option value="phone">Phone</option><option value="email">Email</option><option value="in_app">In app</option><option value="none">None</option></select></label>
-                        <label class="checkbox-row"><input v-model="reportForm.isAnonymous" type="checkbox"><span>Submit anonymously</span></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
                     </form>
                 </div>
