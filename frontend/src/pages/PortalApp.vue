@@ -322,7 +322,7 @@
                                 1️⃣ Click the button above<br>
                                 2️⃣ A popup will appear asking for permission<br>
                                 3️⃣ Tap <strong>Allow</strong><br>
-                                💡 If it doesn't work, make sure <strong>Location Services is ON</strong> in your phone settings first.
+                                💡 Safari tip: if no popup appears, go to iPhone Settings → Privacy & Security → Location Services → Safari Websites → <strong>While Using the App</strong>.
                             </small>
                             <small v-if="hasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ reportForm.locationLatitude }}, {{ reportForm.locationLongitude }} (±{{ reportForm.locationAccuracy || 'N/A' }}m)</small>
                             <iframe
@@ -594,8 +594,11 @@ const captureCurrentLocation = async () => {
         return;
     }
 
+    const userAgent = navigator.userAgent || '';
+    const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|Edg|OPR|FxiOS|Android/i.test(userAgent);
+
     // Check if HTTPS is used (required for geolocation on production)
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         setStatus('Geolocation requires a secure connection (HTTPS). Please ensure you\'re using HTTPS on this site.', true);
         return;
     }
@@ -627,7 +630,11 @@ const captureCurrentLocation = async () => {
         const permissionState = await readPermissionState();
 
         if (permissionState === 'denied') {
-            setStatus('🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.', true);
+            if (isSafari) {
+                setStatus('🔒 Safari location access is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then open this site in Safari again and tap "Use My Current Location".', true);
+            } else {
+                setStatus('🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.', true);
+            }
             return;
         }
 
@@ -663,9 +670,15 @@ const captureCurrentLocation = async () => {
         // Provide helpful error messages based on error code
         let errorMsg = 'Unable to capture your location.';
         if (error?.code === 1) {
-            errorMsg = '❌ Permission Denied: When you clicked the button, you might have tapped "Block" instead of "Allow". Try again and tap Allow when the popup appears. OR check your browser settings to allow location access for this site.';
+            if (isSafari) {
+                errorMsg = '❌ Permission Denied on Safari: If no popup appears, Safari may already be blocked for this site. Open iPhone Settings → Privacy & Security → Location Services → Safari Websites, set to "While Using the App", then reload this page and tap "Use My Current Location" again.';
+            } else {
+                errorMsg = '❌ Permission Denied: When you clicked the button, you might have tapped "Block" instead of "Allow". Try again and tap Allow when the popup appears. OR check your browser settings to allow location access for this site.';
+            }
         } else if (error?.code === 2) {
-            errorMsg = '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
+            errorMsg = isSafari
+                ? '⚠️ Safari could not get your location. Make sure iPhone Location Services is ON and Safari Websites is set to "While Using the App", then try again.'
+                : '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
         } else if (error?.code === 3) {
             errorMsg = '⏱️ Timeout: Getting your location is taking too long. Check that Location Services is ON and your network is working, then try again.';
         } else if (error?.message) {
