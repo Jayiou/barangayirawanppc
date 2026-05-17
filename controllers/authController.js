@@ -323,7 +323,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
         await user.save();
 
         try {
-            const resetLink = `${getAppOrigin(req)}/?resetToken=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}`;
+            const resetLink = `${getAppOrigin(req)}/?resetToken=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}&redirect=reset-password`;
             await mailer.sendPasswordResetEmail(user.email, user.username, resetLink);
         } catch (mailError) {
             console.error('Password reset email could not be sent:', mailError);

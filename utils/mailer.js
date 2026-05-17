@@ -77,8 +77,9 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
                     <p>Hello <strong>${name}</strong>,</p>
                     <p>We received a request to reset your password. Click the button below to choose a new password:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetLink}" style="display: inline-block; background: #235b82; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: bold;">Reset Password</a>
+                        <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #235b82; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: bold; word-break: break-word;">Reset Password</a>
                     </div>
+                    <p style="font-size: 12px; color: #666; margin: 20px 0; text-align: center; word-break: break-all;">Or copy and paste this link in your browser: <br /><a href="${resetLink}" style="color: #235b82; text-decoration: underline; word-break: break-all;">${resetLink}</a></p>
                     <p>This link will expire in <strong>30 minutes</strong>.</p>
                     <p style="font-size: 12px; color: #888; margin-top: 40px; text-align: center;">If you did not request this, you can ignore this email and your password will remain unchanged.</p>
                 </div>
