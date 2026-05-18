@@ -1,7 +1,9 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
-const publicUploadDirectory = path.resolve(__dirname, '../../uploads/public');
+const publicUploadDirectory = path.resolve(
+    process.env.PUBLIC_UPLOAD_DIR || path.resolve(__dirname, '../../uploads/public')
+);
 const legacyPublicUploadDirectory = path.resolve(__dirname, '../public/uploads');
 
 const ensureDirectory = (directory) => {
