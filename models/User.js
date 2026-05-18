@@ -40,9 +40,19 @@ const userSchema = new mongoose.Schema(
                 type: String,
                 trim: true
             },
+            middleName: {
+                type: String,
+                trim: true,
+                default: ''
+            },
             lastName: {
                 type: String,
                 trim: true
+            },
+            suffix: {
+                type: String,
+                trim: true,
+                default: ''
             },
             sex: {
                 type: String,
@@ -50,6 +60,11 @@ const userSchema = new mongoose.Schema(
             },
             birthDate: {
                 type: Date
+            },
+            civilStatus: {
+                type: String,
+                trim: true,
+                default: 'single'
             },
             contactNumber: {
                 type: String,
@@ -62,6 +77,75 @@ const userSchema = new mongoose.Schema(
             purok: {
                 type: String,
                 trim: true
+            },
+            zone: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            citizenship: {
+                type: String,
+                trim: true,
+                default: 'Filipino'
+            },
+            occupation: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            voterStatus: {
+                type: String,
+                trim: true,
+                default: 'not_registered'
+            },
+            isSeniorCitizen: {
+                type: Boolean,
+                default: false
+            },
+            isPWD: {
+                type: Boolean,
+                default: false
+            },
+            isSoloParent: {
+                type: Boolean,
+                default: false
+            },
+            isPregnant: {
+                type: Boolean,
+                default: false
+            },
+            vulnerabilityType: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            vulnerabilityProofPath: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            verificationPending: {
+                type: Boolean,
+                default: false
+            },
+            emergencyContactName: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            emergencyContactNumber: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            emergencyContactRelationship: {
+                type: String,
+                trim: true,
+                default: ''
+            },
+            floodProneArea: {
+                type: Boolean,
+                default: false
             },
             proofOfResidency: {
                 type: String,

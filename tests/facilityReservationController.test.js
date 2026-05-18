@@ -9,6 +9,7 @@ const { createMockResponse } = require('./helpers/httpMocks');
 const originals = {
     reservationCreate: FacilityReservation.create,
     reservationFind: FacilityReservation.find,
+    reservationFindOne: FacilityReservation.findOne,
     reservationFindById: FacilityReservation.findById,
     reservationFindByIdAndUpdate: FacilityReservation.findByIdAndUpdate,
     residentFindOne: Resident.findOne
@@ -17,6 +18,7 @@ const originals = {
 test.afterEach(() => {
     FacilityReservation.create = originals.reservationCreate;
     FacilityReservation.find = originals.reservationFind;
+    FacilityReservation.findOne = originals.reservationFindOne;
     FacilityReservation.findById = originals.reservationFindById;
     FacilityReservation.findByIdAndUpdate = originals.reservationFindByIdAndUpdate;
     Resident.findOne = originals.residentFindOne;
@@ -150,6 +152,7 @@ test('createPublicFacilityReservation creates and returns a populated guest rese
     const res = createMockResponse();
 
     FacilityReservation.find = async () => [];
+    FacilityReservation.findOne = async () => null;
     FacilityReservation.create = async (payload) => ({ _id: 'reservation-public-1', ...payload });
     FacilityReservation.findById = () => ({
         populate() {

@@ -32,16 +32,29 @@ const isStrongPassword = (password) => {
     return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 };
 
+const normalizeContactNumber = (value) => {
+    const rawValue = String(value || '').trim().replace(/\s|-/g, '');
+    if (/^09\d{9}$/.test(rawValue)) return rawValue;
+    if (/^\+639\d{9}$/.test(rawValue)) return `0${rawValue.slice(3)}`;
+    if (/^639\d{9}$/.test(rawValue)) return `0${rawValue.slice(2)}`;
+    return '';
+};
+
+const zoneOptionsByPurok = {
+    Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
+    Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
+};
+
 export function useLandingAuth() {
     const loginForm = reactive({ username: '', password: '' });
     const registerForm = reactive({ 
         username: '', email: '', password: '', confirmPassword: '',
         firstName: '', middleName: '', lastName: '', suffix: '', sex: 'male',
         birthDate: '', civilStatus: 'single', citizenship: 'Filipino', occupation: '',
-        contactNumber: '', address: '', purok: '', houseNumber: '', streetAddress: '',
-        isSeniorCitizen: false, isPWD: false, isSoloParent: false, isPregnant: false, vulnerabilityType: '', voterStatus: 'not_registered', householdMemberCount: 1, householdId: '',
+        contactNumber: '', address: 'Barangay Irawan', purok: '', zone: '',
+        isSeniorCitizen: false, isPWD: false, isSoloParent: false, isPregnant: false, vulnerabilityType: '', voterStatus: 'not_registered',
         emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '',
-        medicalConditions: '', floodProneArea: false, evacuationPriority: '', verificationPending: false
+        floodProneArea: false, verificationPending: false
     });
     const proofOfResidencyFile = ref(null);
     const vulnerabilityProofFile = ref(null);
@@ -79,6 +92,20 @@ export function useLandingAuth() {
             return { success: false, message: 'Please fill in all required fields.' };
         }
 
+        const normalizedContactNumber = normalizeContactNumber(registerForm.contactNumber);
+        if (!normalizedContactNumber) {
+            return { success: false, message: 'Contact number must be a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.' };
+        }
+
+        if (!registerForm.purok) {
+            return { success: false, message: 'Please select a Purok.' };
+        }
+
+        const requiredZones = zoneOptionsByPurok[registerForm.purok] || [];
+        if (requiredZones.length && !requiredZones.includes(registerForm.zone)) {
+            return { success: false, message: `Please select a zone for Purok ${registerForm.purok}.` };
+        }
+
         if (registerForm.password.length < 8) {
             return { success: false, message: 'Password must be at least 8 characters long.' };
         }
@@ -104,6 +131,8 @@ export function useLandingAuth() {
             Object.entries(registerForm).forEach(([key, value]) => {
                 if (key !== 'confirmPassword') formData.append(key, value);
             });
+            formData.set('address', 'Barangay Irawan');
+            formData.set('contactNumber', normalizedContactNumber);
             
             formData.append('recaptchaToken', recaptchaToken);
             formData.append('proofOfResidency', proofOfResidencyFile);

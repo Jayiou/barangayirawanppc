@@ -39,7 +39,7 @@ test('createReport rejects missing required fields', async () => {
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'reportType, title, description, and locationText are required'
+        message: 'reportType, description, and locationText are required'
     });
 });
 

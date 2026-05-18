@@ -673,30 +673,38 @@
                                 </div>
                                 <div class="input-group">
                                     <label for="reg-address">Barangay</label>
-                                    <input id="reg-address" name="address" v-model="registerForm.address" type="text" autocomplete="address-line1" placeholder="Barangay Irawan" required>
+                                    <input id="reg-address" name="address" v-model="registerForm.address" type="text" autocomplete="address-line1" readonly required>
                                 </div>
                                 <div class="two-col-grid">
                                     <div class="input-group">
                                         <label for="reg-contact">Contact Number</label>
-                                        <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" placeholder="09xxxxxxxxx" required>
+                                        <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" required>
                                     </div>
                                     <div class="input-group">
                                         <label for="reg-email">Email Address</label>
                                         <input id="reg-email" name="email" v-model="registerForm.email" type="email" autocomplete="email" placeholder="juan@example.com" required>
                                     </div>
                                 </div>
-                                <div class="input-group">
-                                    <label for="reg-purok">Purok / Zone</label>
-                                    <input id="reg-purok" name="purok" v-model="registerForm.purok" type="text" placeholder="Purok 1" required>
-                                </div>
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="reg-house-number">House Number</label>
-                                        <input id="reg-house-number" v-model="registerForm.houseNumber" type="text" placeholder="Blk/Lot/House No.">
+                                        <label for="reg-purok">Purok</label>
+                                        <div class="custom-select">
+                                            <select id="reg-purok" name="purok" v-model="registerForm.purok" required>
+                                                <option value="" disabled>Select Purok</option>
+                                                <option v-for="purok in purokOptions" :key="purok" :value="purok">{{ purok }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="reg-street-address">Street Address</label>
-                                        <input id="reg-street-address" v-model="registerForm.streetAddress" type="text" placeholder="Street / Sitio">
+                                    <div v-if="availableZoneOptions.length" class="input-group">
+                                        <label for="reg-zone">Zone</label>
+                                        <div class="custom-select">
+                                            <select id="reg-zone" name="zone" v-model="registerForm.zone" required>
+                                                <option value="" disabled>Select Zone</option>
+                                                <option v-for="zone in availableZoneOptions" :key="zone" :value="zone">{{ zone }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -753,14 +761,6 @@
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="reg-household-count">Household Member Count</label>
-                                        <input id="reg-household-count" v-model.number="registerForm.householdMemberCount" type="number" min="1">
-                                    </div>
-                                </div>
-                                <div class="input-group">
-                                    <label for="reg-household-id">Household ID</label>
-                                    <input id="reg-household-id" v-model="registerForm.householdId" type="text" placeholder="HH-2026-0001">
                                 </div>
 
                                 <div class="section-head compact-head">
@@ -839,14 +839,6 @@
                                         <span class="file-name">{{ proofOfResidencyFile ? proofOfResidencyFile.name : 'No file chosen' }}</span>
                                     </div>
                                 </div>
-                                <div class="input-group file-upload-group">
-                                    <label for="reg-selfie-proof">Selfie Verification (Optional)</label>
-                                    <div class="file-upload-wrapper">
-                                        <input id="reg-selfie-proof" name="selfieVerification" type="file" accept="image/*" class="file-input">
-                                        <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
-                                        <span class="file-name">Optional selfie image</span>
-                                    </div>
-                                </div>
 
                                 <div class="section-head compact-head">
                                     <span class="eyebrow">Section 6</span>
@@ -866,29 +858,6 @@
                                     <div class="input-group">
                                         <label for="reg-emergency-relationship">Relationship</label>
                                         <input id="reg-emergency-relationship" v-model="registerForm.emergencyContactRelationship" type="text" placeholder="Mother, Father, Sibling">
-                                    </div>
-                                    <div class="input-group">
-                                        <label for="reg-evacuation-priority">Evacuation Priority</label>
-                                        <div class="custom-select">
-                                            <select id="reg-evacuation-priority" v-model="registerForm.evacuationPriority">
-                                                <option value="">None</option>
-                                                <option value="low">Low</option>
-                                                <option value="medium">Medium</option>
-                                                <option value="high">High</option>
-                                                <option value="critical">Critical</option>
-                                            </select>
-                                            <i class="fa-solid fa-chevron-down"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="two-col-grid">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" v-model="registerForm.floodProneArea">
-                                        <span>Flood-Prone Area</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <label for="reg-medical">Medical Conditions (Optional)</label>
-                                        <input id="reg-medical" v-model="registerForm.medicalConditions" type="text" placeholder="Asthma, hypertension, etc.">
                                     </div>
                                 </div>
 
@@ -1154,7 +1123,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
@@ -1175,6 +1144,18 @@ const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
 const pendingOtpEmail = ref(getPendingOtpEmail());
+const purokOptions = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
+const zoneOptionsByPurok = {
+    Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
+    Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
+};
+const availableZoneOptions = computed(() => zoneOptionsByPurok[registerForm.purok] || []);
+
+watch(() => registerForm.purok, () => {
+    registerForm.zone = '';
+});
+
+registerForm.address = 'Barangay Irawan';
 const guestDocumentFormDefaults = {
     documentType: 'barangay_clearance',
     purpose: '',

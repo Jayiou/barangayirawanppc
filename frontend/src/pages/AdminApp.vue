@@ -778,9 +778,8 @@
                                     <p><strong>Contact Number:</strong> {{ selectedItem.contactNumber || 'N/A' }}</p>
                                     <p><strong>Email:</strong> {{ selectedItem.email || selectedItem.userId?.email || 'N/A' }}</p>
                                     <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
-                                    <p><strong>Purok/Zone:</strong> {{ selectedItem.purok || 'N/A' }}</p>
+                                    <p><strong>Purok/Zone:</strong> {{ formatPurokZone(selectedItem) }}</p>
                                     <p><strong>Voter Status:</strong> {{ selectedItem.voterStatus || 'N/A' }}</p>
-                                    <p><strong>Household ID:</strong> {{ selectedItem.householdId || 'N/A' }}</p>
                                 </div>
                             </div>
                             <div class="resident-tab-content" v-else-if="residentTab === 'verification'">
@@ -2341,11 +2340,16 @@ const formatVerificationStatus = (status) => {
     };
     return map[status] || 'Pending Review';
 };
+const formatPurokZone = (resident) => {
+    const purok = resident?.purok || '';
+    const zone = resident?.zone || '';
+    if (purok && zone) return `${purok} / ${zone}`;
+    return purok || zone || 'N/A';
+};
 const residentDocumentCards = (resident) => ([
     { key: 'validIdPath', label: 'Valid ID', path: resident?.validIdPath },
     { key: 'proofOfResidency', label: 'Proof of Residency', path: resident?.proofOfResidency },
-    { key: 'vulnerabilityProofPath', label: 'Senior/PWD Proof', path: resident?.vulnerabilityProofPath },
-    { key: 'selfieVerificationPath', label: 'Selfie Verification', path: resident?.selfieVerificationPath }
+    { key: 'vulnerabilityProofPath', label: 'Senior/PWD Proof', path: resident?.vulnerabilityProofPath }
 ]);
 const openResidentDocument = (resident, key) => {
     if (key === 'proofOfResidency') {

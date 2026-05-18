@@ -48,12 +48,14 @@ const defaultValidBody = {
     email: 'juan@example.com',
     password: 'Secret_123',
     firstName: 'Juan',
+    middleName: 'Santos',
     lastName: 'Dela Cruz',
     sex: 'male',
     birthDate: '1990-01-01',
     contactNumber: '09123456789',
-    address: '123 Main St',
-    purok: 'Purok 1'
+    address: 'Barangay Irawan',
+    purok: 'Sampalok',
+    zone: 'Zone 1'
 };
 
 const defaultValidReq = {
@@ -88,10 +90,14 @@ test('register caches the resident profile and returns an OTP payload', async ()
     await authController.register(req, res);
 
     assert.equal(res.statusCode, 201);
-    assert.equal(res.body.message, 'Registration initiated. Please check your email for the OTP.');
+    assert.equal(res.body.message, 'Registration initiated. Please check your email for the OTP. If you do not see it in your inbox, please check your Spam folder.');
     assert.equal(res.body.user.email, 'juan@example.com');
     assert.match(createdUserPayload.otpCode, /^hashed-\d{6}$/);
+    assert.equal(createdUserPayload.pendingResidentProfile.middleName, 'Santos');
     assert.equal(createdUserPayload.pendingResidentProfile.contactNumber, '09123456789');
+    assert.equal(createdUserPayload.pendingResidentProfile.address, 'Barangay Irawan');
+    assert.equal(createdUserPayload.pendingResidentProfile.purok, 'Sampalok');
+    assert.equal(createdUserPayload.pendingResidentProfile.zone, 'Zone 1');
     assert.equal(createdUserPayload.pendingResidentProfile.proofOfResidency, 'proof.jpg');
     assert.equal(residentCreateCalled, false);
 });
@@ -115,12 +121,14 @@ test('verifyOtp creates the resident profile after OTP verification', async () =
         otpCode: '123456',
         pendingResidentProfile: {
             firstName: 'Juan',
+            middleName: 'Santos',
             lastName: 'Dela Cruz',
             sex: 'male',
             birthDate: '1990-01-01',
             contactNumber: '09123456789',
-            address: '123 Main St',
-            purok: 'Purok 1',
+            address: 'Barangay Irawan',
+            purok: 'Sampalok',
+            zone: 'Zone 1',
             proofOfResidency: 'proof.jpg'
         },
         async save() {
@@ -140,6 +148,9 @@ test('verifyOtp creates the resident profile after OTP verification', async () =
     assert.equal(res.body.message, 'Email successfully verified! Your account is now pending admin approval.');
     assert.equal(createdResidentPayload.userId, 'user-123');
     assert.equal(createdResidentPayload.firstName, 'Juan');
+    assert.equal(createdResidentPayload.middleName, 'Santos');
+    assert.equal(createdResidentPayload.purok, 'Sampalok');
+    assert.equal(createdResidentPayload.zone, 'Zone 1');
     assert.equal(savedUser.accountStatus, 'pending_approval');
     assert.equal(savedUser.pendingResidentProfile, undefined);
 });

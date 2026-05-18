@@ -63,6 +63,11 @@ const residentSchema = new mongoose.Schema(
             trim: true,
             default: ''
         },
+        zone: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         houseNumber: {
             type: String,
             trim: true,

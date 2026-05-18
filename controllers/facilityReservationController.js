@@ -36,6 +36,7 @@ const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const normalizeText = (value) => String(value || '').trim();
+const normalizeEmail = (value) => normalizeText(value).toLowerCase();
 
 const isValidTime = (value) => hasText(value) && timePattern.test(value.trim());
 
@@ -312,7 +313,7 @@ exports.createPublicFacilityReservation = asyncHandler(async (req, res) => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const existingReservation = await FacilityReservation.findOne({
         email: normalizeEmail(reservationData.email),
-        requesterType: 'non_resident',
+        requesterType: 'guest',
         createdAt: { $gte: oneDayAgo }
     });
 

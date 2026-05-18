@@ -9,6 +9,7 @@ const { createMockResponse } = require('./helpers/httpMocks');
 const originals = {
     documentRequestCreate: DocumentRequest.create,
     documentRequestFind: DocumentRequest.find,
+    documentRequestFindOne: DocumentRequest.findOne,
     documentRequestFindById: DocumentRequest.findById,
     documentRequestFindByIdAndUpdate: DocumentRequest.findByIdAndUpdate,
     residentFindOne: Resident.findOne
@@ -17,6 +18,7 @@ const originals = {
 test.afterEach(() => {
     DocumentRequest.create = originals.documentRequestCreate;
     DocumentRequest.find = originals.documentRequestFind;
+    DocumentRequest.findOne = originals.documentRequestFindOne;
     DocumentRequest.findById = originals.documentRequestFindById;
     DocumentRequest.findByIdAndUpdate = originals.documentRequestFindByIdAndUpdate;
     Resident.findOne = originals.residentFindOne;
@@ -147,6 +149,7 @@ test('createPublicDocumentRequest creates and returns a populated request', asyn
     const res = createMockResponse();
 
     let capturedPayload;
+    DocumentRequest.findOne = async () => null;
     DocumentRequest.create = async (payload) => {
         capturedPayload = payload;
         return { _id: 'request-public-1', ...payload };

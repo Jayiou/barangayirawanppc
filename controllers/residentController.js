@@ -21,6 +21,7 @@ const residentProfileFields = [
     'email',
     'address',
     'purok',
+    'zone',
     'houseNumber',
     'streetAddress',
     'citizenship',
@@ -199,13 +200,19 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const existingResident = await Resident.findOne({ userId: req.user.id });
     const validationError = validateResidentData(residentData);
 
-    const user = await User.findById(req.user.id);
-    if (!residentData.email && user && user.email) {
-        residentData.email = user.email;
-    }
-
     if (validationError) {
         throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
+    }
+
+    if (!residentData.email) {
+        try {
+            const user = await User.findById(req.user.id);
+            if (user?.email) {
+                residentData.email = user.email;
+            }
+        } catch {
+            // Email fallback is best-effort; authenticated profile updates should not fail on it.
+        }
     }
 
     if (!existingResident) {

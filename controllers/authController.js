@@ -14,6 +14,12 @@ const OTP_EXPIRY_MINUTES = 10;
 const PASSWORD_RESET_EXPIRY_MINUTES = 30;
 const GENERIC_LOGIN_ERROR = 'Invalid username or password';
 const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[_|@$!%*?&])[A-Za-z\d_|@$!%*?&]{8,}$/;
+const BARANGAY_ADDRESS = 'Barangay Irawan';
+const ALLOWED_PUROKS = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
+const PUROK_ZONE_MAP = {
+    Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
+    Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
+};
 
 const calculateAge = (birthDateString) => {
     const today = new Date();
@@ -44,6 +50,41 @@ const hashResetToken = (token) => crypto.createHash('sha256').update(token).dige
 const toBoolean = (value) => {
     if (typeof value === 'boolean') return value;
     return String(value).toLowerCase() === 'true';
+};
+
+const normalizeContactNumber = (value) => {
+    const rawValue = String(value || '').trim().replace(/\s|-/g, '');
+    if (/^09\d{9}$/.test(rawValue)) return rawValue;
+    if (/^\+639\d{9}$/.test(rawValue)) return `0${rawValue.slice(3)}`;
+    if (/^639\d{9}$/.test(rawValue)) return `0${rawValue.slice(2)}`;
+    return '';
+};
+
+const normalizeZone = (value) => {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const match = text.match(/\d+/);
+    return match ? `Zone ${Number(match[0])}` : text;
+};
+
+const validatePurokZone = (purok, zone) => {
+    const normalizedPurok = String(purok || '').trim();
+    const normalizedZone = normalizeZone(zone);
+    const allowedZones = PUROK_ZONE_MAP[normalizedPurok] || [];
+
+    if (!ALLOWED_PUROKS.includes(normalizedPurok)) {
+        return { message: 'Please select a valid Purok.', normalizedPurok, normalizedZone };
+    }
+
+    if (allowedZones.length && !allowedZones.includes(normalizedZone)) {
+        return { message: `${normalizedPurok} requires a valid zone selection.`, normalizedPurok, normalizedZone };
+    }
+
+    if (!allowedZones.length && normalizedZone) {
+        return { message: `${normalizedPurok} does not have zone options.`, normalizedPurok, normalizedZone: '' };
+    }
+
+    return { message: '', normalizedPurok, normalizedZone };
 };
 
 const getAppOrigin = (req) => {
@@ -131,23 +172,33 @@ exports.register = asyncHandler(async (req, res) => {
     // 1. Separate user core fields from resident details
     const { 
         username, email, password, role,
-        firstName, middleName, lastName, suffix, sex, birthDate, civilStatus, contactNumber, address, purok, houseNumber, streetAddress, citizenship, occupation, voterStatus, recaptchaToken,
+        firstName, middleName, lastName, suffix, sex, birthDate, civilStatus, contactNumber, address, purok, zone, houseNumber, streetAddress, citizenship, occupation, voterStatus, recaptchaToken,
         householdMemberCount, householdId, emergencyContactName, emergencyContactNumber, emergencyContactRelationship, medicalConditions, floodProneArea, evacuationPriority,
-        isSeniorCitizen, isPWD, vulnerabilityType, verificationPending
+        isSeniorCitizen, isPWD, isSoloParent, isPregnant, vulnerabilityType, verificationPending
     } = req.body;
 
-    const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || null;
+    const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || req.file?.filename || null;
     const vulnerabilityProofPath = req.files?.vulnerabilityProof?.[0]?.filename || '';
     const seniorFlag = toBoolean(isSeniorCitizen);
     const pwdFlag = toBoolean(isPWD);
     const pendingVerificationFlag = toBoolean(verificationPending);
+    const normalizedContactNumber = normalizeContactNumber(contactNumber);
+    const { message: purokZoneError, normalizedPurok, normalizedZone } = validatePurokZone(purok, zone);
 
     // 1.5. Verify reCaptcha token
     await verifyRecaptcha(recaptchaToken);
 
     // 2. Validate essential inputs
-    if (!username || !email || !password || !firstName || !lastName || !sex || !birthDate || !contactNumber || !address) {
+    if (!username || !email || !password || !firstName || !lastName || !sex || !birthDate || !contactNumber || !normalizedPurok) {
         throw createHttpError(400, 'All required fields including Resident Profile are necessary.', { code: 'AUTH_VALIDATION_ERROR' });
+    }
+
+    if (!normalizedContactNumber) {
+        throw createHttpError(400, 'Contact number must be a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.', { code: 'AUTH_VALIDATION_ERROR' });
+    }
+
+    if (purokZoneError) {
+        throw createHttpError(400, purokZoneError, { code: 'AUTH_VALIDATION_ERROR' });
     }
 
     if (!isValidEmail(email)) {
@@ -209,9 +260,10 @@ exports.register = asyncHandler(async (req, res) => {
             sex,
             birthDate,
             civilStatus: civilStatus || 'single',
-            contactNumber: String(contactNumber).trim(),
-            address,
-            purok: purok || '',
+            contactNumber: normalizedContactNumber,
+            address: BARANGAY_ADDRESS,
+            purok: normalizedPurok,
+            zone: normalizedZone,
             houseNumber: houseNumber || '',
             streetAddress: streetAddress || '',
             citizenship: citizenship || 'Filipino',
@@ -228,6 +280,8 @@ exports.register = asyncHandler(async (req, res) => {
             proofOfResidency,
             isSeniorCitizen: seniorFlag,
             isPWD: pwdFlag,
+            isSoloParent: toBoolean(isSoloParent),
+            isPregnant: toBoolean(isPregnant),
             vulnerabilityType: vulnerabilityType || '',
             vulnerabilityProofPath,
             verificationPending: pendingVerificationFlag
@@ -290,8 +344,9 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
                 birthDate: pendingProfile.birthDate,
                 civilStatus: pendingProfile.civilStatus || 'single',
                 contactNumber: pendingProfile.contactNumber || '',
-                address: pendingProfile.address,
+                address: pendingProfile.address || BARANGAY_ADDRESS,
                 purok: pendingProfile.purok || '',
+                zone: pendingProfile.zone || '',
                 houseNumber: pendingProfile.houseNumber || '',
                 streetAddress: pendingProfile.streetAddress || '',
                 citizenship: pendingProfile.citizenship || 'Filipino',
@@ -308,6 +363,8 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
                 proofOfResidency: pendingProfile.proofOfResidency || '',
                 isSeniorCitizen: Boolean(pendingProfile.isSeniorCitizen),
                 isPWD: Boolean(pendingProfile.isPWD),
+                isSoloParent: Boolean(pendingProfile.isSoloParent),
+                isPregnant: Boolean(pendingProfile.isPregnant),
                 vulnerabilityType: pendingProfile.vulnerabilityType || '',
                 vulnerabilityProofPath: pendingProfile.vulnerabilityProofPath || '',
                 verificationPending: Boolean(pendingProfile.verificationPending)
