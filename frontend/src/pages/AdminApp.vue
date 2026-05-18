@@ -179,6 +179,13 @@
                     <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">This may take a few seconds on first generation.</div>
                 </div>
             </div>
+            <div v-if="residentModalLoading" class="preview-loading-overlay">
+                <div class="preview-loading-box">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <div style="margin-top: 12px; font-weight: 600;">Loading resident profile...</div>
+                    <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing full resident details for review.</div>
+                </div>
+            </div>
             <!-- Dashboard View -->
             <section class="app-view" :class="{ active: currentView === 'dashboard' }">
                 <div class="ops-dashboard-shell">
@@ -709,7 +716,7 @@
 
         <!-- Dynamic Action Modal -->
         <div class="admin-modal-backdrop" v-if="activeModal" @click.self="activeModal = null">
-            <div class="admin-modal">
+            <div class="admin-modal" :class="{ 'admin-modal-wide': activeModal === 'resident' }">
                 <button class="admin-modal-close" @click="activeModal = null"><i class="fa-solid fa-xmark"></i></button>
 
                 <div v-if="activeModal === 'resident'">
@@ -733,14 +740,12 @@
                                 <small>Last Activity: {{ formatDate(selectedItem.updatedAt || selectedItem.createdAt) }}</small>
                             </div>
                             <div class="resident-quick-actions">
-                                <button type="button" class="primary-button" @click="setResidentStatusAndSave('approved')"><i class="fa-solid fa-circle-check"></i> Approve</button>
-                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
-                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
-                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
-                                <button type="button" class="ghost-button" @click="resetResidentPasswordAction"><i class="fa-solid fa-key"></i> Reset Password</button>
+                                <button v-if="canApproveRejectResident" type="button" class="primary-button" @click="setResidentStatusAndSave('approved')"><i class="fa-solid fa-circle-check"></i> Approve</button>
+                                <button v-if="canApproveRejectResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
+                                <button v-if="canSuspendResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
+                                <button v-if="canArchiveResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
                                 <button type="button" class="ghost-button" @click="sendResidentSMSAction"><i class="fa-solid fa-message"></i> Send SMS</button>
                                 <button type="button" class="ghost-button" @click="sendResidentEmailAction"><i class="fa-solid fa-envelope"></i> Send Email</button>
-                                <button type="button" class="ghost-button" @click="window.print()"><i class="fa-solid fa-print"></i> Print Info</button>
                             </div>
                         </aside>
                         <section class="resident-center-pane">
@@ -762,7 +767,7 @@
                                     <p><strong>Citizenship:</strong> {{ selectedItem.citizenship || 'N/A' }}</p>
                                     <p><strong>Occupation:</strong> {{ selectedItem.occupation || 'N/A' }}</p>
                                     <p><strong>Contact Number:</strong> {{ selectedItem.contactNumber || 'N/A' }}</p>
-                                    <p><strong>Email:</strong> {{ selectedItem.email || 'N/A' }}</p>
+                                    <p><strong>Email:</strong> {{ selectedItem.email || selectedItem.userId?.email || 'N/A' }}</p>
                                     <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
                                     <p><strong>Purok/Zone:</strong> {{ selectedItem.purok || 'N/A' }}</p>
                                     <p><strong>Voter Status:</strong> {{ selectedItem.voterStatus || 'N/A' }}</p>
@@ -777,8 +782,8 @@
                                         <div class="resident-doc-actions">
                                             <button type="button" class="ghost-button" :disabled="!doc.path" @click="openResidentDocument(selectedItem, doc.key)"><i class="fa-solid fa-eye"></i> View</button>
                                             <button type="button" class="ghost-button" :disabled="!doc.path"><i class="fa-solid fa-download"></i> Download</button>
-                                            <button type="button" class="ghost-button" @click="setVerificationStatus('verified')"><i class="fa-solid fa-check"></i> Approve</button>
-                                            <button type="button" class="ghost-button" @click="setVerificationStatus('rejected')"><i class="fa-solid fa-ban"></i> Reject</button>
+                                            <button v-if="selectedItem.verificationStatus !== 'verified' && selectedItem.verificationStatus !== 'rejected'" type="button" class="ghost-button" @click="setVerificationStatus('verified')"><i class="fa-solid fa-check"></i> Approve</button>
+                                            <button v-if="selectedItem.verificationStatus !== 'verified' && selectedItem.verificationStatus !== 'rejected'" type="button" class="ghost-button" @click="setVerificationStatus('rejected')"><i class="fa-solid fa-ban"></i> Reject</button>
                                             <button type="button" class="ghost-button" @click="setVerificationStatus('needs_reupload')"><i class="fa-solid fa-rotate"></i> Re-upload</button>
                                         </div>
                                     </article>
@@ -1194,6 +1199,7 @@ const selectedDashboardCard = ref('reports');
 const analyticsRange = ref('monthly');
 const documentRequestTab = ref('all');
 const activeModal = ref(null);
+const residentModalLoading = ref(false);
 const confirmingAction = ref(null);
 const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
@@ -1222,6 +1228,10 @@ const smsPagination = ref(null);
 const residentTab = ref('personal');
 const residentInternalNotes = ref('');
 const residentVerificationRemarks = ref('');
+const residentAccountStatus = computed(() => selectedItem.value?.userId?.accountStatus || editForm.status || 'pending_approval');
+const canApproveRejectResident = computed(() => !['approved', 'rejected'].includes(residentAccountStatus.value));
+const canSuspendResident = computed(() => residentAccountStatus.value === 'approved');
+const canArchiveResident = computed(() => ['rejected', 'suspended'].includes(residentAccountStatus.value));
 const disasterFilterStatus = ref('all');
 const selectedDisasterIncidentId = ref('');
 const selectedDisasterReportId = ref('');
@@ -2151,8 +2161,17 @@ const openModal = async (type, item) => {
     selectedItem.value = { ...item };
 
     if (type === 'resident') {
-        setupResidentModal(item);
-        activeModal.value = type;
+        residentModalLoading.value = true;
+        try {
+            const fullResident = item?._id ? await apiFetch(`/residents/${item._id}`) : item;
+            selectedItem.value = { ...fullResident };
+            setupResidentModal(selectedItem.value);
+            activeModal.value = type;
+        } catch (error) {
+            showToast(error.message || 'Failed to load resident details.', true);
+        } finally {
+            residentModalLoading.value = false;
+        }
         return;
     }
 
@@ -2422,7 +2441,8 @@ const setVerificationStatus = async (status) => {
 
 const sendResidentEmailAction = async () => {
     const resident = selectedItem.value;
-    if (!resident?._id || !resident?.email) {
+    const recipientEmail = resident?.email || resident?.userId?.email;
+    if (!resident?._id || !recipientEmail) {
         showToast('Resident email is missing.', true);
         return;
     }
@@ -2464,24 +2484,6 @@ const sendResidentSMSAction = async () => {
         await loadSMSLogs();
     } catch (error) {
         showToast(error.message || 'Failed to send SMS.', true);
-    }
-};
-
-const resetResidentPasswordAction = async () => {
-    const resident = selectedItem.value;
-    if (!resident?._id) {
-        showToast('Invalid resident record.', true);
-        return;
-    }
-    const fullName = getFullResidentName(resident) || 'this resident';
-    if (!window.confirm(`Send password reset email to ${fullName}?`)) return;
-    try {
-        await apiFetch(`/residents/${resident._id}/reset-password`, {
-            method: 'POST'
-        });
-        showToast('Password reset link sent.');
-    } catch (error) {
-        showToast(error.message || 'Failed to send password reset link.', true);
     }
 };
 
@@ -4599,3 +4601,4 @@ onMounted(() => {
     animation: spin 0.8s linear infinite;
 }
 </style>
+

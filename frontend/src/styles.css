@@ -671,6 +671,9 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     padding: 32px;
     position: relative;
 }
+.admin-modal.admin-modal-wide {
+    max-width: min(1200px, 96vw);
+}
 .admin-modal-close {
     position: absolute;
     top: 16px;

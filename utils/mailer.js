@@ -65,6 +65,7 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
     }
 };
 
+
 const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
     try {
         const mailOptions = {
