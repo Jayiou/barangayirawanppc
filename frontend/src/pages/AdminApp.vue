@@ -713,28 +713,129 @@
                 <button class="admin-modal-close" @click="activeModal = null"><i class="fa-solid fa-xmark"></i></button>
 
                 <div v-if="activeModal === 'resident'">
-                    <h2><i class="fa-solid fa-user-check"></i> View Resident</h2>
-                    <p class="fine-print">Review resident details and decide account status.</p>
-                    <div class="stack" style="background: #f9f9f9; padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0;">
-                        <p><strong>Name:</strong> {{ selectedItem.firstName }} {{ selectedItem.middleName }} {{ selectedItem.lastName }}</p>
-                        <p><strong>Birth Date:</strong> {{ formatDate(selectedItem.birthDate) }} (Age: {{ calculateAge(selectedItem.birthDate) }})</p>
-                        <p><strong>Address:</strong> {{ selectedItem.address }}, {{ selectedItem.purok }}</p>
-                        <p><strong>Contact:</strong> {{ selectedItem.contactNumber }} | {{ selectedItem.email }}</p>
-                        <button v-if="selectedItem.proofOfResidency" type="button" class="ghost-button" @click="openResidentProof(selectedItem._id)">
-                            <i class="fa-solid fa-id-card"></i> View Proof
-                        </button>
+                    <h2><i class="fa-solid fa-users-viewfinder"></i> Resident Overview Dashboard</h2>
+                    <p class="fine-print">Complete resident information, verification workflow, and service history.</p>
+                    <div class="resident-overview-layout">
+                        <aside class="resident-identity-card">
+                            <div class="resident-avatar">
+                                <img v-if="selectedItem.profileImage" :src="selectedItem.profileImage" alt="Resident avatar">
+                                <span v-else>{{ getResidentInitials(selectedItem) }}</span>
+                            </div>
+                            <h3>{{ getFullResidentName(selectedItem) }}</h3>
+                            <p class="fine-print">Resident ID: {{ residentSystemId(selectedItem) }}</p>
+                            <StatusBadge :status="selectedItem.userId?.accountStatus || 'pending_approval'" />
+                            <p class="fine-print"><strong>Verification:</strong> {{ formatVerificationStatus(selectedItem.verificationStatus) }}</p>
+                            <div class="resident-tags">
+                                <span v-for="tag in residentVulnerabilityTags(selectedItem)" :key="tag" class="resident-tag">{{ tag }}</span>
+                            </div>
+                            <div class="resident-meta-list">
+                                <small>Registered: {{ formatDate(selectedItem.createdAt) }}</small>
+                                <small>Last Activity: {{ formatDate(selectedItem.updatedAt || selectedItem.createdAt) }}</small>
+                            </div>
+                            <div class="resident-quick-actions">
+                                <button type="button" class="primary-button" @click="setResidentStatusAndSave('approved')"><i class="fa-solid fa-circle-check"></i> Approve</button>
+                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
+                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
+                                <button type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
+                                <button type="button" class="ghost-button" @click="resetResidentPasswordAction"><i class="fa-solid fa-key"></i> Reset Password</button>
+                                <button type="button" class="ghost-button" @click="sendResidentSMSAction"><i class="fa-solid fa-message"></i> Send SMS</button>
+                                <button type="button" class="ghost-button" @click="sendResidentEmailAction"><i class="fa-solid fa-envelope"></i> Send Email</button>
+                                <button type="button" class="ghost-button" @click="window.print()"><i class="fa-solid fa-print"></i> Print Info</button>
+                            </div>
+                        </aside>
+                        <section class="resident-center-pane">
+                            <div class="resident-tab-nav">
+                                <button type="button" :class="{ active: residentTab === 'personal' }" @click="residentTab = 'personal'"><i class="fa-solid fa-id-card"></i> Personal Information</button>
+                                <button type="button" :class="{ active: residentTab === 'verification' }" @click="residentTab = 'verification'"><i class="fa-solid fa-file-shield"></i> Verification Documents</button>
+                                <button type="button" :class="{ active: residentTab === 'activity' }" @click="residentTab = 'activity'"><i class="fa-solid fa-timeline"></i> Activity History</button>
+                                <button type="button" :class="{ active: residentTab === 'transactions' }" @click="residentTab = 'transactions'"><i class="fa-solid fa-receipt"></i> Requests & Transactions</button>
+                                <button type="button" :class="{ active: residentTab === 'disaster' }" @click="residentTab = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster & Emergency</button>
+                            </div>
+                            <div class="resident-tab-content" v-if="residentTab === 'personal'">
+                                <div class="resident-info-grid">
+                                    <p><strong>Full Name:</strong> {{ getFullResidentName(selectedItem) }}</p>
+                                    <p><strong>Middle Name:</strong> {{ selectedItem.middleName || 'N/A' }}</p>
+                                    <p><strong>Suffix:</strong> {{ selectedItem.suffix || 'N/A' }}</p>
+                                    <p><strong>Birthdate / Age:</strong> {{ formatDate(selectedItem.birthDate) }} ({{ calculateAge(selectedItem.birthDate) }})</p>
+                                    <p><strong>Sex:</strong> {{ selectedItem.sex || 'N/A' }}</p>
+                                    <p><strong>Civil Status:</strong> {{ selectedItem.civilStatus || 'N/A' }}</p>
+                                    <p><strong>Citizenship:</strong> {{ selectedItem.citizenship || 'N/A' }}</p>
+                                    <p><strong>Occupation:</strong> {{ selectedItem.occupation || 'N/A' }}</p>
+                                    <p><strong>Contact Number:</strong> {{ selectedItem.contactNumber || 'N/A' }}</p>
+                                    <p><strong>Email:</strong> {{ selectedItem.email || 'N/A' }}</p>
+                                    <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
+                                    <p><strong>Purok/Zone:</strong> {{ selectedItem.purok || 'N/A' }}</p>
+                                    <p><strong>Voter Status:</strong> {{ selectedItem.voterStatus || 'N/A' }}</p>
+                                    <p><strong>Household ID:</strong> {{ selectedItem.householdId || 'N/A' }}</p>
+                                </div>
+                            </div>
+                            <div class="resident-tab-content" v-else-if="residentTab === 'verification'">
+                                <div class="resident-doc-grid">
+                                    <article class="resident-doc-card" v-for="doc in residentDocumentCards(selectedItem)" :key="doc.key">
+                                        <h4>{{ doc.label }}</h4>
+                                        <p class="fine-print">{{ doc.path ? doc.path.split('/').pop() : 'No uploaded file' }}</p>
+                                        <div class="resident-doc-actions">
+                                            <button type="button" class="ghost-button" :disabled="!doc.path" @click="openResidentDocument(selectedItem, doc.key)"><i class="fa-solid fa-eye"></i> View</button>
+                                            <button type="button" class="ghost-button" :disabled="!doc.path"><i class="fa-solid fa-download"></i> Download</button>
+                                            <button type="button" class="ghost-button" @click="setVerificationStatus('verified')"><i class="fa-solid fa-check"></i> Approve</button>
+                                            <button type="button" class="ghost-button" @click="setVerificationStatus('rejected')"><i class="fa-solid fa-ban"></i> Reject</button>
+                                            <button type="button" class="ghost-button" @click="setVerificationStatus('needs_reupload')"><i class="fa-solid fa-rotate"></i> Re-upload</button>
+                                        </div>
+                                    </article>
+                                </div>
+                                <label style="margin-top: 12px;">
+                                    <span>Admin Remarks</span>
+                                    <textarea v-model="residentVerificationRemarks" rows="3" placeholder="Reason for rejection or re-upload request"></textarea>
+                                </label>
+                            </div>
+                            <div class="resident-tab-content" v-else-if="residentTab === 'activity'">
+                                <div class="resident-timeline">
+                                    <div class="resident-timeline-item" v-for="item in residentActivityTimeline(selectedItem)" :key="item.key">
+                                        <div class="dot"></div>
+                                        <div><strong>{{ item.label }}</strong><small>{{ item.time }}</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="resident-tab-content" v-else-if="residentTab === 'transactions'">
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead><tr><th>Type</th><th>Status</th><th>Date Submitted</th><th>Stage</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="entry in residentTransactions(selectedItem)" :key="entry.key">
+                                                <td>{{ entry.type }}</td>
+                                                <td><StatusBadge :status="entry.status" /></td>
+                                                <td>{{ entry.date }}</td>
+                                                <td>{{ entry.stage }}</td>
+                                            </tr>
+                                            <tr v-if="residentTransactions(selectedItem).length === 0"><td colspan="4" style="text-align:center;">No transactions yet.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="resident-tab-content" v-else>
+                                <div class="resident-info-grid">
+                                    <p><strong>Household Member Count:</strong> {{ selectedItem.householdMemberCount || 1 }}</p>
+                                    <p><strong>Emergency Contact:</strong> {{ selectedItem.emergencyContactName || 'N/A' }}</p>
+                                    <p><strong>Emergency Number:</strong> {{ selectedItem.emergencyContactNumber || 'N/A' }}</p>
+                                    <p><strong>Vulnerability Level:</strong> {{ selectedItem.vulnerabilityType || 'N/A' }}</p>
+                                    <p><strong>Evacuation Priority:</strong> {{ selectedItem.evacuationPriority || 'N/A' }}</p>
+                                    <p><strong>Medical Conditions:</strong> {{ selectedItem.medicalConditions || 'N/A' }}</p>
+                                    <p><strong>Flood-Prone Area:</strong> {{ selectedItem.floodProneArea ? 'Yes' : 'No' }}</p>
+                                    <p><strong>Rescue Assistance History:</strong> {{ selectedItem.rescueHistory || 'No records yet' }}</p>
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                    <form class="stack" @submit.prevent="handleSave">
-                        <label>
-                            <span>Action / Status</span>
-                            <select v-model="editForm.status" required>
-                                <option value="pending_approval">Pending Approval</option>
-                                <option value="approved">Approve</option>
-                                <option value="rejected">Reject</option>
-                            </select>
-                        </label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting"><i :class="isSubmitting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-save'"></i> {{ isSubmitting ? 'Saving...' : 'Save Changes' }}</button>
-                    </form>
+                    <div class="resident-bottom-panels">
+                        <article class="content-card">
+                            <h4><i class="fa-solid fa-note-sticky"></i> Internal Resident Notes</h4>
+                            <textarea v-model="residentInternalNotes" rows="3" placeholder="Admin-only notes for barangay staff"></textarea>
+                        </article>
+                        <article class="content-card">
+                            <h4><i class="fa-solid fa-tags"></i> Resident Tags</h4>
+                            <div class="resident-tags"><span class="resident-tag" v-for="tag in residentAutoTags(selectedItem)" :key="tag">{{ tag }}</span></div>
+                        </article>
+                    </div>
                 </div>
 
                 <div v-if="['document', 'reservation', 'report', 'appointment'].includes(activeModal)">
@@ -1118,6 +1219,9 @@ const smsLogsLoading = ref(false);
 const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
+const residentTab = ref('personal');
+const residentInternalNotes = ref('');
+const residentVerificationRemarks = ref('');
 const disasterFilterStatus = ref('all');
 const selectedDisasterIncidentId = ref('');
 const selectedDisasterReportId = ref('');
@@ -2024,6 +2128,9 @@ const getRequestDetails = (item) => {
 // Modal and form handlers
 const setupResidentModal = (item) => {
     editForm.status = item.userId?.accountStatus || 'pending_approval';
+    residentTab.value = 'personal';
+    residentInternalNotes.value = item.internalNotes || '';
+    residentVerificationRemarks.value = item.verificationRemarks || '';
 };
 
 const setupRecordStatusModal = (item) => {
@@ -2214,6 +2321,168 @@ const getEntityName = (item) => {
         return `Appointment with ${item.officialId?.name}`;
     }
     return 'Request';
+};
+
+const getFullResidentName = (resident) => [resident?.firstName, resident?.middleName, resident?.lastName, resident?.suffix].filter(Boolean).join(' ').trim();
+const getResidentInitials = (resident) => [resident?.firstName?.charAt(0), resident?.lastName?.charAt(0)].filter(Boolean).join('').toUpperCase() || 'RS';
+const residentSystemId = (resident) => {
+    const created = resident?.createdAt ? new Date(resident.createdAt) : new Date();
+    const year = Number.isNaN(created.getTime()) ? new Date().getFullYear() : created.getFullYear();
+    const suffix = String(resident?._id || '').slice(-5).toUpperCase().padStart(5, '0');
+    return `RES-${year}-${suffix}`;
+};
+const residentVulnerabilityTags = (resident) => {
+    const tags = [];
+    if (resident?.isSeniorCitizen) tags.push('Senior Citizen');
+    if (resident?.isPWD) tags.push('PWD');
+    if (resident?.isSoloParent) tags.push('Solo Parent');
+    if (resident?.isPregnant) tags.push('Pregnant');
+    return tags.length ? tags : ['General Resident'];
+};
+const residentAutoTags = (resident) => {
+    const tags = [];
+    if (resident?.userId?.accountStatus === 'approved') tags.push('Verified Resident');
+    if (resident?.verificationPending) tags.push('Needs Verification');
+    if (resident?.voterStatus === 'registered') tags.push('Active Voter');
+    if (resident?.floodProneArea) tags.push('High Risk Area');
+    return [...tags, ...residentVulnerabilityTags(resident)];
+};
+const formatVerificationStatus = (status) => {
+    const map = {
+        pending_review: 'Pending Review',
+        under_verification: 'Under Verification',
+        verified: 'Verified',
+        rejected: 'Rejected',
+        needs_reupload: 'Needs Re-upload'
+    };
+    return map[status] || 'Pending Review';
+};
+const residentDocumentCards = (resident) => ([
+    { key: 'validIdPath', label: 'Valid ID', path: resident?.validIdPath },
+    { key: 'proofOfResidency', label: 'Proof of Residency', path: resident?.proofOfResidency },
+    { key: 'vulnerabilityProofPath', label: 'Senior/PWD Proof', path: resident?.vulnerabilityProofPath },
+    { key: 'selfieVerificationPath', label: 'Selfie Verification', path: resident?.selfieVerificationPath }
+]);
+const openResidentDocument = (resident, key) => {
+    if (key === 'proofOfResidency') {
+        openResidentProof(resident._id);
+        return;
+    }
+    const path = resident?.[key];
+    if (path) window.open(path, '_blank', 'noopener');
+};
+const residentActivityTimeline = (resident) => ([
+    { key: 'registered', label: 'Registered account', time: formatDate(resident?.createdAt) },
+    { key: 'updated', label: 'Profile updated', time: formatDate(resident?.updatedAt || resident?.createdAt) },
+    { key: 'verified', label: `Verification status: ${formatVerificationStatus(resident?.verificationStatus)}`, time: formatDate(resident?.updatedAt || resident?.createdAt) }
+]);
+const residentTransactions = (resident) => {
+    const residentId = resident?._id;
+    if (!residentId) return [];
+    const docs = documentRequests.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
+        key: `doc-${item._id}`, type: 'Document Request', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
+    }));
+    const reservationsEntries = reservations.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
+        key: `resv-${item._id}`, type: 'Facility Reservation', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
+    }));
+    const reportsEntries = reports.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
+        key: `rep-${item._id}`, type: 'Complaint / Report', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
+    }));
+    const appointmentsEntries = appointments.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
+        key: `apt-${item._id}`, type: 'Appointment', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
+    }));
+    return [...docs, ...reportsEntries, ...appointmentsEntries, ...reservationsEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+};
+const setResidentStatusAndSave = async (status) => {
+    editForm.status = status;
+    await handleSave();
+};
+const setVerificationStatus = async (status) => {
+    if (!selectedItem.value?._id) {
+        showToast('Invalid resident record.', true);
+        return;
+    }
+    try {
+        const payload = {
+            verificationStatus: status,
+            verificationRemarks: residentVerificationRemarks.value || ''
+        };
+        const response = await apiFetch(`/residents/${selectedItem.value._id}/verification`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        });
+        selectedItem.value.verificationStatus = response?.resident?.verificationStatus || status;
+        selectedItem.value.verificationRemarks = response?.resident?.verificationRemarks || residentVerificationRemarks.value;
+        showToast(`Verification set to ${formatVerificationStatus(selectedItem.value.verificationStatus)}.`);
+        await loadAll();
+    } catch (error) {
+        showToast(error.message || 'Failed to update verification status.', true);
+    }
+};
+
+const sendResidentEmailAction = async () => {
+    const resident = selectedItem.value;
+    if (!resident?._id || !resident?.email) {
+        showToast('Resident email is missing.', true);
+        return;
+    }
+    const subject = window.prompt('Email subject:', 'Barangay Resident Update');
+    if (!subject) return;
+    const message = window.prompt('Email message:', `Good day ${getFullResidentName(resident)},`) || '';
+    if (!message.trim()) {
+        showToast('Email message is required.', true);
+        return;
+    }
+    try {
+        await apiFetch(`/residents/${resident._id}/send-email`, {
+            method: 'POST',
+            body: JSON.stringify({ subject, message })
+        });
+        showToast('Email sent successfully.');
+    } catch (error) {
+        showToast(error.message || 'Failed to send email.', true);
+    }
+};
+
+const sendResidentSMSAction = async () => {
+    const resident = selectedItem.value;
+    if (!resident?._id || !resident?.contactNumber) {
+        showToast('Resident contact number is missing.', true);
+        return;
+    }
+    const message = window.prompt('SMS message:', `Barangay update for ${getFullResidentName(resident)}:`) || '';
+    if (!message.trim()) {
+        showToast('SMS message is required.', true);
+        return;
+    }
+    try {
+        await apiFetch(`/residents/${resident._id}/send-sms`, {
+            method: 'POST',
+            body: JSON.stringify({ message })
+        });
+        showToast('SMS logged and queued successfully.');
+        await loadSMSLogs();
+    } catch (error) {
+        showToast(error.message || 'Failed to send SMS.', true);
+    }
+};
+
+const resetResidentPasswordAction = async () => {
+    const resident = selectedItem.value;
+    if (!resident?._id) {
+        showToast('Invalid resident record.', true);
+        return;
+    }
+    const fullName = getFullResidentName(resident) || 'this resident';
+    if (!window.confirm(`Send password reset email to ${fullName}?`)) return;
+    try {
+        await apiFetch(`/residents/${resident._id}/reset-password`, {
+            method: 'POST'
+        });
+        showToast('Password reset link sent.');
+    } catch (error) {
+        showToast(error.message || 'Failed to send password reset link.', true);
+    }
 };
 
 const handleStatusAction = (actionObj) => {
@@ -2966,6 +3235,176 @@ onMounted(() => {
     transform: translateX(2px);
 }
 
+.resident-overview-layout {
+    display: grid;
+    grid-template-columns: minmax(270px, 0.75fr) minmax(0, 1.35fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.resident-identity-card {
+    position: sticky;
+    top: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    background: linear-gradient(180deg, #ffffff, #f6faf8);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    gap: 10px;
+}
+
+.resident-avatar {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(27, 115, 71, 0.12);
+    color: var(--accent);
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+}
+
+.resident-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.resident-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.resident-tag {
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    background: rgba(13, 74, 42, 0.1);
+    color: #0d4a2a;
+    border: 1px solid rgba(13, 74, 42, 0.16);
+}
+
+.resident-meta-list {
+    display: grid;
+    gap: 4px;
+}
+
+.resident-quick-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.resident-center-pane {
+    display: grid;
+    gap: 12px;
+}
+
+.resident-tab-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.resident-tab-nav button {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.resident-tab-nav button.active {
+    background: linear-gradient(135deg, #0d4a2a, #a1121c);
+    color: #fff;
+    border-color: transparent;
+}
+
+.resident-tab-content {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.resident-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+}
+
+.resident-info-grid p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.resident-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.resident-doc-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    background: #fcfefe;
+}
+
+.resident-doc-card h4 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.resident-doc-actions {
+    display: grid;
+    gap: 6px;
+}
+
+.resident-timeline {
+    display: grid;
+    gap: 10px;
+}
+
+.resident-timeline-item {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.resident-timeline-item .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    background: linear-gradient(135deg, #0d4a2a, #a1121c);
+}
+
+.resident-timeline-item small {
+    display: block;
+    color: var(--muted);
+    margin-top: 3px;
+}
+
+.resident-bottom-panels {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
 .announcements-empty {
     text-align: center;
     padding: 60px 40px;
@@ -3524,6 +3963,16 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+    .resident-overview-layout,
+    .resident-bottom-panels,
+    .resident-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resident-identity-card {
+        position: static;
+    }
+
     .ops-dashboard-header,
     .ops-analytics-top,
     .ops-panel-heading {

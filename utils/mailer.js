@@ -297,11 +297,43 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
     }
 };
 
+const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
+    try {
+        const mailOptions = {
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            to: toEmail,
+            subject: subject || 'Barangay Resident Notification',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
+                    <p>Hello <strong>${name || 'Resident'}</strong>,</p>
+                    <div style="padding: 15px; border-left: 5px solid #235b82; background-color: #f9f9f9; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 16px; white-space: pre-wrap;">${String(message || '').trim()}</p>
+                    </div>
+                    <p>Thank you,</p>
+                    <p><strong>Barangay Administration</strong></p>
+                </div>
+            `
+        };
+
+        if (!smtpAuth) {
+            console.log('Skipping custom resident email because no SendGrid API key or SMTP credentials are configured');
+            return;
+        }
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Custom resident email sent to ${toEmail}`);
+    } catch (error) {
+        console.error('Error sending custom resident email:', error);
+    }
+};
+
 module.exports = {
     sendOtpEmail,
     sendPasswordResetEmail,
     sendStatusUpdateEmail,
     sendDocumentStatusEmail,
     sendRequestStatusEmail,
-    sendGeneratedDocumentEmail
+    sendGeneratedDocumentEmail,
+    sendCustomResidentEmail
 };

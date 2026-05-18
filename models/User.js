@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
         },
         accountStatus: {
             type: String,
-            enum: ['pending_otp', 'pending_approval', 'approved', 'rejected'],
+            enum: ['pending_otp', 'pending_approval', 'approved', 'rejected', 'suspended', 'archived'],
             default: 'pending_otp'
         },
         otpCode: {

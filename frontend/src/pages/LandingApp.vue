@@ -604,14 +604,28 @@
 
                             <!-- Registration Form -->
                             <form v-else-if="activeModal === 'register'" class="modern-form register-form" @submit.prevent="handleRegister">
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 1</span>
+                                    <h4>Personal Information</h4>
+                                </div>
                                 <div class="two-col-grid">
                                     <div class="input-group">
                                         <label for="reg-firstname">First Name</label>
                                         <input id="reg-firstname" name="firstName" v-model="registerForm.firstName" type="text" autocomplete="given-name" placeholder="Juan" required>
                                     </div>
                                     <div class="input-group">
+                                        <label for="reg-middlename">Middle Name</label>
+                                        <input id="reg-middlename" name="middleName" v-model="registerForm.middleName" type="text" autocomplete="additional-name" placeholder="Santos">
+                                    </div>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
                                         <label for="reg-lastname">Last Name</label>
                                         <input id="reg-lastname" name="lastName" v-model="registerForm.lastName" type="text" autocomplete="family-name" placeholder="Dela Cruz" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-suffix">Suffix</label>
+                                        <input id="reg-suffix" name="suffix" v-model="registerForm.suffix" type="text" placeholder="Jr., Sr., III">
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
@@ -629,6 +643,33 @@
                                         <label for="reg-birthdate">Birth Date</label>
                                         <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required>
                                     </div>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-civil-status">Civil Status</label>
+                                        <div class="custom-select">
+                                            <select id="reg-civil-status" v-model="registerForm.civilStatus">
+                                                <option value="single">Single</option>
+                                                <option value="married">Married</option>
+                                                <option value="widowed">Widowed</option>
+                                                <option value="separated">Separated</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-citizenship">Citizenship</label>
+                                        <input id="reg-citizenship" v-model="registerForm.citizenship" type="text" placeholder="Filipino">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="reg-occupation">Occupation</label>
+                                    <input id="reg-occupation" v-model="registerForm.occupation" type="text" placeholder="Occupation">
+                                </div>
+
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 2</span>
+                                    <h4>Contact and Address</h4>
                                 </div>
                                 <div class="input-group">
                                     <label for="reg-address">Barangay</label>
@@ -649,6 +690,21 @@
                                     <input id="reg-purok" name="purok" v-model="registerForm.purok" type="text" placeholder="Purok 1" required>
                                 </div>
                                 <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-house-number">House Number</label>
+                                        <input id="reg-house-number" v-model="registerForm.houseNumber" type="text" placeholder="Blk/Lot/House No.">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-street-address">Street Address</label>
+                                        <input id="reg-street-address" v-model="registerForm.streetAddress" type="text" placeholder="Street / Sitio">
+                                    </div>
+                                </div>
+
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 3</span>
+                                    <h4>Vulnerability and Community Data</h4>
+                                </div>
+                                <div class="two-col-grid">
                                     <label class="checkbox-label">
                                         <input type="checkbox" v-model="registerForm.isSeniorCitizen">
                                         <span>Senior Citizen</span>
@@ -656,6 +712,16 @@
                                     <label class="checkbox-label">
                                         <input type="checkbox" v-model="registerForm.isPWD">
                                         <span>PWD</span>
+                                    </label>
+                                </div>
+                                <div class="two-col-grid">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.isSoloParent">
+                                        <span>Solo Parent</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.isPregnant">
+                                        <span>Pregnant</span>
                                     </label>
                                 </div>
                                 <div class="two-col-grid">
@@ -675,6 +741,31 @@
                                         <input type="checkbox" v-model="registerForm.verificationPending">
                                         <span>Verification pending (no ID yet)</span>
                                     </label>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-voter-status">Voter Status</label>
+                                        <div class="custom-select">
+                                            <select id="reg-voter-status" v-model="registerForm.voterStatus">
+                                                <option value="registered">Registered</option>
+                                                <option value="not_registered">Not Registered</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-household-count">Household Member Count</label>
+                                        <input id="reg-household-count" v-model.number="registerForm.householdMemberCount" type="number" min="1">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="reg-household-id">Household ID</label>
+                                    <input id="reg-household-id" v-model="registerForm.householdId" type="text" placeholder="HH-2026-0001">
+                                </div>
+
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 4</span>
+                                    <h4>Account Information</h4>
                                 </div>
                                 <div class="input-group">
                                     <label for="reg-username">Username</label>
@@ -728,6 +819,18 @@
                                         </ul>
                                     </div>
                                 </div>
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 5</span>
+                                    <h4>Verification Documents</h4>
+                                </div>
+                                <div class="input-group file-upload-group">
+                                    <label for="reg-valid-id">Valid ID (Primary ID)</label>
+                                    <div class="file-upload-wrapper">
+                                        <input id="reg-valid-id" name="vulnerabilityProof" type="file" @change="handleVulnerabilityProofUpload" accept="image/*,application/pdf" class="file-input">
+                                        <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
+                                        <span class="file-name">{{ vulnerabilityProofFile ? vulnerabilityProofFile.name : 'No file chosen' }}</span>
+                                    </div>
+                                </div>
                                 <div class="input-group file-upload-group">
                                     <label for="reg-proof">Proof of Residency (Valid ID / Doc)</label>
                                     <div class="file-upload-wrapper">
@@ -737,11 +840,55 @@
                                     </div>
                                 </div>
                                 <div class="input-group file-upload-group">
-                                    <label for="reg-vulnerability-proof">Senior/PWD Proof (Optional)</label>
+                                    <label for="reg-selfie-proof">Selfie Verification (Optional)</label>
                                     <div class="file-upload-wrapper">
-                                        <input id="reg-vulnerability-proof" name="vulnerabilityProof" type="file" @change="handleVulnerabilityProofUpload" accept="image/*,application/pdf" class="file-input">
+                                        <input id="reg-selfie-proof" name="selfieVerification" type="file" accept="image/*" class="file-input">
                                         <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
-                                        <span class="file-name">{{ vulnerabilityProofFile ? vulnerabilityProofFile.name : 'No file chosen' }}</span>
+                                        <span class="file-name">Optional selfie image</span>
+                                    </div>
+                                </div>
+
+                                <div class="section-head compact-head">
+                                    <span class="eyebrow">Section 6</span>
+                                    <h4>Emergency Information</h4>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-emergency-contact">Emergency Contact Person</label>
+                                        <input id="reg-emergency-contact" v-model="registerForm.emergencyContactName" type="text" placeholder="Full name">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-emergency-number">Emergency Contact Number</label>
+                                        <input id="reg-emergency-number" v-model="registerForm.emergencyContactNumber" type="text" placeholder="09xxxxxxxxx">
+                                    </div>
+                                </div>
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="reg-emergency-relationship">Relationship</label>
+                                        <input id="reg-emergency-relationship" v-model="registerForm.emergencyContactRelationship" type="text" placeholder="Mother, Father, Sibling">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="reg-evacuation-priority">Evacuation Priority</label>
+                                        <div class="custom-select">
+                                            <select id="reg-evacuation-priority" v-model="registerForm.evacuationPriority">
+                                                <option value="">None</option>
+                                                <option value="low">Low</option>
+                                                <option value="medium">Medium</option>
+                                                <option value="high">High</option>
+                                                <option value="critical">Critical</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="two-col-grid">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="registerForm.floodProneArea">
+                                        <span>Flood-Prone Area</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <label for="reg-medical">Medical Conditions (Optional)</label>
+                                        <input id="reg-medical" v-model="registerForm.medicalConditions" type="text" placeholder="Asthma, hypertension, etc.">
                                     </div>
                                 </div>
 

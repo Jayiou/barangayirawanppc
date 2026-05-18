@@ -63,6 +63,16 @@ const residentSchema = new mongoose.Schema(
             trim: true,
             default: ''
         },
+        houseNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        streetAddress: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         citizenship: {
             type: String,
             trim: true,
@@ -96,6 +106,24 @@ const residentSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
+        isSoloParent: {
+            type: Boolean,
+            default: false
+        },
+        isPregnant: {
+            type: Boolean,
+            default: false
+        },
+        householdMemberCount: {
+            type: Number,
+            min: 1,
+            default: 1
+        },
+        householdId: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         vulnerabilityType: {
             type: String,
             enum: ['', 'senior', 'pwd', 'both'],
@@ -109,6 +137,55 @@ const residentSchema = new mongoose.Schema(
         verificationPending: {
             type: Boolean,
             default: false
+        },
+        emergencyContactName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        emergencyContactNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        emergencyContactRelationship: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        medicalConditions: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        floodProneArea: {
+            type: Boolean,
+            default: false
+        },
+        evacuationPriority: {
+            type: String,
+            enum: ['', 'low', 'medium', 'high', 'critical'],
+            default: ''
+        },
+        verificationStatus: {
+            type: String,
+            enum: ['pending_review', 'under_verification', 'verified', 'rejected', 'needs_reupload'],
+            default: 'pending_review'
+        },
+        verificationRemarks: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        validIdPath: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        selfieVerificationPath: {
+            type: String,
+            trim: true,
+            default: ''
         }
     },
     {

@@ -36,9 +36,12 @@ export function useLandingAuth() {
     const loginForm = reactive({ username: '', password: '' });
     const registerForm = reactive({ 
         username: '', email: '', password: '', confirmPassword: '',
-        firstName: '', lastName: '', sex: 'male', 
-        birthDate: '', contactNumber: '', address: '', purok: '',
-        isSeniorCitizen: false, isPWD: false, vulnerabilityType: '', verificationPending: false
+        firstName: '', middleName: '', lastName: '', suffix: '', sex: 'male',
+        birthDate: '', civilStatus: 'single', citizenship: 'Filipino', occupation: '',
+        contactNumber: '', address: '', purok: '', houseNumber: '', streetAddress: '',
+        isSeniorCitizen: false, isPWD: false, isSoloParent: false, isPregnant: false, vulnerabilityType: '', voterStatus: 'not_registered', householdMemberCount: 1, householdId: '',
+        emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '',
+        medicalConditions: '', floodProneArea: false, evacuationPriority: '', verificationPending: false
     });
     const proofOfResidencyFile = ref(null);
     const vulnerabilityProofFile = ref(null);

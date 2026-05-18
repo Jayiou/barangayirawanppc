@@ -2,10 +2,12 @@ const Resident = require('../models/Resident');
 const User = require('../models/User');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
-const { sendStatusUpdateEmail } = require('../utils/mailer');
+const { sendStatusUpdateEmail, sendPasswordResetEmail, sendCustomResidentEmail } = require('../utils/mailer');
 const { sendStatusUpdateSMS } = require('../utils/sms');
+const SMSLog = require('../models/SMSLog');
 
 const residentProfileFields = [
     'firstName',
@@ -19,15 +21,31 @@ const residentProfileFields = [
     'email',
     'address',
     'purok',
+    'houseNumber',
+    'streetAddress',
     'citizenship',
     'occupation',
     'voterStatus',
     'profileImage',
     'isSeniorCitizen',
     'isPWD',
+    'isSoloParent',
+    'isPregnant',
+    'householdMemberCount',
+    'householdId',
     'vulnerabilityType',
     'vulnerabilityProofPath',
-    'verificationPending'
+    'verificationPending',
+    'emergencyContactName',
+    'emergencyContactNumber',
+    'emergencyContactRelationship',
+    'medicalConditions',
+    'floodProneArea',
+    'evacuationPriority',
+    'verificationStatus',
+    'verificationRemarks',
+    'validIdPath',
+    'selfieVerificationPath'
 ];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,6 +76,12 @@ const validateResidentData = (payload) => {
 
     if (payload.vulnerabilityType !== undefined && !['', 'senior', 'pwd', 'both'].includes(String(payload.vulnerabilityType))) {
         return 'Please provide a valid vulnerabilityType';
+    }
+    if (payload.evacuationPriority !== undefined && !['', 'low', 'medium', 'high', 'critical'].includes(String(payload.evacuationPriority))) {
+        return 'Please provide a valid evacuationPriority';
+    }
+    if (payload.verificationStatus !== undefined && !['pending_review', 'under_verification', 'verified', 'rejected', 'needs_reupload'].includes(String(payload.verificationStatus))) {
+        return 'Please provide a valid verificationStatus';
     }
 
     return null;
@@ -236,8 +260,8 @@ exports.updateResident = asyncHandler(async (req, res) => {
 exports.updateResidentStatus = asyncHandler(async (req, res) => {
     const { status } = req.body;
     
-    if (!['approved', 'rejected'].includes(status)) {
-        throw createHttpError(400, 'Status must be either approved or rejected', { code: 'INVALID_STATUS' });
+    if (!['approved', 'rejected', 'suspended', 'archived', 'pending_approval'].includes(status)) {
+        throw createHttpError(400, 'Status must be approved, rejected, suspended, archived, or pending_approval', { code: 'INVALID_STATUS' });
     }
 
     const resident = await Resident.findById(req.params.id);
@@ -250,12 +274,8 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Associated user account not found', { code: 'USER_NOT_FOUND' });
     }
 
-    if (user.accountStatus !== 'pending_approval') {
-        throw createHttpError(400, `Cannot change status. Current account status is ${user.accountStatus}`, { code: 'INVALID_STATUS_TRANSITION' });
-    }
-
     user.accountStatus = status;
-    user.isActive = status === 'approved'; // Only activate if approved
+    user.isActive = status === 'approved' || status === 'pending_approval';
     await user.save();
 
     // Send email notification to user about approval or rejection
@@ -272,6 +292,105 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
         message: `Resident account successfully ${status}`,
         resident,
         user: { id: user._id, accountStatus: user.accountStatus, isActive: user.isActive }
+    });
+});
+
+exports.updateResidentVerification = asyncHandler(async (req, res) => {
+    const { verificationStatus, verificationRemarks = '' } = req.body;
+    const allowed = ['pending_review', 'under_verification', 'verified', 'rejected', 'needs_reupload'];
+    if (!allowed.includes(verificationStatus)) {
+        throw createHttpError(400, 'Invalid verificationStatus', { code: 'INVALID_VERIFICATION_STATUS' });
+    }
+
+    const resident = await Resident.findByIdAndUpdate(
+        req.params.id,
+        {
+            verificationStatus,
+            verificationRemarks: String(verificationRemarks || '').trim()
+        },
+        { new: true, runValidators: true }
+    ).populate('userId', 'username email role isActive accountStatus createdAt');
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    res.json({
+        message: 'Resident verification status updated',
+        resident
+    });
+});
+
+exports.sendResidentEmail = asyncHandler(async (req, res) => {
+    const { subject, message } = req.body;
+    const resident = await Resident.findById(req.params.id).populate('userId', 'email');
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+    const toEmail = resident.email || resident.userId?.email;
+    if (!toEmail) {
+        throw createHttpError(400, 'Resident email not available', { code: 'RESIDENT_EMAIL_MISSING' });
+    }
+
+    const formattedSubject = String(subject || 'Barangay Resident Notification').trim();
+    const body = String(message || '').trim() || 'This is a resident account notification from Barangay Administration.';
+    await sendCustomResidentEmail(toEmail, resident.firstName || 'Resident', formattedSubject, body);
+    res.json({
+        message: 'Resident email sent successfully.',
+        details: { toEmail, subject: formattedSubject, preview: body.slice(0, 120) }
+    });
+});
+
+exports.sendResidentSMS = asyncHandler(async (req, res) => {
+    const { message } = req.body;
+    const resident = await Resident.findById(req.params.id);
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    if (!resident.contactNumber) {
+        throw createHttpError(400, 'Resident contact number not available', { code: 'RESIDENT_CONTACT_MISSING' });
+    }
+
+    const content = String(message || '').trim() || 'Barangay resident account update.';
+    await SMSLog.create({
+        phoneNumber: resident.contactNumber,
+        messageType: 'resident_update',
+        messageContent: content,
+        status: 'sent'
+    });
+
+    res.json({
+        message: 'Resident SMS logged successfully.',
+        details: { phoneNumber: resident.contactNumber }
+    });
+});
+
+exports.adminResetResidentPassword = asyncHandler(async (req, res) => {
+    const resident = await Resident.findById(req.params.id).populate('userId', 'email');
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
+    }
+
+    const user = await User.findById(resident.userId?._id || resident.userId);
+    if (!user) {
+        throw createHttpError(404, 'Associated user account not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 30 * 60 * 1000);
+    await user.save();
+
+    const baseUrl = String(process.env.APP_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const resetLink = `${baseUrl}/?resetToken=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    await sendPasswordResetEmail(user.email, resident.firstName || 'Resident', resetLink);
+
+    res.json({
+        message: 'Password reset link generated and sent to resident email.'
     });
 });
 
