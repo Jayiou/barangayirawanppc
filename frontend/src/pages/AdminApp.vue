@@ -356,84 +356,94 @@
                     </section>
                 </div>
             </section>
-
             <section class="app-view" :class="{ active: currentView === 'disaster' }">
                 <div class="portal-grid">
                     <article class="content-card">
                         <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
                             <div>
-                                <span class="eyebrow">Disaster Management</span>
-                                <h3>Incidents and response monitoring</h3>
+                                <span class="eyebrow">Disaster Advisory Module</span>
+                                <h3>Weather impact advisory and evacuation guidance</h3>
                             </div>
-                            <button class="primary-button" type="button" @click="createDisasterIncident"><i class="fa-solid fa-plus"></i> Create Incident</button>
+                            <button class="ghost-button" type="button" @click="resetDisasterAdvisoryForm"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
                         </div>
                         <div class="summary-grid" style="margin-bottom:14px;">
-                            <article class="summary-card"><span>Active Incidents</span><strong>{{ disasterSummary.activeIncidents }}</strong></article>
-                            <article class="summary-card"><span>Evacuated Households</span><strong>{{ disasterSummary.evacuees }}</strong></article>
-                            <article class="summary-card"><span>Injured / Missing</span><strong>{{ disasterSummary.injured }} / {{ disasterSummary.missing }}</strong></article>
-                            <article class="summary-card"><span>Seniors / PWD</span><strong>{{ disasterSummary.seniors }} / {{ disasterSummary.pwds }}</strong></article>
+                            <article class="summary-card"><span>Total Advisories</span><strong>{{ disasterSummary.total }}</strong></article>
+                            <article class="summary-card"><span>Upcoming</span><strong>{{ disasterSummary.upcoming }}</strong></article>
+                            <article class="summary-card"><span>Ongoing</span><strong>{{ disasterSummary.ongoing }}</strong></article>
+                            <article class="summary-card"><span>Ended</span><strong>{{ disasterSummary.ended }}</strong></article>
                         </div>
                         <div class="portal-grid" style="grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.3fr);">
                             <article class="content-card" style="padding:16px;">
-                                <label><span>Status Filter</span>
+                                <form class="stack" @submit.prevent="saveDisasterAdvisory">
+                                    <label><span>Disaster Type</span>
+                                        <select v-model="disasterAdvisoryForm.disasterType" required>
+                                            <option value="typhoon">Typhoon</option>
+                                            <option value="flood">Flood</option>
+                                            <option value="landslide">Landslide</option>
+                                            <option value="earthquake">Earthquake</option>
+                                            <option value="fire">Fire</option>
+                                            <option value="storm_surge">Storm Surge</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </label>
+                                    <label><span>Expected Impact Date</span><input v-model="disasterAdvisoryForm.expectedImpactDate" type="datetime-local" required></label>
+                                    <label><span>Severity</span>
+                                        <select v-model="disasterAdvisoryForm.severity" required>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="critical">Critical</option>
+                                        </select>
+                                    </label>
+                                    <label><span>Affected Purok/Zone (comma separated)</span><input v-model="disasterAdvisoryForm.affectedPuroks" type="text" placeholder="Purok 1, Purok 2"></label>
+                                    <label><span>Flood-Prone Areas (comma separated)</span><input v-model="disasterAdvisoryForm.floodProneAreas" type="text" placeholder="Riverbank Sitio, Lowland Zone"></label>
+                                    <label><span>Available Evacuation Centers (comma separated)</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" placeholder="Barangay Hall, Covered Court"></label>
+                                    <label><span>Advisory Message</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required placeholder="Safety reminders and evacuation instructions"></textarea></label>
+                                    <label><span>Status</span>
+                                        <select v-model="disasterAdvisoryForm.status">
+                                            <option value="upcoming">Upcoming</option>
+                                            <option value="ongoing">Ongoing</option>
+                                            <option value="ended">Ended</option>
+                                        </select>
+                                    </label>
+                                    <button class="primary-button" type="submit" :disabled="isSubmitting">
+                                        <i class="fa-solid fa-floppy-disk"></i> {{ disasterAdvisoryForm._id ? 'Update Advisory' : 'Create Advisory' }}
+                                    </button>
+                                </form>
+                            </article>
+                            <article class="content-card" style="padding:16px;">
+                                <label><span>Filter by Status</span>
                                     <select v-model="disasterFilterStatus">
                                         <option value="all">All</option>
-                                        <option value="active">Active</option>
-                                        <option value="monitoring">Monitoring</option>
-                                        <option value="resolved">Resolved</option>
+                                        <option value="upcoming">Upcoming</option>
+                                        <option value="ongoing">Ongoing</option>
+                                        <option value="ended">Ended</option>
                                     </select>
                                 </label>
                                 <div style="margin-top:10px; display:grid; gap:8px;">
-                                    <button v-for="incident in filteredDisasterIncidents" :key="incident._id" type="button" class="ghost-button" style="justify-content:space-between;" @click="selectDisasterIncident(incident)">
-                                        <span>{{ incident.title }}</span>
-                                        <StatusBadge :status="incident.status" />
-                                    </button>
-                                </div>
-                            </article>
-                            <article class="content-card" style="padding:16px;">
-                                <div v-if="selectedDisasterIncident">
-                                    <div class="section-head" style="margin-bottom:10px;">
-                                        <h3 style="margin:0;">{{ selectedDisasterIncident.incident.title }}</h3>
-                                        <span class="fine-print">{{ selectedDisasterIncident.incident.disasterType?.replaceAll('_', ' ') }} | {{ formatDate(selectedDisasterIncident.incident.occurredAt) }}</span>
-                                    </div>
-                                    <p class="fine-print">{{ selectedDisasterIncident.incident.description || 'No description yet.' }}</p>
-                                    <div class="status-btn-grid">
-                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'active' }" @click="updateDisasterStatus('active')">active</button>
-                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'monitoring' }" @click="updateDisasterStatus('monitoring')">monitoring</button>
-                                        <button class="status-btn" :class="{ active: selectedDisasterIncident.incident.status === 'resolved' }" @click="updateDisasterStatus('resolved')">resolved</button>
-                                    </div>
-                                    <div style="margin-top:12px;">
-                                        <h4 style="margin:0 0 8px;">Affected Residents / Families</h4>
-                                        <div v-if="selectedDisasterIncident.affectedRecords.length" style="display:grid;gap:8px;">
-                                            <div v-for="record in selectedDisasterIncident.affectedRecords" :key="record._id" class="record-item" style="padding:10px;">
-                                                <strong>{{ getAffectedDisplayName(record) }}</strong>
-                                                <div class="fine-print">Household: {{ record.householdSize }} | Evacuated: {{ record.isEvacuated ? 'Yes' : 'No' }} | Injured: {{ record.injuredCount }} | Missing: {{ record.missingCount }}</div>
-                                            </div>
+                                    <article v-for="advisory in filteredDisasterIncidents" :key="advisory._id" class="record-item" style="padding:12px;">
+                                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                                            <strong>{{ normalizeLabel(advisory.disasterType) }}</strong>
+                                            <StatusBadge :status="advisory.status" />
                                         </div>
-                                        <div v-else class="fine-print">No affected records yet.</div>
-                                        <form class="stack" style="margin-top:10px;" @submit.prevent="addAffectedToSelectedIncident">
-                                            <label><span>Family Head Name</span><input v-model="disasterAffectedForm.familyHeadName" type="text" required></label>
-                                            <label><span>Household Size</span><input v-model.number="disasterAffectedForm.householdSize" type="number" min="1"></label>
-                                            <label><span>Urgent Needs (comma separated)</span><input v-model="disasterAffectedForm.urgentNeeds" type="text" placeholder="Food, medicine, rescue"></label>
-                                            <button class="primary-button" type="submit" :disabled="isSubmitting"><i class="fa-solid fa-user-plus"></i> Add Affected Record</button>
-                                        </form>
-                                    </div>
-                                    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
-                                        <select v-model="selectedDisasterReportId" style="min-width: 220px;">
-                                            <option value="">Select disaster report to link</option>
-                                            <option v-for="report in disasterReports" :key="report._id" :value="report._id">{{ report.title }}</option>
-                                        </select>
-                                        <button class="ghost-button" type="button" @click="prefillDisasterAdvisory"><i class="fa-solid fa-bullhorn"></i> Publish Advisory</button>
-                                        <button class="ghost-button" type="button" @click="linkSelectedDisasterReport"><i class="fa-solid fa-link"></i> Link Selected Disaster Report</button>
-                                    </div>
+                                        <div class="fine-print" style="margin-top:4px;">Impact Date: {{ formatDate(advisory.expectedImpactDate) }}</div>
+                                        <div class="fine-print">Severity: {{ normalizeLabel(advisory.severity) }}</div>
+                                        <p style="margin:8px 0 0;">{{ advisory.advisoryMessage }}</p>
+                                        <small class="fine-print" style="display:block; margin-top:8px;">Purok/Zone: {{ advisory.affectedPuroks?.join(', ') || 'N/A' }}</small>
+                                        <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                                            <button class="ghost-button" type="button" @click="editDisasterAdvisory(advisory)"><i class="fa-solid fa-pen"></i> Edit</button>
+                                            <button class="ghost-button" type="button" @click="deleteDisasterAdvisory(advisory._id)"><i class="fa-solid fa-trash"></i> Delete</button>
+                                            <button class="ghost-button" type="button" @click="markDisasterAdvisoryStatus(advisory, 'ended')"><i class="fa-solid fa-check"></i> Mark Ended</button>
+                                        </div>
+                                    </article>
+                                    <div v-if="!filteredDisasterIncidents.length" class="fine-print">No advisories found.</div>
                                 </div>
-                                <div v-else class="fine-print">Select an incident to view details.</div>
                             </article>
                         </div>
                     </article>
                 </div>
             </section>
-
             <!-- Data Table Generic Loop For Other Views -->
             <section class="app-view" :class="{ active: ['documents', 'reservations', 'reports', 'announcements', 'residents'].includes(currentView) }">
                 <div class="portal-grid">
@@ -754,7 +764,6 @@
                                 <button type="button" :class="{ active: residentTab === 'verification' }" @click="residentTab = 'verification'"><i class="fa-solid fa-file-shield"></i> Verification Documents</button>
                                 <button type="button" :class="{ active: residentTab === 'activity' }" @click="residentTab = 'activity'"><i class="fa-solid fa-timeline"></i> Activity History</button>
                                 <button type="button" :class="{ active: residentTab === 'transactions' }" @click="residentTab = 'transactions'"><i class="fa-solid fa-receipt"></i> Requests & Transactions</button>
-                                <button type="button" :class="{ active: residentTab === 'disaster' }" @click="residentTab = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster & Emergency</button>
                             </div>
                             <div class="resident-tab-content" v-if="residentTab === 'personal'">
                                 <div class="resident-info-grid">
@@ -782,8 +791,6 @@
                                         <div class="resident-doc-actions">
                                             <button type="button" class="ghost-button" :disabled="!doc.path" @click="openResidentDocument(selectedItem, doc.key)"><i class="fa-solid fa-eye"></i> View</button>
                                             <button type="button" class="ghost-button" :disabled="!doc.path"><i class="fa-solid fa-download"></i> Download</button>
-                                            <button v-if="selectedItem.verificationStatus !== 'verified' && selectedItem.verificationStatus !== 'rejected'" type="button" class="ghost-button" @click="setVerificationStatus('verified')"><i class="fa-solid fa-check"></i> Approve</button>
-                                            <button v-if="selectedItem.verificationStatus !== 'verified' && selectedItem.verificationStatus !== 'rejected'" type="button" class="ghost-button" @click="setVerificationStatus('rejected')"><i class="fa-solid fa-ban"></i> Reject</button>
                                             <button type="button" class="ghost-button" @click="setVerificationStatus('needs_reupload')"><i class="fa-solid fa-rotate"></i> Re-upload</button>
                                         </div>
                                     </article>
@@ -815,18 +822,6 @@
                                             <tr v-if="residentTransactions(selectedItem).length === 0"><td colspan="4" style="text-align:center;">No transactions yet.</td></tr>
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
-                            <div class="resident-tab-content" v-else>
-                                <div class="resident-info-grid">
-                                    <p><strong>Household Member Count:</strong> {{ selectedItem.householdMemberCount || 1 }}</p>
-                                    <p><strong>Emergency Contact:</strong> {{ selectedItem.emergencyContactName || 'N/A' }}</p>
-                                    <p><strong>Emergency Number:</strong> {{ selectedItem.emergencyContactNumber || 'N/A' }}</p>
-                                    <p><strong>Vulnerability Level:</strong> {{ selectedItem.vulnerabilityType || 'N/A' }}</p>
-                                    <p><strong>Evacuation Priority:</strong> {{ selectedItem.evacuationPriority || 'N/A' }}</p>
-                                    <p><strong>Medical Conditions:</strong> {{ selectedItem.medicalConditions || 'N/A' }}</p>
-                                    <p><strong>Flood-Prone Area:</strong> {{ selectedItem.floodProneArea ? 'Yes' : 'No' }}</p>
-                                    <p><strong>Rescue Assistance History:</strong> {{ selectedItem.rescueHistory || 'No records yet' }}</p>
                                 </div>
                             </div>
                         </section>
@@ -1211,9 +1206,6 @@ const reportAlertReports = ref([]);
 // Persist view state on change
 watch(currentView, (newView) => {
     localStorage.setItem('admin_current_view', newView);
-    if (newView === 'disaster' && disasterIncidents.value.length > 0 && !selectedDisasterIncidentId.value) {
-        selectDisasterIncident(disasterIncidents.value[0]);
-    }
 });
 const selectedItem = ref({});
 const editForm = reactive({});
@@ -1233,13 +1225,16 @@ const canApproveRejectResident = computed(() => !['approved', 'rejected'].includ
 const canSuspendResident = computed(() => residentAccountStatus.value === 'approved');
 const canArchiveResident = computed(() => ['rejected', 'suspended'].includes(residentAccountStatus.value));
 const disasterFilterStatus = ref('all');
-const selectedDisasterIncidentId = ref('');
-const selectedDisasterReportId = ref('');
-const selectedDisasterIncident = ref(null);
-const disasterAffectedForm = reactive({
-    familyHeadName: '',
-    householdSize: 1,
-    urgentNeeds: ''
+const disasterAdvisoryForm = reactive({
+    _id: '',
+    disasterType: 'typhoon',
+    expectedImpactDate: '',
+    severity: 'medium',
+    affectedPuroks: '',
+    floodProneAreas: '',
+    evacuationCenters: '',
+    advisoryMessage: '',
+    status: 'upcoming'
 });
 
 const todayDate = computed(() => {
@@ -1400,24 +1395,19 @@ const filteredDisasterIncidents = computed(() => {
     return disasterIncidents.value.filter((incident) => incident.status === disasterFilterStatus.value);
 });
 
-const disasterReports = computed(() => reports.value.filter((report) => report.reportType === 'disaster'));
-
 const disasterSummary = computed(() => {
-    const seed = {
-        activeIncidents: 0,
-        evacuees: 0,
-        injured: 0,
-        missing: 0,
-        seniors: 0,
-        pwds: 0
-    };
-
-    return disasterIncidents.value.reduce((summary, incident) => {
-        if (incident.status === 'active' || incident.status === 'monitoring') {
-            summary.activeIncidents += 1;
-        }
+    return disasterIncidents.value.reduce((summary, advisory) => {
+        summary.total += 1;
+        if (advisory.status === 'upcoming') summary.upcoming += 1;
+        if (advisory.status === 'ongoing') summary.ongoing += 1;
+        if (advisory.status === 'ended') summary.ended += 1;
         return summary;
-    }, seed);
+    }, {
+        total: 0,
+        upcoming: 0,
+        ongoing: 0,
+        ended: 0
+    });
 });
 
 const normalizeLabel = (value) => {
@@ -1880,128 +1870,103 @@ const reportAlertMessage = computed(() => {
         : 'Multiple reports are waiting for review.';
 });
 
-const selectDisasterIncident = async (incident) => {
-    if (!incident?._id) return;
-    selectedDisasterIncidentId.value = incident._id;
-    try {
-        selectedDisasterIncident.value = await apiFetch(`/disaster-incidents/${incident._id}`);
-    } catch (error) {
-        showToast(error.message || 'Failed to load disaster incident detail.', true);
-    }
+const resetDisasterAdvisoryForm = () => {
+    disasterAdvisoryForm._id = '';
+    disasterAdvisoryForm.disasterType = 'typhoon';
+    disasterAdvisoryForm.expectedImpactDate = '';
+    disasterAdvisoryForm.severity = 'medium';
+    disasterAdvisoryForm.affectedPuroks = '';
+    disasterAdvisoryForm.floodProneAreas = '';
+    disasterAdvisoryForm.evacuationCenters = '';
+    disasterAdvisoryForm.advisoryMessage = '';
+    disasterAdvisoryForm.status = 'upcoming';
 };
 
-const createDisasterIncident = async () => {
-    const title = prompt('Disaster incident title:');
-    if (!title) return;
+const splitByComma = (value) => String(value || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 
-    try {
-        const created = await apiFetch('/disaster-incidents', {
-            method: 'POST',
-            body: JSON.stringify({
-                title: String(title).trim(),
-                disasterType: 'other',
-                status: 'active',
-                severity: 'medium',
-                source: 'manual'
-            })
-        });
-        disasterIncidents.value.unshift(created);
-        await selectDisasterIncident(created);
-        showToast('Disaster incident created.');
-    } catch (error) {
-        showToast(error.message || 'Failed to create disaster incident.', true);
-    }
-};
-
-const addAffectedToSelectedIncident = async () => {
-    if (!selectedDisasterIncidentId.value) return;
-    if (!disasterAffectedForm.familyHeadName.trim()) {
-        showToast('Family head name is required.', true);
+const saveDisasterAdvisory = async () => {
+    if (!disasterAdvisoryForm.expectedImpactDate || !disasterAdvisoryForm.advisoryMessage.trim()) {
+        showToast('Expected impact date and advisory message are required.', true);
         return;
     }
 
+    const payload = {
+        disasterType: disasterAdvisoryForm.disasterType,
+        expectedImpactDate: disasterAdvisoryForm.expectedImpactDate,
+        severity: disasterAdvisoryForm.severity,
+        affectedPuroks: splitByComma(disasterAdvisoryForm.affectedPuroks),
+        floodProneAreas: splitByComma(disasterAdvisoryForm.floodProneAreas),
+        evacuationCenters: splitByComma(disasterAdvisoryForm.evacuationCenters),
+        advisoryMessage: disasterAdvisoryForm.advisoryMessage.trim(),
+        status: disasterAdvisoryForm.status
+    };
+
+    isSubmitting.value = true;
     try {
-        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}/affected-records`, {
-            method: 'POST',
-            body: JSON.stringify({
-                familyHeadName: disasterAffectedForm.familyHeadName.trim(),
-                householdSize: disasterAffectedForm.householdSize || 1,
-                urgentNeeds: disasterAffectedForm.urgentNeeds
-            })
-        });
-        disasterAffectedForm.familyHeadName = '';
-        disasterAffectedForm.householdSize = 1;
-        disasterAffectedForm.urgentNeeds = '';
-        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
-        showToast('Affected record added.');
+        if (disasterAdvisoryForm._id) {
+            await apiFetch(`/disaster-advisories/${disasterAdvisoryForm._id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+            });
+            showToast('Disaster advisory updated.');
+        } else {
+            await apiFetch('/disaster-advisories', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            showToast('Disaster advisory created.');
+        }
+        await loadAll();
+        resetDisasterAdvisoryForm();
     } catch (error) {
-        showToast(error.message || 'Failed to add affected record.', true);
+        showToast(error.message || 'Failed to save disaster advisory.', true);
+    } finally {
+        isSubmitting.value = false;
     }
 };
 
-const updateDisasterStatus = async (status) => {
-    if (!selectedDisasterIncidentId.value) return;
+const editDisasterAdvisory = (advisory) => {
+    disasterAdvisoryForm._id = advisory._id;
+    disasterAdvisoryForm.disasterType = advisory.disasterType || 'other';
+    disasterAdvisoryForm.expectedImpactDate = advisory.expectedImpactDate ? new Date(advisory.expectedImpactDate).toISOString().slice(0, 16) : '';
+    disasterAdvisoryForm.severity = advisory.severity || 'medium';
+    disasterAdvisoryForm.affectedPuroks = Array.isArray(advisory.affectedPuroks) ? advisory.affectedPuroks.join(', ') : '';
+    disasterAdvisoryForm.floodProneAreas = Array.isArray(advisory.floodProneAreas) ? advisory.floodProneAreas.join(', ') : '';
+    disasterAdvisoryForm.evacuationCenters = Array.isArray(advisory.evacuationCenters) ? advisory.evacuationCenters.join(', ') : '';
+    disasterAdvisoryForm.advisoryMessage = advisory.advisoryMessage || '';
+    disasterAdvisoryForm.status = advisory.status || 'upcoming';
+};
+
+const deleteDisasterAdvisory = async (advisoryId) => {
+    if (!advisoryId) return;
+    if (!window.confirm('Delete this disaster advisory?')) return;
+
     try {
-        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}`, {
+        await apiFetch(`/disaster-advisories/${advisoryId}`, { method: 'DELETE' });
+        showToast('Disaster advisory deleted.');
+        await loadAll();
+        if (disasterAdvisoryForm._id === advisoryId) {
+            resetDisasterAdvisoryForm();
+        }
+    } catch (error) {
+        showToast(error.message || 'Failed to delete disaster advisory.', true);
+    }
+};
+
+const markDisasterAdvisoryStatus = async (advisory, status) => {
+    if (!advisory?._id) return;
+    try {
+        await apiFetch(`/disaster-advisories/${advisory._id}`, {
             method: 'PATCH',
             body: JSON.stringify({ status })
         });
+        showToast(`Advisory marked as ${status}.`);
         await loadAll();
-        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
-        showToast('Disaster incident status updated.');
     } catch (error) {
-        showToast(error.message || 'Failed to update incident status.', true);
-    }
-};
-
-const getAffectedDisplayName = (record) => {
-    if (record.residentId) {
-        return [
-            record.residentId.firstName,
-            record.residentId.middleName,
-            record.residentId.lastName,
-            record.residentId.suffix
-        ].filter(Boolean).join(' ');
-    }
-    return record.familyHeadName || 'Unnamed Household';
-};
-
-const prefillDisasterAdvisory = () => {
-    if (!selectedDisasterIncident.value?.incident) {
-        showToast('Select an incident first.', true);
-        return;
-    }
-
-    const incident = selectedDisasterIncident.value.incident;
-    openModal('announcement', {
-        title: `[Disaster Advisory] ${incident.title}`,
-        description: `Advisory for ${incident.affectedArea || 'affected area'}.\nCurrent status: ${incident.status}.`,
-        startDate: new Date().toISOString().slice(0, 16),
-        endDate: '',
-        isActive: true
-    });
-};
-
-const linkSelectedDisasterReport = async () => {
-    if (!selectedDisasterIncidentId.value) {
-        showToast('Select an incident first.', true);
-        return;
-    }
-    if (!selectedDisasterReportId.value) {
-        showToast('Select a disaster report from table list first.', true);
-        return;
-    }
-    try {
-        const detail = selectedDisasterIncident.value?.incident;
-        const nextLinks = [...new Set([...(detail?.linkedReportIds || []), selectedDisasterReportId.value])];
-        await apiFetch(`/disaster-incidents/${selectedDisasterIncidentId.value}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ linkedReportIds: nextLinks })
-        });
-        await selectDisasterIncident({ _id: selectedDisasterIncidentId.value });
-        showToast('Disaster report linked.');
-    } catch (error) {
-        showToast(error.message || 'Failed to link disaster report.', true);
+        showToast(error.message || 'Failed to update advisory status.', true);
     }
 };
 
@@ -3333,7 +3298,7 @@ onMounted(() => {
 .resident-tab-content {
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 14px;
+    padding: 20px;
     background: #fff;
     box-shadow: var(--shadow-sm);
 }
@@ -3341,12 +3306,17 @@ onMounted(() => {
 .resident-info-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 16px;
+    gap: 16px 24px;
 }
 
 .resident-info-grid p {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fbfa;
+    border: 1px solid rgba(15, 31, 27, 0.06);
 }
 
 .resident-doc-grid {
@@ -4601,4 +4571,5 @@ onMounted(() => {
     animation: spin 0.8s linear infinite;
 }
 </style>
+
 

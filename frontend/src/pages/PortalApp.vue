@@ -22,6 +22,7 @@
                 <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i> Document Requests</button>
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facility Reservations</button>
                 <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports</button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster Advisories</button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -252,6 +253,32 @@
                 </div>
             </section>
 
+            <section class="app-view" :class="{ active: currentView === 'disaster' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <div class="section-head">
+                            <span class="eyebrow">Disaster Advisories</span>
+                            <h3>Latest barangay emergency guidance</h3>
+                        </div>
+                        <div v-if="!disasterAdvisories.length" class="fine-print">No active advisories right now.</div>
+                        <div v-else style="display:grid; gap:12px;">
+                            <article v-for="advisory in disasterAdvisories" :key="advisory._id" class="record-item" style="padding:12px;">
+                                <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                                    <strong>{{ normalizeLabel(advisory.disasterType) }}</strong>
+                                    <StatusBadge :status="advisory.status" />
+                                </div>
+                                <div class="fine-print" style="margin-top:4px;">Expected Impact: {{ formatDate(advisory.expectedImpactDate) }}</div>
+                                <div class="fine-print">Severity: {{ normalizeLabel(advisory.severity) }}</div>
+                                <p style="margin:8px 0 0;">{{ advisory.advisoryMessage }}</p>
+                                <small class="fine-print" style="display:block; margin-top:8px;">Affected Purok/Zone: {{ advisory.affectedPuroks?.join(', ') || 'N/A' }}</small>
+                                <small class="fine-print" style="display:block;">Flood-Prone Areas: {{ advisory.floodProneAreas?.join(', ') || 'N/A' }}</small>
+                                <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
+                            </article>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
         </main>
 
         <!-- Modals -->
@@ -475,7 +502,7 @@ const confirmLogout = () => {
         logout();
     }
 };
-const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
+const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
 const { documentForm, reservationForm, reportForm, reportProofFiles, submitDocumentRequest, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
 // Local state
@@ -562,8 +589,14 @@ const viewTitle = computed(() => ({
     documents: 'Request and track barangay documents',
     reservations: 'Reserve facilities for events',
     reports: 'Submit and monitor your reports',
-    appointments: 'Schedule meetings with barangay officials'
+    appointments: 'Schedule meetings with barangay officials',
+    disaster: 'View weather and evacuation advisories'
 }[currentView.value]));
+
+const normalizeLabel = (value) => {
+    if (!value) return 'Unspecified';
+    return String(value).replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
 
 const documentItems = computed(() => documentRequests.value.map((item) => ({
     id: item._id,

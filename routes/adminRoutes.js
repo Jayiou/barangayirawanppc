@@ -4,13 +4,9 @@ const fs = require('node:fs');
 const multer = require('multer');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const { ensureDirectory, publicUploadDirectory, resolvePublicUploadFilePath } = require('../utils/uploadPaths');
 
 const router = express.Router();
-
-const publicUploadDirectory = path.join(__dirname, '../public/uploads/');
-const ensureDirectory = (directory) => {
-    fs.mkdirSync(directory, { recursive: true });
-};
 
 ensureDirectory(publicUploadDirectory);
 
@@ -31,22 +27,12 @@ const audioFileFilter = (req, file, cb) => {
 };
 
 const resolveAdminSoundFilePath = (value) => {
-    const rawValue = String(value || '').trim();
-    if (!rawValue) {
-        return '';
-    }
-
-    const filename = path.basename(rawValue.split('?')[0].split('#')[0]);
+    const filename = path.basename(String(value || '').trim().split('?')[0].split('#')[0]);
     if (!filename.startsWith('adminSound-')) {
         return '';
     }
 
-    const filePath = path.join(publicUploadDirectory, filename);
-    if (!filePath.startsWith(publicUploadDirectory)) {
-        return '';
-    }
-
-    return filePath;
+    return resolvePublicUploadFilePath(filename);
 };
 
 const deleteAdminSoundFile = (value) => {

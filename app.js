@@ -7,6 +7,7 @@ const sanitize = require('mongo-sanitize');
 const path = require('node:path');
 const fs = require('node:fs');
 const errorHandler = require('./middleware/errorMiddleware');
+const { resolvePublicUploadFilePath } = require('./utils/uploadPaths');
 
 const app = express();
 
@@ -167,9 +168,16 @@ app.use('/uploads/:filename', (req, res, next) => {
         });
     }
 
-    return next();
+    const filePath = resolvePublicUploadFilePath(req.params.filename);
+    if (!filePath || !fs.existsSync(filePath)) {
+        return res.status(404).json({
+            success: false,
+            message: 'File not found'
+        });
+    }
+
+    return res.sendFile(filePath);
 });
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 app.use(cors({
     origin(origin, callback) {
@@ -219,6 +227,7 @@ app.use('/api/facility-reservations', require('./routes/facilityReservationRoute
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/disaster-incidents', require('./routes/disasterIncidentRoutes'));
+app.use('/api/disaster-advisories', require('./routes/disasterAdvisoryRoutes'));
 app.use('/api/sms-logs', require('./routes/smsRoutes'));
     app.use('/api/blotters', require('./routes/blotterRoutes'));
     app.use('/api/manpower-requests', require('./routes/manpowerRequestRoutes'));

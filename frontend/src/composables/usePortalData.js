@@ -9,6 +9,7 @@ export function usePortalData() {
     const documentRequests = ref([]);
     const reservations = ref([]);
     const reports = ref([]);
+    const disasterAdvisories = ref([]);
     const appointments = ref([]);
     const officials = ref([]);
     const facilityAvailability = ref('Pick a facility and date to load available slots.');
@@ -91,6 +92,14 @@ export function usePortalData() {
         }
     };
 
+    const loadDisasterAdvisories = async () => {
+        try {
+            disasterAdvisories.value = await apiFetch('/disaster-advisories/public');
+        } catch (error) {
+            console.error('Failed to load disaster advisories', error);
+        }
+    };
+
     const loadAll = async () => {
         try {
             await Promise.all([
@@ -99,7 +108,8 @@ export function usePortalData() {
                 loadReservations(),
                 loadReports(),
                 loadAppointments(),
-                loadOfficials()
+                loadOfficials(),
+                loadDisasterAdvisories()
             ]);
             setStatus('Dashboard loaded.');
         } catch (error) {
@@ -144,6 +154,7 @@ export function usePortalData() {
         documentRequests,
         reservations,
         reports,
+        disasterAdvisories,
         appointments,
         officials,
         facilityAvailability,
@@ -157,6 +168,7 @@ export function usePortalData() {
         loadReports,
         loadAppointments,
         loadOfficials,
+        loadDisasterAdvisories,
         loadAll,
         saveProfile,
         loadFacilityAvailability

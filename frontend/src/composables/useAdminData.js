@@ -30,7 +30,7 @@ export function useAdminData() {
                 apiFetch('/announcements/admin/all').then(res => res.data || res),
                 apiFetch('/appointments/admin/all-appointments').then(res => res.data || res),
                 apiFetch('/appointments/officials').then(res => res.data || res),
-                apiFetch('/disaster-incidents')
+                apiFetch('/disaster-advisories')
             ]);
 
             [
