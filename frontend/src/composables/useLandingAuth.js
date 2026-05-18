@@ -51,7 +51,7 @@ export function useLandingAuth() {
         username: '', email: '', password: '', confirmPassword: '',
         firstName: '', middleName: '', lastName: '', suffix: '', sex: 'male',
         birthDate: '', civilStatus: 'single', citizenship: 'Filipino', occupation: '',
-        contactNumber: '', address: 'Barangay Irawan', purok: '', zone: '',
+        contactNumber: '+63', address: 'Barangay Irawan', purok: '', zone: '',
         isSeniorCitizen: false, isPWD: false, isSoloParent: false, isPregnant: false, vulnerabilityType: '', voterStatus: 'not_registered',
         emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '',
         floodProneArea: false, verificationPending: false

@@ -678,7 +678,13 @@
                                 <div class="two-col-grid">
                                     <div class="input-group">
                                         <label for="reg-contact">Contact Number</label>
-                                        <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" required>
+                                        <div class="phone-input-wrapper">
+                                            <span class="phone-country-badge" aria-hidden="true">
+                                                <span class="phone-country-flag">🇵🇭</span>
+                                                <span>PH</span>
+                                            </span>
+                                            <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="+639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" required @focus="ensureRegisterPhonePrefix" @input="formatRegisterPhoneInput">
+                                        </div>
                                     </div>
                                     <div class="input-group">
                                         <label for="reg-email">Email Address</label>
@@ -1156,6 +1162,47 @@ watch(() => registerForm.purok, () => {
 });
 
 registerForm.address = 'Barangay Irawan';
+if (!registerForm.contactNumber) {
+    registerForm.contactNumber = '+63';
+}
+
+const ensureRegisterPhonePrefix = () => {
+    if (!String(registerForm.contactNumber || '').trim()) {
+        registerForm.contactNumber = '+63';
+    }
+};
+
+const formatRegisterPhoneInput = () => {
+    let value = String(registerForm.contactNumber || '').replace(/[^\d+]/g, '');
+
+    if (value.startsWith('+63')) {
+        registerForm.contactNumber = `+63${value.slice(3).replace(/\D/g, '').slice(0, 10)}`;
+        return;
+    }
+
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+        registerForm.contactNumber = '+63';
+        return;
+    }
+
+    if (digits.startsWith('63')) {
+        registerForm.contactNumber = `+63${digits.slice(2, 12)}`;
+        return;
+    }
+
+    if (digits.startsWith('09')) {
+        registerForm.contactNumber = `+63${digits.slice(1, 11)}`;
+        return;
+    }
+
+    if (digits.startsWith('9')) {
+        registerForm.contactNumber = `+63${digits.slice(0, 10)}`;
+        return;
+    }
+
+    registerForm.contactNumber = `+63${digits.slice(0, 10)}`;
+};
 const guestDocumentFormDefaults = {
     documentType: 'barangay_clearance',
     purpose: '',
@@ -2068,6 +2115,37 @@ onMounted(() => {
 
 .input-wrapper input {
     padding-left: 44px !important;
+}
+
+.phone-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.phone-country-badge {
+    position: absolute;
+    left: 12px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 10px;
+    border-right: 1px solid #d8e0dc;
+    color: #20352c;
+    font-size: 0.86rem;
+    font-weight: 800;
+    pointer-events: none;
+}
+
+.phone-country-flag {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.phone-input-wrapper input {
+    padding-left: 94px !important;
 }
 
 /* Hide native browser password reveal/clear icons to avoid duplicate controls */
