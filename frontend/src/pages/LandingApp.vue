@@ -1852,6 +1852,21 @@ onMounted(() => {
 
 </script>
 
+<style>
+/* Google injects the image challenge iframe at document.body level, outside Vue's scoped styles. */
+iframe[src*="recaptcha/api2/bframe"] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(400px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: min(580px, calc(100vh - 32px)) !important;
+    max-height: calc(100vh - 32px) !important;
+    z-index: 2147483647 !important;
+}
+</style>
+
 <style scoped>
 /* Highly Attractive Modern Split Auth Modal Styles */
 
