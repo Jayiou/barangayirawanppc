@@ -98,14 +98,6 @@ const userSchema = new mongoose.Schema(
                 trim: true,
                 default: 'not_registered'
             },
-            isSeniorCitizen: {
-                type: Boolean,
-                default: false
-            },
-            isPWD: {
-                type: Boolean,
-                default: false
-            },
             isSoloParent: {
                 type: Boolean,
                 default: false
@@ -114,34 +106,9 @@ const userSchema = new mongoose.Schema(
                 type: Boolean,
                 default: false
             },
-            vulnerabilityType: {
-                type: String,
-                trim: true,
-                default: ''
-            },
-            vulnerabilityProofPath: {
-                type: String,
-                trim: true,
-                default: ''
-            },
             verificationPending: {
                 type: Boolean,
                 default: false
-            },
-            emergencyContactName: {
-                type: String,
-                trim: true,
-                default: ''
-            },
-            emergencyContactNumber: {
-                type: String,
-                trim: true,
-                default: ''
-            },
-            emergencyContactRelationship: {
-                type: String,
-                trim: true,
-                default: ''
             },
             floodProneArea: {
                 type: Boolean,

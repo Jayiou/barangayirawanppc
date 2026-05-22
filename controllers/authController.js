@@ -173,14 +173,11 @@ exports.register = asyncHandler(async (req, res) => {
     const { 
         username, email, password, role,
         firstName, middleName, lastName, suffix, sex, birthDate, civilStatus, contactNumber, address, purok, zone, houseNumber, streetAddress, citizenship, occupation, voterStatus, recaptchaToken,
-        householdMemberCount, householdId, emergencyContactName, emergencyContactNumber, emergencyContactRelationship, medicalConditions, floodProneArea, evacuationPriority,
-        isSeniorCitizen, isPWD, isSoloParent, isPregnant, vulnerabilityType, verificationPending
+        householdMemberCount, householdId, medicalConditions, floodProneArea, evacuationPriority,
+        isSoloParent, isPregnant, verificationPending
     } = req.body;
 
     const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || req.file?.filename || null;
-    const vulnerabilityProofPath = req.files?.vulnerabilityProof?.[0]?.filename || '';
-    const seniorFlag = toBoolean(isSeniorCitizen);
-    const pwdFlag = toBoolean(isPWD);
     const pendingVerificationFlag = toBoolean(verificationPending);
     const normalizedContactNumber = normalizeContactNumber(contactNumber);
     const { message: purokZoneError, normalizedPurok, normalizedZone } = validatePurokZone(purok, zone);
@@ -271,19 +268,12 @@ exports.register = asyncHandler(async (req, res) => {
             voterStatus: voterStatus || 'not_registered',
             householdMemberCount: Number(householdMemberCount) || 1,
             householdId: householdId || '',
-            emergencyContactName: emergencyContactName || '',
-            emergencyContactNumber: emergencyContactNumber || '',
-            emergencyContactRelationship: emergencyContactRelationship || '',
             medicalConditions: medicalConditions || '',
             floodProneArea: toBoolean(floodProneArea),
             evacuationPriority: evacuationPriority || '',
             proofOfResidency,
-            isSeniorCitizen: seniorFlag,
-            isPWD: pwdFlag,
             isSoloParent: toBoolean(isSoloParent),
             isPregnant: toBoolean(isPregnant),
-            vulnerabilityType: vulnerabilityType || '',
-            vulnerabilityProofPath,
             verificationPending: pendingVerificationFlag
         },
         isActive: false // Explicitly inactive until OTP -> Admin Approval
@@ -354,19 +344,12 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
                 voterStatus: pendingProfile.voterStatus || 'not_registered',
                 householdMemberCount: Number(pendingProfile.householdMemberCount) || 1,
                 householdId: pendingProfile.householdId || '',
-                emergencyContactName: pendingProfile.emergencyContactName || '',
-                emergencyContactNumber: pendingProfile.emergencyContactNumber || '',
-                emergencyContactRelationship: pendingProfile.emergencyContactRelationship || '',
                 medicalConditions: pendingProfile.medicalConditions || '',
                 floodProneArea: Boolean(pendingProfile.floodProneArea),
                 evacuationPriority: pendingProfile.evacuationPriority || '',
                 proofOfResidency: pendingProfile.proofOfResidency || '',
-                isSeniorCitizen: Boolean(pendingProfile.isSeniorCitizen),
-                isPWD: Boolean(pendingProfile.isPWD),
                 isSoloParent: Boolean(pendingProfile.isSoloParent),
                 isPregnant: Boolean(pendingProfile.isPregnant),
-                vulnerabilityType: pendingProfile.vulnerabilityType || '',
-                vulnerabilityProofPath: pendingProfile.vulnerabilityProofPath || '',
                 verificationPending: Boolean(pendingProfile.verificationPending)
             });
         }

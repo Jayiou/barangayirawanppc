@@ -32,8 +32,7 @@ const passwordResetLimiter = createRateLimiter({
 });
 
 router.post('/register', registerLimiter, upload.fields([
-    { name: 'proofOfResidency', maxCount: 1 },
-    { name: 'vulnerabilityProof', maxCount: 1 }
+    { name: 'proofOfResidency', maxCount: 1 }
 ]), register);
 router.post('/verify-otp', otpLimiter, verifyOtp);
 router.post('/resend-otp', otpLimiter, resendOtp);

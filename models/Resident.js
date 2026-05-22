@@ -103,14 +103,6 @@ const residentSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
-        isSeniorCitizen: {
-            type: Boolean,
-            default: false
-        },
-        isPWD: {
-            type: Boolean,
-            default: false
-        },
         isSoloParent: {
             type: Boolean,
             default: false
@@ -129,34 +121,9 @@ const residentSchema = new mongoose.Schema(
             trim: true,
             default: ''
         },
-        vulnerabilityType: {
-            type: String,
-            enum: ['', 'senior', 'pwd', 'both'],
-            default: ''
-        },
-        vulnerabilityProofPath: {
-            type: String,
-            trim: true,
-            default: ''
-        },
         verificationPending: {
             type: Boolean,
             default: false
-        },
-        emergencyContactName: {
-            type: String,
-            trim: true,
-            default: ''
-        },
-        emergencyContactNumber: {
-            type: String,
-            trim: true,
-            default: ''
-        },
-        emergencyContactRelationship: {
-            type: String,
-            trim: true,
-            default: ''
         },
         medicalConditions: {
             type: String,

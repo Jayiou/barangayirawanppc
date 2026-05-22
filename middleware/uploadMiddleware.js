@@ -6,7 +6,7 @@ const privateProofDirectory = path.join(__dirname, '../private/uploads/proofs/')
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const destination = ['proofOfResidency', 'vulnerabilityProof'].includes(file.fieldname)
+        const destination = file.fieldname === 'proofOfResidency'
             ? privateProofDirectory
             : publicUploadDirectory;
 
@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const validMimes = ['proofOfResidency', 'vulnerabilityProof'].includes(file.fieldname)
+    const validMimes = file.fieldname === 'proofOfResidency'
         ? ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
         : ['image/jpeg', 'image/png', 'image/jpg'];
 

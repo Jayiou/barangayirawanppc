@@ -97,36 +97,12 @@
                                 <label><span>Citizenship</span><input v-model="profile.citizenship" type="text"></label>
                                 <label><span>Occupation</span><input v-model="profile.occupation" type="text"></label>
                                 <label>
-                                    <span>Senior Citizen</span>
-                                    <select v-model="profile.isSeniorCitizen">
-                                        <option :value="false">No</option>
-                                        <option :value="true">Yes</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>PWD</span>
-                                    <select v-model="profile.isPWD">
-                                        <option :value="false">No</option>
-                                        <option :value="true">Yes</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>Vulnerability Type</span>
-                                    <select v-model="profile.vulnerabilityType">
-                                        <option value="">None</option>
-                                        <option value="senior">Senior</option>
-                                        <option value="pwd">PWD</option>
-                                        <option value="both">Senior + PWD</option>
-                                    </select>
-                                </label>
-                                <label>
                                     <span>Verification Pending</span>
                                     <select v-model="profile.verificationPending">
                                         <option :value="false">No</option>
                                         <option :value="true">Yes</option>
                                     </select>
                                 </label>
-                                <label><span>Vulnerability Proof Path</span><input v-model="profile.vulnerabilityProofPath" type="text"></label>
                                 <label>
                                     <span>Voter status</span>
                                     <select v-model="profile.voterStatus">

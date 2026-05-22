@@ -94,7 +94,7 @@ const buildAffectedPayload = (payload) => {
 const getIncidentSummary = async (incident) => {
     const affectedRecords = await DisasterAffectedRecord.find({ incidentId: incident._id }).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix isSeniorCitizen isPWD'
+        select: 'firstName middleName lastName suffix'
     });
 
     const linkedReports = await Report.find({
@@ -107,17 +107,13 @@ const getIncidentSummary = async (incident) => {
         accumulator.injured += record.injuredCount || 0;
         accumulator.missing += record.missingCount || 0;
 
-        const resident = record.residentId;
-        if (resident?.isSeniorCitizen) accumulator.seniors += 1;
-        if (resident?.isPWD) accumulator.pwds += 1;
         return accumulator;
     }, {
         households: 0,
         evacuees: 0,
         injured: 0,
         missing: 0,
-        seniors: 0,
-        pwds: 0
+        seniors: 0
     });
 
     return {
@@ -225,7 +221,7 @@ exports.addAffectedRecord = asyncHandler(async (req, res) => {
 
     const populated = await DisasterAffectedRecord.findById(record._id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix isSeniorCitizen isPWD'
+        select: 'firstName middleName lastName suffix'
     });
     res.status(201).json(populated);
 });
@@ -239,7 +235,7 @@ exports.updateAffectedRecord = asyncHandler(async (req, res) => {
         { new: true, runValidators: true }
     ).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix isSeniorCitizen isPWD'
+        select: 'firstName middleName lastName suffix'
     });
 
     if (!record) {

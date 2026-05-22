@@ -18,8 +18,7 @@ export function usePortalData() {
     const profile = reactive({
         firstName: '', lastName: '', middleName: '', suffix: '', sex: 'male', birthDate: '', civilStatus: 'single',
         contactNumber: '', email: '', address: '', purok: '', houseNumber: '', streetAddress: '', citizenship: '', occupation: '', voterStatus: 'not_registered', householdMemberCount: 1, householdId: '', profileImage: '',
-        isSeniorCitizen: false, isPWD: false, vulnerabilityType: '', vulnerabilityProofPath: '', verificationPending: false
-        , isSoloParent: false, isPregnant: false, emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '', medicalConditions: '', floodProneArea: false, evacuationPriority: '', verificationStatus: 'pending_review', verificationRemarks: '', validIdPath: '', selfieVerificationPath: ''
+        verificationPending: false, isSoloParent: false, isPregnant: false, medicalConditions: '', floodProneArea: false, evacuationPriority: '', verificationStatus: 'pending_review', verificationRemarks: '', validIdPath: '', selfieVerificationPath: ''
     });
 
     const setStatus = (message, isError = false) => {

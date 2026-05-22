@@ -2838,8 +2838,6 @@ const residentSystemId = (resident) => {
 };
 const residentVulnerabilityTags = (resident) => {
     const tags = [];
-    if (resident?.isSeniorCitizen) tags.push('Senior Citizen');
-    if (resident?.isPWD) tags.push('PWD');
     if (resident?.isSoloParent) tags.push('Solo Parent');
     if (resident?.isPregnant) tags.push('Pregnant');
     return tags.length ? tags : ['General Resident'];
@@ -2870,8 +2868,7 @@ const formatPurokZone = (resident) => {
 };
 const residentDocumentCards = (resident) => ([
     { key: 'validIdPath', label: 'Valid ID', path: resident?.validIdPath },
-    { key: 'proofOfResidency', label: 'Proof of Residency', path: resident?.proofOfResidency },
-    { key: 'vulnerabilityProofPath', label: 'Senior/PWD Proof', path: resident?.vulnerabilityProofPath }
+    { key: 'proofOfResidency', label: 'Proof of Residency', path: resident?.proofOfResidency }
 ]);
 const openResidentDocument = (resident, key) => {
     if (key === 'proofOfResidency') {

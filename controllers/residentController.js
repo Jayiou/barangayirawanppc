@@ -28,18 +28,11 @@ const residentProfileFields = [
     'occupation',
     'voterStatus',
     'profileImage',
-    'isSeniorCitizen',
-    'isPWD',
     'isSoloParent',
     'isPregnant',
     'householdMemberCount',
     'householdId',
-    'vulnerabilityType',
-    'vulnerabilityProofPath',
     'verificationPending',
-    'emergencyContactName',
-    'emergencyContactNumber',
-    'emergencyContactRelationship',
     'medicalConditions',
     'floodProneArea',
     'evacuationPriority',
@@ -75,9 +68,6 @@ const validateResidentData = (payload) => {
         return 'Please provide a valid birthDate';
     }
 
-    if (payload.vulnerabilityType !== undefined && !['', 'senior', 'pwd', 'both'].includes(String(payload.vulnerabilityType))) {
-        return 'Please provide a valid vulnerabilityType';
-    }
     if (payload.evacuationPriority !== undefined && !['', 'low', 'medium', 'high', 'critical'].includes(String(payload.evacuationPriority))) {
         return 'Please provide a valid evacuationPriority';
     }

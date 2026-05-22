@@ -52,12 +52,10 @@ export function useLandingAuth() {
         firstName: '', middleName: '', lastName: '', suffix: '', sex: 'male',
         birthDate: '', civilStatus: 'single', citizenship: 'Filipino', occupation: '',
         contactNumber: '+63', address: 'Barangay Irawan', purok: '', zone: '',
-        isSeniorCitizen: false, isPWD: false, isSoloParent: false, isPregnant: false, vulnerabilityType: '', voterStatus: 'not_registered',
-        emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '',
+        isSoloParent: false, isPregnant: false, voterStatus: 'not_registered',
         floodProneArea: false, verificationPending: false
     });
     const proofOfResidencyFile = ref(null);
-    const vulnerabilityProofFile = ref(null);
     const otpForm = reactive({ email: '', code: '' });
 
     const handleResidentAuth = async (path, payload) => {
@@ -136,10 +134,6 @@ export function useLandingAuth() {
             
             formData.append('recaptchaToken', recaptchaToken);
             formData.append('proofOfResidency', proofOfResidencyFile);
-            if (vulnerabilityProofFile.value) {
-                formData.append('vulnerabilityProof', vulnerabilityProofFile.value);
-            }
-
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 body: formData
@@ -200,13 +194,9 @@ export function useLandingAuth() {
         proofOfResidencyFile.value = event.target.files[0];
     };
 
-    const handleVulnerabilityProofUpload = (event) => {
-        vulnerabilityProofFile.value = event.target.files[0] || null;
-    };
-
     return {
-        loginForm, registerForm, proofOfResidencyFile, vulnerabilityProofFile, otpForm,
-        loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, handleVulnerabilityProofUpload,
+        loginForm, registerForm, proofOfResidencyFile, otpForm,
+        loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload,
         getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail
     };
 }
