@@ -268,9 +268,24 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Associated user account not found', { code: 'USER_NOT_FOUND' });
     }
 
+    const verificationStatusByAccountStatus = {
+        approved: 'verified',
+        rejected: 'rejected',
+        pending_approval: 'pending_review'
+    };
+    const nextVerificationStatus = verificationStatusByAccountStatus[status];
+
     user.accountStatus = status;
     user.isActive = status === 'approved' || status === 'pending_approval';
     await user.save();
+
+    if (nextVerificationStatus) {
+        resident.verificationStatus = nextVerificationStatus;
+        if (status === 'approved' || status === 'rejected' || status === 'pending_approval') {
+            resident.verificationRemarks = '';
+        }
+        await resident.save();
+    }
 
     // Send email notification to user about approval or rejection
     if (user.email && resident.firstName) {
@@ -284,7 +299,7 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
 
     res.json({
         message: `Resident account successfully ${status}`,
-        resident,
+        resident: await Resident.findById(resident._id).populate('userId', 'username email role isActive accountStatus createdAt'),
         user: { id: user._id, accountStatus: user.accountStatus, isActive: user.isActive }
     });
 });

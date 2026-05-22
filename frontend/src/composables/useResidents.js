@@ -32,11 +32,12 @@ export function useResidents(sourceResidents = null) {
 
     const saveResidentStatus = async (itemId, status) => {
         try {
-            await apiFetch(`/residents/${itemId}/status`, {
+            const response = await apiFetch(`/residents/${itemId}/status`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status })
             });
             await loadResidents();
+            return response;
         } catch (error) {
             throw new Error(error.message || 'Failed to update resident status');
         }

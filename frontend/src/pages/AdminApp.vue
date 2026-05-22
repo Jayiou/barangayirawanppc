@@ -853,14 +853,11 @@
                                 <button v-if="canApproveRejectResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
                                 <button v-if="canSuspendResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
                                 <button v-if="canArchiveResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
-                                <button type="button" class="ghost-button" @click="sendResidentSMSAction"><i class="fa-solid fa-message"></i> Send SMS</button>
-                                <button type="button" class="ghost-button" @click="sendResidentEmailAction"><i class="fa-solid fa-envelope"></i> Send Email</button>
                             </div>
                         </aside>
                         <section class="resident-center-pane">
                             <div class="resident-tab-nav">
                                 <button type="button" :class="{ active: residentTab === 'personal' }" @click="residentTab = 'personal'"><i class="fa-solid fa-id-card"></i> Personal Information</button>
-                                <button type="button" :class="{ active: residentTab === 'verification' }" @click="residentTab = 'verification'"><i class="fa-solid fa-file-shield"></i> Verification Documents</button>
                                 <button type="button" :class="{ active: residentTab === 'activity' }" @click="residentTab = 'activity'"><i class="fa-solid fa-timeline"></i> Activity History</button>
                                 <button type="button" :class="{ active: residentTab === 'transactions' }" @click="residentTab = 'transactions'"><i class="fa-solid fa-receipt"></i> Requests & Transactions</button>
                             </div>
@@ -880,23 +877,6 @@
                                     <p><strong>Purok/Zone:</strong> {{ formatPurokZone(selectedItem) }}</p>
                                     <p><strong>Voter Status:</strong> {{ selectedItem.voterStatus || 'N/A' }}</p>
                                 </div>
-                            </div>
-                            <div class="resident-tab-content" v-else-if="residentTab === 'verification'">
-                                <div class="resident-doc-grid">
-                                    <article class="resident-doc-card" v-for="doc in residentDocumentCards(selectedItem)" :key="doc.key">
-                                        <h4>{{ doc.label }}</h4>
-                                        <p class="fine-print">{{ doc.path ? doc.path.split('/').pop() : 'No uploaded file' }}</p>
-                                        <div class="resident-doc-actions">
-                                            <button type="button" class="ghost-button" :disabled="!doc.path" @click="openResidentDocument(selectedItem, doc.key)"><i class="fa-solid fa-eye"></i> View</button>
-                                            <button type="button" class="ghost-button" :disabled="!doc.path"><i class="fa-solid fa-download"></i> Download</button>
-                                            <button type="button" class="ghost-button" @click="setVerificationStatus('needs_reupload')"><i class="fa-solid fa-rotate"></i> Re-upload</button>
-                                        </div>
-                                    </article>
-                                </div>
-                                <label style="margin-top: 12px;">
-                                    <span>Admin Remarks</span>
-                                    <textarea v-model="residentVerificationRemarks" rows="3" placeholder="Reason for rejection or re-upload request"></textarea>
-                                </label>
                             </div>
                             <div class="resident-tab-content" v-else-if="residentTab === 'activity'">
                                 <div class="resident-timeline">
@@ -925,10 +905,6 @@
                         </section>
                     </div>
                     <div class="resident-bottom-panels">
-                        <article class="content-card">
-                            <h4><i class="fa-solid fa-note-sticky"></i> Internal Resident Notes</h4>
-                            <textarea v-model="residentInternalNotes" rows="3" placeholder="Admin-only notes for barangay staff"></textarea>
-                        </article>
                         <article class="content-card">
                             <h4><i class="fa-solid fa-tags"></i> Resident Tags</h4>
                             <div class="resident-tags"><span class="resident-tag" v-for="tag in residentAutoTags(selectedItem)" :key="tag">{{ tag }}</span></div>
@@ -1367,7 +1343,7 @@ const resetSound = async () => {
 const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
-const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);
+const { residentSearch, filteredResidents, calculateAge, saveResidentStatus } = useResidents(residents);
 const { unreadReports, startNotificationPolling, stopNotificationPolling, clearUnreadReports, setCustomSound, getCustomSoundConfig, stopAlertSound } = useReportNotifications();
 // Local state
 const sidebarOpen = ref(false);
@@ -1443,8 +1419,6 @@ const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
 const residentTab = ref('personal');
-const residentInternalNotes = ref('');
-const residentVerificationRemarks = ref('');
 const residentAccountStatus = computed(() => selectedItem.value?.userId?.accountStatus || editForm.status || 'pending_approval');
 const canApproveRejectResident = computed(() => !['approved', 'rejected'].includes(residentAccountStatus.value));
 const canSuspendResident = computed(() => residentAccountStatus.value === 'approved');
@@ -2443,8 +2417,6 @@ const getRequestDetails = (item) => {
 const setupResidentModal = (item) => {
     editForm.status = item.userId?.accountStatus || 'pending_approval';
     residentTab.value = 'personal';
-    residentInternalNotes.value = item.internalNotes || '';
-    residentVerificationRemarks.value = item.verificationRemarks || '';
 };
 
 const setupRecordStatusModal = (item) => {
@@ -2526,7 +2498,12 @@ const handleSave = async () => {
     try {
         switch (activeModal.value) {
             case 'resident':
-                await saveResidentStatus(selectedItem.value._id, editForm.status);
+                {
+                    const response = await saveResidentStatus(selectedItem.value._id, editForm.status);
+                    if (response?.resident) {
+                        selectedItem.value = { ...selectedItem.value, ...response.resident };
+                    }
+                }
                 msg('Resident account status updated.');
                 break;
             case 'document':
@@ -2866,18 +2843,6 @@ const formatPurokZone = (resident) => {
     if (purok && zone) return `${purok} / ${zone}`;
     return purok || zone || 'N/A';
 };
-const residentDocumentCards = (resident) => ([
-    { key: 'validIdPath', label: 'Valid ID', path: resident?.validIdPath },
-    { key: 'proofOfResidency', label: 'Proof of Residency', path: resident?.proofOfResidency }
-]);
-const openResidentDocument = (resident, key) => {
-    if (key === 'proofOfResidency') {
-        openResidentProof(resident._id);
-        return;
-    }
-    const path = resident?.[key];
-    if (path) window.open(path, '_blank', 'noopener');
-};
 const residentActivityTimeline = (resident) => ([
     { key: 'registered', label: 'Registered account', time: formatDate(resident?.createdAt) },
     { key: 'updated', label: 'Profile updated', time: formatDate(resident?.updatedAt || resident?.createdAt) },
@@ -2938,77 +2903,6 @@ const setResidentStatusAndSave = async (status) => {
     editForm.status = status;
     await handleSave();
 };
-const setVerificationStatus = async (status) => {
-    if (!selectedItem.value?._id) {
-        showToast('Invalid resident record.', true);
-        return;
-    }
-    try {
-        const payload = {
-            verificationStatus: status,
-            verificationRemarks: residentVerificationRemarks.value || ''
-        };
-        const response = await apiFetch(`/residents/${selectedItem.value._id}/verification`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload)
-        });
-        selectedItem.value.verificationStatus = response?.resident?.verificationStatus || status;
-        selectedItem.value.verificationRemarks = response?.resident?.verificationRemarks || residentVerificationRemarks.value;
-        showToast(`Verification set to ${formatVerificationStatus(selectedItem.value.verificationStatus)}.`);
-        await loadAll();
-    } catch (error) {
-        showToast(error.message || 'Failed to update verification status.', true);
-    }
-};
-
-const sendResidentEmailAction = async () => {
-    const resident = selectedItem.value;
-    const recipientEmail = resident?.email || resident?.userId?.email;
-    if (!resident?._id || !recipientEmail) {
-        showToast('Resident email is missing.', true);
-        return;
-    }
-    const subject = globalThis.prompt('Email subject:', 'Barangay Resident Update');
-    if (!subject) return;
-    const message = globalThis.prompt('Email message:', `Good day ${getFullResidentName(resident)},`) || '';
-    if (!message.trim()) {
-        showToast('Email message is required.', true);
-        return;
-    }
-    try {
-        await apiFetch(`/residents/${resident._id}/send-email`, {
-            method: 'POST',
-            body: JSON.stringify({ subject, message })
-        });
-        showToast('Email sent successfully.');
-    } catch (error) {
-        showToast(error.message || 'Failed to send email.', true);
-    }
-};
-
-const sendResidentSMSAction = async () => {
-    const resident = selectedItem.value;
-    if (!resident?._id || !resident?.contactNumber) {
-        showToast('Resident contact number is missing.', true);
-        return;
-    }
-    const message = globalThis.prompt('SMS message:', `Barangay update for ${getFullResidentName(resident)}:`) || '';
-    if (!message.trim()) {
-        showToast('SMS message is required.', true);
-        return;
-    }
-    try {
-        await apiFetch(`/residents/${resident._id}/send-sms`, {
-            method: 'POST',
-            body: JSON.stringify({ message })
-        });
-        showToast('SMS logged and queued successfully.');
-        await loadSMSLogs();
-    } catch (error) {
-        showToast(error.message || 'Failed to send SMS.', true);
-    }
-};
-
 const handleStatusAction = (actionObj) => {
     confirmingAction.value = actionObj;
 };
