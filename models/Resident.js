@@ -103,14 +103,6 @@ const residentSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
-        isSoloParent: {
-            type: Boolean,
-            default: false
-        },
-        isPregnant: {
-            type: Boolean,
-            default: false
-        },
         householdMemberCount: {
             type: Number,
             min: 1,
@@ -120,10 +112,6 @@ const residentSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ''
-        },
-        verificationPending: {
-            type: Boolean,
-            default: false
         },
         medicalConditions: {
             type: String,

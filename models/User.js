@@ -98,18 +98,6 @@ const userSchema = new mongoose.Schema(
                 trim: true,
                 default: 'not_registered'
             },
-            isSoloParent: {
-                type: Boolean,
-                default: false
-            },
-            isPregnant: {
-                type: Boolean,
-                default: false
-            },
-            verificationPending: {
-                type: Boolean,
-                default: false
-            },
             floodProneArea: {
                 type: Boolean,
                 default: false

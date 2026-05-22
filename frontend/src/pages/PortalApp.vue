@@ -96,20 +96,7 @@
                                 <label><span>Purok</span><input v-model="profile.purok" type="text"></label>
                                 <label><span>Citizenship</span><input v-model="profile.citizenship" type="text"></label>
                                 <label><span>Occupation</span><input v-model="profile.occupation" type="text"></label>
-                                <label>
-                                    <span>Verification Pending</span>
-                                    <select v-model="profile.verificationPending">
-                                        <option :value="false">No</option>
-                                        <option :value="true">Yes</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>Voter status</span>
-                                    <select v-model="profile.voterStatus">
-                                        <option value="registered">Registered</option>
-                                        <option value="not_registered">Not registered</option>
-                                    </select>
-                                </label>
+
                                 <label><span>Profile image URL</span><input v-model="profile.profileImage" type="url"></label>
                             </div>
                             <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Resident Profile' }}</button>

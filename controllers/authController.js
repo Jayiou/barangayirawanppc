@@ -173,12 +173,10 @@ exports.register = asyncHandler(async (req, res) => {
     const { 
         username, email, password, role,
         firstName, middleName, lastName, suffix, sex, birthDate, civilStatus, contactNumber, address, purok, zone, houseNumber, streetAddress, citizenship, occupation, voterStatus, recaptchaToken,
-        householdMemberCount, householdId, medicalConditions, floodProneArea, evacuationPriority,
-        isSoloParent, isPregnant, verificationPending
+        householdMemberCount, householdId, medicalConditions, floodProneArea, evacuationPriority
     } = req.body;
 
     const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || req.file?.filename || null;
-    const pendingVerificationFlag = toBoolean(verificationPending);
     const normalizedContactNumber = normalizeContactNumber(contactNumber);
     const { message: purokZoneError, normalizedPurok, normalizedZone } = validatePurokZone(purok, zone);
 
@@ -271,10 +269,7 @@ exports.register = asyncHandler(async (req, res) => {
             medicalConditions: medicalConditions || '',
             floodProneArea: toBoolean(floodProneArea),
             evacuationPriority: evacuationPriority || '',
-            proofOfResidency,
-            isSoloParent: toBoolean(isSoloParent),
-            isPregnant: toBoolean(isPregnant),
-            verificationPending: pendingVerificationFlag
+            proofOfResidency
         },
         isActive: false // Explicitly inactive until OTP -> Admin Approval
     });
@@ -347,10 +342,7 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
                 medicalConditions: pendingProfile.medicalConditions || '',
                 floodProneArea: Boolean(pendingProfile.floodProneArea),
                 evacuationPriority: pendingProfile.evacuationPriority || '',
-                proofOfResidency: pendingProfile.proofOfResidency || '',
-                isSoloParent: Boolean(pendingProfile.isSoloParent),
-                isPregnant: Boolean(pendingProfile.isPregnant),
-                verificationPending: Boolean(pendingProfile.verificationPending)
+                proofOfResidency: pendingProfile.proofOfResidency || ''
             });
         }
     }

@@ -633,41 +633,6 @@
                                 </div>
 
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 3</span>
-                                    <h4>Vulnerability and Community Data</h4>
-                                </div>
-                                <div class="two-col-grid">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" v-model="registerForm.isSoloParent">
-                                        <span>Solo Parent</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" v-model="registerForm.isPregnant">
-                                        <span>Pregnant</span>
-                                    </label>
-                                </div>
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" v-model="registerForm.verificationPending">
-                                            <span>Verification pending (no ID yet)</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-voter-status">Voter Status</label>
-                                        <div class="custom-select">
-                                            <select id="reg-voter-status" v-model="registerForm.voterStatus">
-                                                <option value="registered">Registered</option>
-                                                <option value="not_registered">Not Registered</option>
-                                            </select>
-                                            <i class="fa-solid fa-chevron-down"></i>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="section-head compact-head">
                                     <span class="eyebrow">Section 4</span>
                                     <h4>Account Information</h4>
                                 </div>

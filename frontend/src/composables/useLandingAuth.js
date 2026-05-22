@@ -52,8 +52,7 @@ export function useLandingAuth() {
         firstName: '', middleName: '', lastName: '', suffix: '', sex: 'male',
         birthDate: '', civilStatus: 'single', citizenship: 'Filipino', occupation: '',
         contactNumber: '+63', address: 'Barangay Irawan', purok: '', zone: '',
-        isSoloParent: false, isPregnant: false, voterStatus: 'not_registered',
-        floodProneArea: false, verificationPending: false
+        floodProneArea: false
     });
     const proofOfResidencyFile = ref(null);
     const otpForm = reactive({ email: '', code: '' });
