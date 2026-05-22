@@ -2,10 +2,17 @@ const DisasterAdvisory = require('../models/DisasterAdvisory');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 
+const ALLOWED_DISASTER_TYPES = new Set(['typhoon', 'flood', 'landslide']);
+
 const normalizeStringList = (value) => {
     if (!value) return [];
     if (Array.isArray(value)) return value.map((entry) => String(entry).trim()).filter(Boolean);
     return String(value).split(',').map((entry) => entry.trim()).filter(Boolean);
+};
+
+const normalizeDisasterType = (value) => {
+    const text = String(value || '').trim().toLowerCase();
+    return ALLOWED_DISASTER_TYPES.has(text) ? text : 'typhoon';
 };
 
 const normalizeStatus = (advisory) => {
@@ -16,17 +23,45 @@ const normalizeStatus = (advisory) => {
     return expected <= now ? 'ongoing' : 'upcoming';
 };
 
-const mapPayload = (body = {}, userId) => ({
-    disasterType: body.disasterType || 'other',
-    expectedImpactDate: body.expectedImpactDate,
-    severity: body.severity || 'medium',
-    affectedPuroks: normalizeStringList(body.affectedPuroks),
-    floodProneAreas: normalizeStringList(body.floodProneAreas),
-    evacuationCenters: normalizeStringList(body.evacuationCenters),
-    advisoryMessage: String(body.advisoryMessage || '').trim(),
-    status: body.status,
-    createdBy: userId
-});
+const mapPayload = (body, userId, options) => {
+    const { partial = false } = options || {};
+    const source = body || {};
+    const payload = {};
+
+    if (!partial || source.disasterType !== undefined) {
+        payload.disasterType = normalizeDisasterType(source.disasterType);
+    }
+
+    if (!partial || source.expectedImpactDate !== undefined) {
+        payload.expectedImpactDate = source.expectedImpactDate;
+    }
+
+    if (!partial || source.severity !== undefined) {
+        payload.severity = source.severity || 'medium';
+    }
+
+    if (!partial || source.floodProneAreas !== undefined) {
+        payload.floodProneAreas = normalizeStringList(source.floodProneAreas);
+    }
+
+    if (!partial || source.evacuationCenters !== undefined) {
+        payload.evacuationCenters = normalizeStringList(source.evacuationCenters);
+    }
+
+    if (!partial || source.advisoryMessage !== undefined) {
+        payload.advisoryMessage = String(source.advisoryMessage || '').trim();
+    }
+
+    if (!partial || source.status !== undefined) {
+        payload.status = source.status;
+    }
+
+    if (!partial) {
+        payload.createdBy = userId;
+    }
+
+    return payload;
+};
 
 exports.getAdminDisasterAdvisories = asyncHandler(async (_req, res) => {
     const advisories = await DisasterAdvisory.find()
@@ -76,11 +111,7 @@ exports.createDisasterAdvisory = asyncHandler(async (req, res) => {
 });
 
 exports.updateDisasterAdvisory = asyncHandler(async (req, res) => {
-    const payload = mapPayload(req.body, req.user.id);
-    delete payload.createdBy;
-    if (!req.body.expectedImpactDate) delete payload.expectedImpactDate;
-    if (!req.body.advisoryMessage) delete payload.advisoryMessage;
-    if (!req.body.status) delete payload.status;
+    const payload = mapPayload(req.body, req.user.id, { partial: true });
 
     const advisory = await DisasterAdvisory.findByIdAndUpdate(
         req.params.id,

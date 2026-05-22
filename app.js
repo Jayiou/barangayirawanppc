@@ -222,7 +222,6 @@ try {
 } catch (err) {
     console.error('ERROR loading announcement routes:', err);
 }
-app.use('/api/document-requests', require('./routes/documentRequestRoutes'));
 app.use('/api/facility-reservations', require('./routes/facilityReservationRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
@@ -232,6 +231,20 @@ app.use('/api/sms-logs', require('./routes/smsRoutes'));
     app.use('/api/blotters', require('./routes/blotterRoutes'));
     app.use('/api/manpower-requests', require('./routes/manpowerRequestRoutes'));
 app.use('/api/status-audit', require('./routes/statusAuditRoutes'));
+
+// Document request routes (resident)
+try {
+    app.use('/api/documents', require('./routes/documentRoutes'));
+} catch (err) {
+    console.error('ERROR loading document routes:', err.message);
+}
+
+// Admin document management
+try {
+    app.use('/api/admin/documents', require('./routes/adminDocumentRoutes'));
+} catch (err) {
+    console.error('ERROR loading admin document routes:', err.message);
+}
 
 // Admin utilities (file upload for admin assets)
 try {

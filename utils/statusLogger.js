@@ -1,6 +1,16 @@
 const StatusAuditLog = require('../models/StatusAuditLog');
 
-const logStatusChange = async (entityType, entityId, previousStatus, newStatus, adminUser, reason = '', ipAddress = '') => {
+const logStatusChange = async (
+    entityType,
+    entityId,
+    previousStatus,
+    newStatus,
+    adminUser,
+    reason = '',
+    ipAddress = '',
+    actionDescription = '',
+    additionalData = null
+) => {
     try {
         if (!adminUser || (!adminUser._id && !adminUser.id)) {
             console.warn('[AUDIT] Missing admin user, skipping audit log');
@@ -10,6 +20,15 @@ const logStatusChange = async (entityType, entityId, previousStatus, newStatus, 
         const userId = adminUser._id || adminUser.id;
         const userName = adminUser.username || adminUser.email || 'Unknown';
 
+        // Build action description if not provided
+        let description = actionDescription;
+        if (!description) {
+            description = `Status changed from ${previousStatus} to ${newStatus}`;
+            if (reason) {
+                description += ` - Reason: ${reason}`;
+            }
+        }
+
         const auditLog = new StatusAuditLog({
             entityType,
             entityId,
@@ -18,7 +37,9 @@ const logStatusChange = async (entityType, entityId, previousStatus, newStatus, 
             changedBy: userId,
             changedByName: userName,
             reason,
-            ipAddress
+            ipAddress,
+            actionDescription: description,
+            additionalData
         });
 
         await auditLog.save();

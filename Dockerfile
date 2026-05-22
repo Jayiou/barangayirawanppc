@@ -1,0 +1,23 @@
+FROM node:20-bullseye-slim
+
+# Install minimal deps Chromium needs
+RUN apt-get update && apt-get install -y \
+    ca-certificates fonts-liberation libnss3 lsb-release wget gnupg --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Chromium (Debian package)
+RUN apt-get update && apt-get install -y chromium --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+
+ENV NODE_ENV=production
+ENV PUBLIC_UPLOAD_DIR=/app/uploads/public
+
+RUN mkdir -p /app/uploads/public
+
+EXPOSE 5000
+CMD ["node", "server.js"]

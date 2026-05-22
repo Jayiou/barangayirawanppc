@@ -6,9 +6,16 @@
             @keyframes spin { to { transform: rotate(360deg); } }
         </style>
     </div>
-    <div class="page-shell app-shell" v-else>
+    <div class="page-shell app-shell resident-shell" :class="{ 'sidebar-expanded': sidebarOpen }" v-else>
         <aside class="app-sidebar" :class="{ open: sidebarOpen }">
-            <button class="sidebar-close-btn" @click="sidebarOpen = false"><i class="fa-solid fa-xmark"></i></button>
+            <button
+                class="resident-sidebar-toggle"
+                type="button"
+                :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                @click="sidebarOpen = !sidebarOpen"
+            >
+                <i class="fa-solid fa-bars"></i>
+            </button>
 
             <!-- Sidebar Header -->
             <div class="sidebar-header">
@@ -17,12 +24,13 @@
 
             <!-- Sidebar Navigation -->
             <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-user"></i> My Profile</button>
-                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> Appointments</button>
-                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i> Document Requests</button>
-                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facility Reservations</button>
-                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports</button>
-                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster Advisories</button>
+                <button :class="{ active: currentView === 'profile' }" type="button" title="My Profile" aria-label="My Profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">My Profile</span></button>
+                <button :class="{ active: currentView === 'appointments' }" type="button" title="Appointments" aria-label="Appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">Appointments</span></button>
+                
+                <button :class="{ active: currentView === 'documents' }" type="button" title="Documents" aria-label="Documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">Documents</span></button>
+                <button :class="{ active: currentView === 'reservations' }" type="button" title="Facility Reservations" aria-label="Facility Reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">Facility Reservations</span></button>
+                <button :class="{ active: currentView === 'reports' }" type="button" title="Reports" aria-label="Reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">Reports</span></button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" title="Disaster Advisories" aria-label="Disaster Advisories" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">Disaster Advisories</span></button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -33,13 +41,13 @@
                     <div class="user-email">{{ user.email }}</div>
                 </div>
                 <div v-else class="fine-print">Checking session...</div>
-                <button type="button" class="logout-btn" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+                <button type="button" class="logout-btn" title="Log Out" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i><span class="nav-label">Log Out</span></button>
             </div>
         </aside>
 
         <main class="app-main">
             <header class="mobile-app-header">
-                <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
+                <button class="sidebar-open-btn" @click="sidebarOpen = !sidebarOpen"><i class="fa-solid fa-bars"></i></button>
             </header>
             <section class="hero-banner">
                 <div>
@@ -138,84 +146,69 @@
             <section class="app-view" :class="{ active: currentView === 'appointments' }">
                 <div class="portal-grid">
                     <article class="content-card">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="section-head portal-table-head">
                             <div>
                                 <span class="eyebrow">Appointments</span>
                                 <h3>My appointments</h3>
                             </div>
                             <button class="primary-button" @click="activeModal = 'appointment'">Request Appointment</button>
                         </div>
-                        <div v-if="!appointmentItems.length" style="padding: 20px; text-align: center; color: #999;">No appointments found.</div>
-                        <div v-else style="display: flex; flex-direction: column; gap: 12px;">
-                            <div v-for="item in appointmentItems" :key="item._id" style="padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; margin-bottom: 4px;">{{ item.title }}</div>
-                                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">{{ item.meta }}</div>
-                                    <div><StatusBadge :status="item.status" /></div>
-                                </div>
-                                <button class="primary-button" @click="viewingAppointment = item.fullItem" style="margin-left: 12px; white-space: nowrap;">View Details</button>
-                            </div>
+                        <input class="portal-search-input" v-model="appointmentSearch" type="search" placeholder="Search appointments">
+                        <div class="portal-table-wrap">
+                            <table class="data-table portal-record-table">
+                                <thead>
+                                    <tr><th>Date</th><th>Official</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!filteredAppointments.length"><td colspan="5" class="portal-empty-cell">No appointments found.</td></tr>
+                                    <tr v-for="item in filteredAppointments" :key="item._id">
+                                        <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
+                                        <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
+                                        <td>{{ item.purpose }}</td>
+                                        <td><StatusBadge :status="item.status" /></td>
+                                        <td><div class="portal-row-actions">
+                                            <button class="ghost-button table-action" @click="openRecordDetail('appointment', item)">View</button>
+                                            <button v-if="canCancelAppointment(item)" class="ghost-button table-action danger" @click="cancelResidentAppointment(item)">Cancel</button>
+                                            <button v-if="canDeleteRecord('appointment', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('appointment', item)">Delete</button>
+                                        </div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </article>
                 </div>
             </section>
 
-            <!-- Document Requests View -->
+            <!-- Document Requests view removed -->
             <section class="app-view" :class="{ active: currentView === 'documents' }">
                 <div class="portal-grid">
                     <article class="content-card">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div class="section-head portal-table-head">
                             <div>
                                 <span class="eyebrow">Document Requests</span>
-                                <h3>My requested documents</h3>
+                                <h3>Request official barangay documents</h3>
                             </div>
                             <button class="primary-button" @click="activeModal = 'document'">Request Document</button>
                         </div>
-                        
-                        <div class="table-responsive" style="border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 15px;">
-                            <table class="data-table" style="margin-top: 0;">
+                        <input class="portal-search-input" v-model="documentSearch" type="search" placeholder="Search requests">
+                        <div class="portal-table-wrap">
+                            <table class="data-table portal-record-table">
                                 <thead>
-                                    <tr>
-                                        <th>Date Requested</th>
-                                        <th>Document Type</th>
-                                        <th>Purpose</th>
-                                        <th>Status</th>
-                                    </tr>
+                                    <tr><th>Date</th><th>Type</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="documentRequests.length === 0">
-                                        <td colspan="4" style="text-align: center; padding: 20px;">No document requests found.</td>
-                                    </tr>
-                                    <tr v-for="doc in paginatedDocumentRequests" :key="doc._id" class="hoverable">
-                                        <td>{{ formatDate(doc.createdAt) }}</td>
-                                        <td style="text-transform: capitalize;">{{ doc.documentType.replace(/_/g, ' ') }}</td>
-                                        <td>{{ doc.purpose }}</td>
-                                        <td><StatusBadge :status="doc.status" /></td>
+                                    <tr v-if="!filteredDocumentRequests.length"><td colspan="5" class="portal-empty-cell">No document requests yet.</td></tr>
+                                    <tr v-for="item in filteredDocumentRequests" :key="item._id">
+                                        <td>{{ formatDate(item.createdAt) }}</td>
+                                        <td>{{ normalizeLabel(item.type) }}</td>
+                                        <td>{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
+                                        <td><StatusBadge :status="item.status" /></td>
+                                        <td><div class="portal-row-actions">
+                                            <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
+                                        </div></td>
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                        
-                        <div v-if="docTotalPages > 1" style="display: flex; gap: 8px; justify-content: center; align-items: center; padding: 15px; background: #f9f9f9; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-                            <button 
-                                @click="docCurrentPage > 1 && (docCurrentPage -= 1)" 
-                                :disabled="docCurrentPage === 1"
-                                style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 0.9rem;"
-                                :style="{ opacity: docCurrentPage === 1 ? 0.5 : 1, cursor: docCurrentPage === 1 ? 'not-allowed' : 'pointer' }"
-                            >
-                                ← Previous
-                            </button>
-                            <span style="font-size: 0.9rem; color: #666; min-width: 120px; text-align: center;">
-                                Page {{ docCurrentPage }} of {{ docTotalPages }}
-                            </span>
-                            <button 
-                                @click="docCurrentPage < docTotalPages && (docCurrentPage += 1)" 
-                                :disabled="docCurrentPage === docTotalPages"
-                                style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 0.9rem;"
-                                :style="{ opacity: docCurrentPage === docTotalPages ? 0.5 : 1, cursor: docCurrentPage === docTotalPages ? 'not-allowed' : 'pointer' }"
-                            >
-                                Next →
-                            </button>
                         </div>
                     </article>
                 </div>
@@ -225,14 +218,32 @@
             <section class="app-view" :class="{ active: currentView === 'reservations' }">
                 <div class="portal-grid">
                     <article class="content-card">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="section-head portal-table-head">
                             <div>
                                 <span class="eyebrow">Facility Reservations</span>
                                 <h3>My reservations</h3>
                             </div>
                             <button class="primary-button" @click="activeModal = 'reservation'">Reserve Facility</button>
                         </div>
-                        <RecordList :items="reservationItems" />
+                        <input class="portal-search-input" v-model="reservationSearch" type="search" placeholder="Search reservations">
+                        <div class="portal-table-wrap">
+                            <table class="data-table portal-record-table">
+                                <thead><tr><th>Date</th><th>Facility</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
+                                <tbody>
+                                    <tr v-if="!filteredReservations.length"><td colspan="5" class="portal-empty-cell">No reservations found.</td></tr>
+                                    <tr v-for="item in filteredReservations" :key="item._id">
+                                        <td>{{ formatDate(item.reservationDate) }}<br><small>{{ item.startTime }}-{{ item.endTime }}</small></td>
+                                        <td>{{ normalizeLabel(item.facilityName) }}</td>
+                                        <td>{{ item.purpose }}</td>
+                                        <td><StatusBadge :status="item.status" /></td>
+                                        <td><div class="portal-row-actions">
+                                            <button class="ghost-button table-action" @click="openRecordDetail('reservation', item)">View</button>
+                                            <button v-if="canDeleteRecord('reservation', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('reservation', item)">Delete</button>
+                                        </div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </article>
                 </div>
             </section>
@@ -241,14 +252,32 @@
             <section class="app-view" :class="{ active: currentView === 'reports' }">
                 <div class="portal-grid">
                     <article class="content-card">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="section-head portal-table-head">
                             <div>
                                 <span class="eyebrow">Reports</span>
                                 <h3>My submitted reports</h3>
                             </div>
                             <button class="primary-button" @click="activeModal = 'report'">Submit New Report</button>
                         </div>
-                        <RecordList :items="reportItems" />
+                        <input class="portal-search-input" v-model="reportSearch" type="search" placeholder="Search reports">
+                        <div class="portal-table-wrap">
+                            <table class="data-table portal-record-table">
+                                <thead><tr><th>Date</th><th>Report</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+                                <tbody>
+                                    <tr v-if="!filteredReports.length"><td colspan="5" class="portal-empty-cell">No reports found.</td></tr>
+                                    <tr v-for="item in filteredReports" :key="item._id">
+                                        <td>{{ formatDate(item.createdAt) }}</td>
+                                        <td>{{ item.title }}<br><small>{{ normalizeLabel(item.reportType) }} | {{ normalizeLabel(item.priority) }}</small></td>
+                                        <td>{{ item.locationText }}</td>
+                                        <td><StatusBadge :status="item.status" /></td>
+                                        <td><div class="portal-row-actions">
+                                            <button class="ghost-button table-action" @click="openRecordDetail('report', item)">View</button>
+                                            <button v-if="canDeleteRecord('report', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('report', item)">Delete</button>
+                                        </div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </article>
                 </div>
             </section>
@@ -270,8 +299,7 @@
                                 <div class="fine-print" style="margin-top:4px;">Expected Impact: {{ formatDate(advisory.expectedImpactDate) }}</div>
                                 <div class="fine-print">Severity: {{ normalizeLabel(advisory.severity) }}</div>
                                 <p style="margin:8px 0 0;">{{ advisory.advisoryMessage }}</p>
-                                <small class="fine-print" style="display:block; margin-top:8px;">Affected Purok/Zone: {{ advisory.affectedPuroks?.join(', ') || 'N/A' }}</small>
-                                <small class="fine-print" style="display:block;">Flood-Prone Areas: {{ advisory.floodProneAreas?.join(', ') || 'N/A' }}</small>
+                                <small class="fine-print" style="display:block; margin-top:8px;">Flood-Prone Areas: {{ advisory.floodProneAreas?.join(', ') || 'N/A' }}</small>
                                 <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
                             </article>
                         </div>
@@ -327,17 +355,6 @@
 
                         <label><span>Purpose</span><input v-model="appointmentForm.purpose" type="text" required placeholder="What is this meeting about?"></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting || !appointmentForm.startTime">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
-                    </form>
-                </div>
-
-                <div v-if="activeModal === 'document'">
-                    <h2>Request Document</h2>
-                    <p class="fine-print">Fill up the details for the document you need.</p>
-                    <form class="stack" @submit.prevent="handleSubmitDocument">
-                        <label><span>Document type</span><select v-model="documentForm.documentType" required><option value="barangay_clearance">Barangay Clearance</option><option value="certificate_of_residency">Certificate of Residency</option><option value="certificate_of_indigency">Certificate of Indigency</option></select></label>
-                        <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" required></label>
-                        <label><span>Request details</span><textarea v-model="documentForm.requestDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
                     </form>
                 </div>
 
@@ -425,6 +442,54 @@
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
                     </form>
                 </div>
+                <div v-if="activeModal === 'document'">
+                    <h2>Request Document</h2>
+                    <p class="fine-print">Choose document type and fill required fields.</p>
+                    <form class="stack" @submit.prevent="handleSubmitDocument">
+                        <label>
+                            <span>Document Type</span>
+                            <select v-model="documentForm.type" required>
+                                <option value="certificate">Barangay Certificate</option>
+                                <option value="clearance">Barangay Clearance</option>
+                                <option value="indigency">Barangay Indigency</option>
+                            </select>
+                        </label>
+                        <label><span>Full name</span><input type="text" v-model="documentForm.fields.FULL_NAME" required></label>
+                        <label><span>Age</span><input type="text" v-model="documentForm.fields.AGE"></label>
+
+                        <label v-if="documentForm.type !== 'indigency'"><span>Barangay</span><input v-model="documentForm.fields.BARANGAY" type="text" placeholder="Irawan"></label>
+                        <label v-if="documentForm.type !== 'indigency'"><span>City/Municipality</span><input v-model="documentForm.fields.CITY" type="text" placeholder="Puerto Princesa City"></label>
+
+                        <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" placeholder="Reason for request"></label>
+
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+
+        <!-- Resident Record Details Modal -->
+        <div class="landing-modal-backdrop" v-if="recordDetail" @click.self="recordDetail = null">
+            <dialog class="landing-modal portal-detail-modal" open>
+                <button class="landing-modal-close" @click="recordDetail = null">X</button>
+                <h2>{{ recordDetailTitle }}</h2>
+                <div class="portal-detail-grid">
+                    <div v-for="[label, value] in recordDetailFields" :key="label" class="portal-detail-item">
+                        <span>{{ label }}</span>
+                        <p>{{ value }}</p>
+                    </div>
+                </div>
+                <div v-if="recordTimeline.length" class="portal-timeline">
+                    <h3>Status Log</h3>
+                    <div v-for="entry in recordTimeline" :key="entry.label + entry.value" class="portal-timeline-item">
+                        <strong>{{ entry.label }}</strong>
+                        <span>{{ entry.value }}</span>
+                    </div>
+                </div>
+                <div class="portal-modal-actions">
+                    <button v-if="canDeleteRecord(recordDetail.type, recordDetail.item)" class="ghost-button danger" @click="deleteResidentRecord(recordDetail.type, recordDetail.item)">Delete</button>
+                    <button class="primary-button" @click="recordDetail = null">Close</button>
+                </div>
             </dialog>
         </div>
 
@@ -483,16 +548,16 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
-import RecordList from '@/components/RecordList.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
-import { formatDate } from '@/shared/client';
+import { apiFetch, formatDate } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { buildFacilityTimeOptions, formatFacilityRange } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
 import { useAppointments } from '@/composables/useAppointments';
+import { useDocuments } from '@/composables/useDocuments';
 
 // Composables
 const { user, initializing, ensureResident, logout } = usePortalAuth();
@@ -502,16 +567,66 @@ const confirmLogout = () => {
         logout();
     }
 };
-const { statusMessage, statusError, documentRequests, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
-const { documentForm, reservationForm, reportForm, reportProofFiles, submitDocumentRequest, submitReservation, submitReport } = usePortalForms();
+const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
+const { reservationForm, reportForm, reportProofFiles, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
+const { documentRequests, loadMyDocuments, createDocumentRequest } = useDocuments();
 // Local state
 const sidebarOpen = ref(false);
 const currentView = ref(localStorage.getItem('portal_current_view') || 'profile');
 const activeModal = ref(null);
-const docCurrentPage = ref(1);
 const itemsPerPage = 5;
 const isSubmitting = ref(false);
+const appointmentSearch = ref('');
+
+const reservationSearch = ref('');
+const reportSearch = ref('');
+const documentSearch = ref('');
+const recordDetail = ref(null);
+
+const documentForm = ref({ type: 'certificate', fields: {}, purpose: '' });
+
+const filteredDocumentRequests = computed(() => {
+    const needle = String(documentSearch.value || '').trim().toLowerCase();
+    return (documentRequests.value || []).filter((item) => {
+        if (!needle) return true;
+        return (item.type || '').toLowerCase().includes(needle) || (item.purpose || '').toLowerCase().includes(needle) || (item.status || '').toLowerCase().includes(needle);
+    });
+});
+
+const handleSubmitDocument = async () => {
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        const payload = {
+            type: documentForm.value.type,
+            fields: documentForm.value.fields || {},
+            purpose: documentForm.value.purpose || ''
+        };
+
+        const result = await createDocumentRequest(payload);
+        if (result.success) {
+            setStatus('Document request submitted.');
+            closeModal();
+            documentForm.value = { type: 'certificate', fields: {}, purpose: '' };
+        } else {
+            setStatus(result.message || 'Failed to submit document request.', true);
+        }
+    } catch (err) {
+        setStatus(err.message, true);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const setResidentView = (view) => {
+    currentView.value = view;
+    document.activeElement?.blur();
+
+    if (globalThis.matchMedia('(max-width: 760px)').matches) {
+        sidebarOpen.value = false;
+    }
+};
 
 const appointmentForm = ref({
     officialId: '',
@@ -583,10 +698,12 @@ watch(currentView, (newView) => {
     localStorage.setItem('portal_current_view', newView);
 });
 
+
+
 // Computed properties
 const viewTitle = computed(() => ({
     profile: 'Manage your personal information',
-    documents: 'Request and track barangay documents',
+    
     reservations: 'Reserve facilities for events',
     reports: 'Submit and monitor your reports',
     appointments: 'Schedule meetings with barangay officials',
@@ -598,40 +715,37 @@ const normalizeLabel = (value) => {
     return String(value).replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
 
-const documentItems = computed(() => documentRequests.value.map((item) => ({
-    id: item._id,
-    title: item.documentType,
-    status: item.status,
-    meta: item.purpose
-})));
+const matchesSearch = (item, term, fields) => {
+    const needle = term.trim().toLowerCase();
+    if (!needle) return true;
+    return fields.some((field) => String(field(item) || '').toLowerCase().includes(needle));
+};
 
-const appointmentItems = computed(() => appointments.value.map((item) => {
-    const title = item.officialId && item.officialId.name ? `${item.officialId.position} - ${item.purpose}` : 'Appointment';
-    const tStart = item.timeSlot?.startTime || 'TBD';
-    const tEnd = item.timeSlot?.endTime || 'TBD';
-    return {
-        _id: item._id,
-        id: item._id,
-        title,
-        status: item.status,
-        meta: `${formatDate(item.appointmentDate)} | ${tStart}-${tEnd}`,
-        fullItem: item
-    };
-}));
+const filteredAppointments = computed(() => appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
+    (record) => record.officialId?.name,
+    (record) => record.officialId?.position,
+    (record) => record.purpose,
+    (record) => record.status,
+    (record) => formatDate(record.appointmentDate)
+])));
 
-const reservationItems = computed(() => reservations.value.map((item) => ({
-    id: item._id,
-    title: item.facilityName,
-    status: item.status,
-    meta: formatDate(item.reservationDate) + ' | ' + item.startTime + '-' + item.endTime + ' | ' + item.purpose
-})));
 
-const reportItems = computed(() => reports.value.map((item) => ({
-    id: item._id,
-    title: item.title,
-    status: item.status,
-    meta: item.reportType + ' | ' + item.priority + ' | ' + item.locationText
-})));
+
+const filteredReservations = computed(() => reservations.value.filter((item) => matchesSearch(item, reservationSearch.value, [
+    (record) => normalizeLabel(record.facilityName),
+    (record) => record.purpose,
+    (record) => record.status,
+    (record) => formatDate(record.reservationDate)
+])));
+
+const filteredReports = computed(() => reports.value.filter((item) => matchesSearch(item, reportSearch.value, [
+    (record) => record.title,
+    (record) => normalizeLabel(record.reportType),
+    (record) => normalizeLabel(record.priority),
+    (record) => record.locationText,
+    (record) => record.status,
+    (record) => formatDate(record.createdAt)
+])));
 
 const reportTypeOptions = REPORT_TYPE_OPTIONS;
 
@@ -639,15 +753,7 @@ const currentReportTypeConfig = computed(() => {
     return REPORT_TYPE_CONFIG[reportForm.reportType] || REPORT_TYPE_CONFIG.other;
 });
 
-const paginatedDocumentRequests = computed(() => {
-    const start = (docCurrentPage.value - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return documentRequests.value.slice(start, end);
-});
 
-const docTotalPages = computed(() => {
-    return Math.ceil(documentRequests.value.length / itemsPerPage) || 1;
-});
 
 const formatTimeRange = (startTime, endTime) => {
     if (!startTime || !endTime) {
@@ -664,6 +770,108 @@ const formatTimeRange = (startTime, endTime) => {
     return `${formatTime(startTime)} - ${formatTime(endTime)}`;
 };
 
+const deleteConfig = {
+    appointment: { path: (id) => `/appointments/${id}`, terminal: ['rejected', 'cancelled', 'completed', 'expired'], label: 'appointment' },
+    reservation: { path: (id) => `/facility-reservations/${id}`, terminal: ['rejected', 'completed', 'cancelled'], label: 'reservation' },
+    report: { path: (id) => `/reports/${id}`, terminal: ['resolved', 'rejected', 'closed'], label: 'report' }
+};
+
+const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(item?.status);
+const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
+
+const openRecordDetail = (type, item) => {
+    recordDetail.value = { type, item };
+};
+
+const cancelResidentAppointment = async (item) => {
+    if (!confirm('Cancel this appointment?')) return;
+    try {
+        await apiFetch(`/appointments/${item._id}/cancel`, {
+            method: 'PUT',
+            body: JSON.stringify({ cancellationReason: 'Cancelled by resident' })
+        });
+        setStatus('Appointment cancelled.');
+        await loadAll();
+    } catch (error) {
+        setStatus(error.message, true);
+    }
+};
+
+const deleteResidentRecord = async (type, item) => {
+    const config = deleteConfig[type];
+    if (!config || !item?._id) return;
+    if (!confirm(`Delete this ${config.label} from your history?`)) return;
+
+    try {
+        await apiFetch(config.path(item._id), { method: 'DELETE' });
+        setStatus(`${normalizeLabel(config.label)} deleted.`);
+        if (recordDetail.value?.item?._id === item._id) {
+            recordDetail.value = null;
+        }
+        await loadAll();
+    } catch (error) {
+        setStatus(error.message, true);
+    }
+};
+
+const recordDetailTitle = computed(() => {
+    if (!recordDetail.value) return '';
+    return {
+        appointment: 'Appointment Details',
+        reservation: 'Reservation Details',
+        report: 'Report Details'
+    }[recordDetail.value.type];
+});
+
+const recordDetailFields = computed(() => {
+    const detail = recordDetail.value;
+    if (!detail) return [];
+    const item = detail.item;
+    const fieldSets = {
+        appointment: [
+            ['Official', `${item.officialId?.name || 'TBD'} - ${item.officialId?.position || 'Official'}`],
+            ['Schedule', `${formatDate(item.appointmentDate)} | ${item.timeSlot?.startTime || 'TBD'}-${item.timeSlot?.endTime || 'TBD'}`],
+            ['Purpose', item.purpose],
+            ['Status', normalizeLabel(item.status)],
+            ['Reason/Notes', item.rejectionReason || item.cancellationReason || item.remarks]
+        ],
+        reservation: [
+            ['Facility', normalizeLabel(item.facilityName)],
+            ['Schedule', `${formatDate(item.reservationDate)} | ${item.startTime}-${item.endTime}`],
+            ['Purpose', item.purpose],
+            ['Details', item.reservationDetails],
+            ['Status', normalizeLabel(item.status)],
+            ['Admin Notes', item.adminNotes]
+        ],
+        report: [
+            ['Title', item.title],
+            ['Type', normalizeLabel(item.reportType)],
+            ['Priority', normalizeLabel(item.priority)],
+            ['Location', item.locationText],
+            ['Description', item.description],
+            ['Status', normalizeLabel(item.status)],
+            ['Admin Notes', item.adminNotes],
+            ['Submitted', formatDate(item.createdAt)]
+        ]
+    };
+
+    return (fieldSets[detail.type] || []).filter(([, value]) => value !== undefined && value !== null && value !== '');
+});
+
+const recordTimeline = computed(() => {
+    const item = recordDetail.value?.item;
+    if (!item) return [];
+    return [
+        ['Submitted', item.createdAt],
+        ['Approved', item.approvedAt],
+        ['Rejected', item.rejectedAt],
+        ['Cancelled', item.cancelledAt],
+        ['Completed', item.completedAt],
+        ['Expired', item.expiredAt],
+        ['Updated', item.updatedAt]
+    ].filter(([, value]) => value).map(([label, value]) => ({ label, value: formatDate(value) }));
+});
+
 // Modal handlers
 const openModal = (type) => {
     activeModal.value = type;
@@ -671,7 +879,6 @@ const openModal = (type) => {
 
 const closeModal = () => {
     activeModal.value = null;
-    docCurrentPage.value = 1;
 };
 
 const hasCapturedCoordinates = computed(() => {
@@ -691,73 +898,94 @@ const handleReportProofFiles = (event) => {
     reportProofFiles.value = incoming.slice(0, 5);
 };
 
+const isSafariBrowser = () => {
+    const userAgent = navigator.userAgent || '';
+    return /Safari/i.test(userAgent) && !/Chrome|CriOS|Edg|OPR|FxiOS|Android/i.test(userAgent);
+};
+
+const requestGeolocation = (options) => new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+});
+
+const readGeolocationPermissionState = async () => {
+    try {
+        if (!navigator.permissions?.query) {
+            return 'unknown';
+        }
+
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        return permission.state;
+    } catch {
+        return 'unknown';
+    }
+};
+
+const isSecureGeolocationContext = () => globalThis.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+const getGeolocationErrorMessage = (error, safari) => {
+    if (error?.code === 1) {
+        return safari
+            ? '❌ Permission Denied on Safari: If no popup appears, Safari may already be blocked for this site. Open iPhone Settings → Privacy & Security → Location Services → Safari Websites, set to "While Using the App", then reload this page and tap "Use My Current Location" again.'
+            : '❌ Permission Denied: When you clicked the button, you might have tapped "Block" instead of "Allow". Try again and tap Allow when the popup appears. OR check your browser settings to allow location access for this site.';
+    }
+
+    if (error?.code === 2) {
+        return safari
+            ? '⚠️ Safari could not get your location. Make sure iPhone Location Services is ON and Safari Websites is set to "While Using the App", then try again.'
+            : '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
+    }
+
+    if (error?.code === 3) {
+        return '⏱️ Timeout: Getting your location is taking too long. Check that Location Services is ON and your network is working, then try again.';
+    }
+
+    return error?.message || 'Unable to capture your location.';
+};
+
 const captureCurrentLocation = async () => {
     if (!navigator.geolocation) {
         setStatus('Geolocation is not supported on this device/browser.', true);
         return;
     }
 
-    const userAgent = navigator.userAgent || '';
-    const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|Edg|OPR|FxiOS|Android/i.test(userAgent);
-
-    // Check if HTTPS is used (required for geolocation on production)
-    if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    const safari = isSafariBrowser();
+    if (!isSecureGeolocationContext()) {
         setStatus('Geolocation requires a secure connection (HTTPS). Please ensure you\'re using HTTPS on this site.', true);
         return;
     }
 
-    const requestLocation = () => new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
+    locatingPosition.value = true;
+
+    try {
+        const permissionState = await readGeolocationPermissionState();
+
+        if (permissionState === 'denied') {
+            setStatus(
+                safari
+                    ? '🔒 Safari location access is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then open this site in Safari again and tap "Use My Current Location".'
+                    : '🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.',
+                true
+            );
+            return;
+        }
+
+        const position = await requestGeolocation({
             enableHighAccuracy: true,
             timeout: 30000,
             maximumAge: 5000
         });
-    });
-
-    const readPermissionState = async () => {
-        try {
-            if (!navigator.permissions?.query) {
-                return 'unknown';
-            }
-
-            const permission = await navigator.permissions.query({ name: 'geolocation' });
-            return permission.state;
-        } catch {
-            return 'unknown';
-        }
-    };
-
-    locatingPosition.value = true;
-
-    try {
-        const permissionState = await readPermissionState();
-
-        if (permissionState === 'denied') {
-            if (isSafari) {
-                setStatus('🔒 Safari location access is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then open this site in Safari again and tap "Use My Current Location".', true);
-            } else {
-                setStatus('🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.', true);
-            }
-            return;
-        }
-
-        // Calling geolocation here triggers the browser permission popup when needed.
-        const position = await requestLocation();
 
         reportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
         reportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
         reportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
         setStatus('Current location captured.');
     } catch (error) {
-        // If GPS/high accuracy fails, try a network-based fallback.
         if (error?.code !== 1) {
             try {
-                const fallbackPosition = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 0
-                    });
+                const fallbackPosition = await requestGeolocation({
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 0
                 });
 
                 reportForm.locationLatitude = String(fallbackPosition.coords.latitude.toFixed(6));
@@ -770,24 +998,7 @@ const captureCurrentLocation = async () => {
             }
         }
 
-        // Provide helpful error messages based on error code
-        let errorMsg = 'Unable to capture your location.';
-        if (error?.code === 1) {
-            if (isSafari) {
-                errorMsg = '❌ Permission Denied on Safari: If no popup appears, Safari may already be blocked for this site. Open iPhone Settings → Privacy & Security → Location Services → Safari Websites, set to "While Using the App", then reload this page and tap "Use My Current Location" again.';
-            } else {
-                errorMsg = '❌ Permission Denied: When you clicked the button, you might have tapped "Block" instead of "Allow". Try again and tap Allow when the popup appears. OR check your browser settings to allow location access for this site.';
-            }
-        } else if (error?.code === 2) {
-            errorMsg = isSafari
-                ? '⚠️ Safari could not get your location. Make sure iPhone Location Services is ON and Safari Websites is set to "While Using the App", then try again.'
-                : '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
-        } else if (error?.code === 3) {
-            errorMsg = '⏱️ Timeout: Getting your location is taking too long. Check that Location Services is ON and your network is working, then try again.';
-        } else if (error?.message) {
-            errorMsg = error.message;
-        }
-        setStatus(errorMsg, true);
+        setStatus(getGeolocationErrorMessage(error, safari), true);
     } finally {
         locatingPosition.value = false;
     }
@@ -799,22 +1010,6 @@ const handleSaveProfile = async () => {
     try {
         await saveProfile();
         closeModal();
-    } finally {
-        isSubmitting.value = false;
-    }
-};
-
-const handleSubmitDocument = async () => {
-    if (isSubmitting.value) return;
-    isSubmitting.value = true;
-    try {
-        const result = await submitDocumentRequest(() => loadAll());
-        if (result.success) {
-            setStatus(result.message);
-            closeModal();
-        } else {
-            setStatus(result.message, true);
-        }
     } finally {
         isSubmitting.value = false;
     }
@@ -871,6 +1066,7 @@ onMounted(async () => {
     const allowed = await ensureResident();
     if (!allowed) return;
     await loadAll();
+    await loadMyDocuments();
 });
 
 onUnmounted(() => {});

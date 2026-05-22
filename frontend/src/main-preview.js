@@ -21,48 +21,12 @@ const renderError = (message) => {
 };
 
 const getDocumentId = () => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     return params.get('documentId');
 };
 
 const openPdf = async () => {
-    const documentId = getDocumentId();
-    if (!documentId) {
-        renderError('Missing document ID in preview URL.');
-        return;
-    }
-
-    const token = localStorage.getItem('barangayToken') || '';
-    if (!token) {
-        renderError('Session expired. Please log in again, then try Preview PDF.');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/document-requests/${encodeURIComponent(documentId)}/preview-document`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            let payload = null;
-            try {
-                payload = await response.json();
-            } catch (error) {
-                // Ignore JSON parse failures and use the HTTP status instead.
-            }
-
-            const serverMsg = (payload && (payload.message || payload.error || String(payload))) || response.statusText || 'Failed to fetch document';
-            throw new Error(serverMsg);
-        }
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        window.location.replace(blobUrl);
-        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
-    } catch (error) {
-        renderError(error.message || 'Failed to load preview.');
-        console.error('Preview page error:', error);
-    }
+    renderError('Document preview is no longer available.');
 };
 
 renderLoading();

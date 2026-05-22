@@ -6,7 +6,7 @@ const isObjectId = (value) => /^[a-fA-F\d]{24}$/.test(String(value || '').trim()
 export function usePortalData() {
     const statusMessage = ref('Checking your session.');
     const statusError = ref(false);
-    const documentRequests = ref([]);
+    
     const reservations = ref([]);
     const reports = ref([]);
     const disasterAdvisories = ref([]);
@@ -50,13 +50,7 @@ export function usePortalData() {
     };
 
 
-    const loadDocuments = async () => { 
-        try {
-            documentRequests.value = await apiFetch('/document-requests/me');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    };
+    
 
     const loadReservations = async () => { 
         try {
@@ -100,11 +94,21 @@ export function usePortalData() {
         }
     };
 
+    // loadDocuments is provided as a noop/compatibility hook for the portal
+    // Document requests are handled by `useDocuments` composable directly
+    const loadDocuments = async () => {
+        try {
+            // call the API to warm cache or validate session; ignore result here
+            await apiFetch('/documents/my');
+        } catch (error) {
+            console.error('Failed to load documents (portal):', error);
+        }
+    };
+
     const loadAll = async () => {
         try {
             await Promise.all([
                 loadProfile(),
-                loadDocuments(),
                 loadReservations(),
                 loadReports(),
                 loadAppointments(),
@@ -151,7 +155,7 @@ export function usePortalData() {
     return {
         statusMessage,
         statusError,
-        documentRequests,
+        
         reservations,
         reports,
         disasterAdvisories,

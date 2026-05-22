@@ -282,94 +282,12 @@
                                 {{ getToggleLabel(activeModal) }}
                             </button>
                         </div>
-                        <div v-else-if="activeModal === 'guest-document-request'" class="modal-helper-copy">
-                            Non-residents can submit a document request without registering. Provide your Gmail address so we can send the decision and next steps.
-                        </div>
+                        
                     </div>
 
                     <transition name="fade-slide" mode="out-in">
                         <div :key="activeModal" class="form-transition-wrapper">
-                            <form v-if="activeModal === 'guest-document-request'" class="modern-form register-form guest-request-form" @submit.prevent="handleGuestDocumentRequest">
-                                <div class="guest-request-banner">
-                                    <i class="fa-solid fa-file-circle-check"></i>
-                                    <div>
-                                        <strong>Non-Resident Document Request</strong>
-                                        <p>Fill out the request and personal details below. The admin will review it and send updates to your email address.</p>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="guest-document-type">Document Type</label>
-                                    <div class="custom-select">
-                                        <select id="guest-document-type" v-model="guestDocumentForm.documentType" required>
-                                            <option value="barangay_clearance">Barangay Clearance</option>
-                                            <option value="certificate_of_residency">Certificate of Residency</option>
-                                            <option value="certificate_of_indigency">Certificate of Indigency</option>
-                                        </select>
-                                        <i class="fa-solid fa-chevron-down"></i>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="guest-purpose">Purpose</label>
-                                    <input id="guest-purpose" v-model="guestDocumentForm.purpose" type="text" placeholder="Employment, school, legal, or travel requirement" required>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="guest-details">Request Details</label>
-                                    <textarea id="guest-details" v-model="guestDocumentForm.requestDetails" rows="4" placeholder="Add any extra context the admin should know"></textarea>
-                                </div>
-
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="guest-first-name">First Name</label>
-                                        <input id="guest-first-name" v-model="guestDocumentForm.firstName" type="text" autocomplete="given-name" required>
-                                    </div>
-                                    <div class="input-group">
-                                        <label for="guest-last-name">Last Name</label>
-                                        <input id="guest-last-name" v-model="guestDocumentForm.lastName" type="text" autocomplete="family-name" required>
-                                    </div>
-                                </div>
-
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="guest-middle-name">Middle Name</label>
-                                        <input id="guest-middle-name" v-model="guestDocumentForm.middleName" type="text" autocomplete="additional-name">
-                                    </div>
-                                    <div class="input-group">
-                                        <label for="guest-suffix">Suffix</label>
-                                        <input id="guest-suffix" v-model="guestDocumentForm.suffix" type="text" placeholder="Jr., Sr., III">
-                                    </div>
-                                </div>
-
-                                <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="guest-contact">Contact Number</label>
-                                        <input id="guest-contact" v-model="guestDocumentForm.contactNumber" type="tel" autocomplete="tel" placeholder="09xxxxxxxxx" required>
-                                    </div>
-                                    <div class="input-group">
-                                        <label for="guest-email">Gmail Address</label>
-                                        <input id="guest-email" v-model="guestDocumentForm.email" type="email" autocomplete="email" placeholder="yourname@gmail.com" required>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="guest-address">Current Address</label>
-                                    <input id="guest-address" v-model="guestDocumentForm.address" type="text" placeholder="City / municipality / barangay" required>
-                                </div>
-
-                                <div class="input-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestDocumentForm.agreePrivacy"> I have read and agree to the <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
-                                    </label>
-                                </div>
-
-                                <button type="submit" class="auth-submit-btn" :disabled="isGuestDocumentLoading || !guestDocumentForm.agreePrivacy">
-                                    {{ isGuestDocumentLoading ? 'Submitting...' : 'Submit Request' }} <i :class="isGuestDocumentLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
-                                </button>
-                            </form>
-
-                            <form v-else-if="activeModal === 'guest-report-request'" class="modern-form register-form guest-request-form" @submit.prevent="handleGuestReportRequest">
+                            <form v-if="activeModal === 'guest-report-request'" class="modern-form register-form guest-request-form" @submit.prevent="handleGuestReportRequest">
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-flag"></i>
                                     <div>
@@ -1203,20 +1121,7 @@ const formatRegisterPhoneInput = () => {
 
     registerForm.contactNumber = `+63${digits.slice(0, 10)}`;
 };
-const guestDocumentFormDefaults = {
-    documentType: 'barangay_clearance',
-    purpose: '',
-    requestDetails: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    suffix: '',
-    contactNumber: '',
-    email: '',
-    address: '',
-    agreePrivacy: false
-};
-const guestDocumentForm = reactive({ ...guestDocumentFormDefaults });
+
 const guestReportFormDefaults = {
     reportType: 'noise_complaint',
     description: '',
@@ -1428,7 +1333,6 @@ const modalTitles = {
     'forgot-password': 'Forgot Password',
     'reset-password': 'Reset Password',
     'pending-approval': 'Registration Received',
-    'guest-document-request': 'Non-Resident Document Request',
     'guest-report-request': 'Non-Resident Incident Report',
     'guest-facility-request': 'Non-Resident Facility Request'
 };
@@ -1440,19 +1344,17 @@ const visualTitles = {
     'forgot-password': 'Reset Access Safely',
     'reset-password': 'Choose a New Password',
     'pending-approval': 'Account Pending Approval',
-    'guest-document-request': 'Request Without Registration',
     'guest-report-request': 'Report Without Registration',
     'guest-facility-request': 'Reserve Without Registration'
 };
 
 const visualCopies = {
-    login: 'Access your digital barangay services, view announcements, and request documents seamlessly.',
-    register: 'Create an account to streamline your document requests, appointments, and report submissions.',
+    login: 'Access your digital barangay services, view announcements, and manage requests seamlessly.',
+    register: 'Create an account to streamline your appointments, reports, and facility submissions.',
     otp: 'We need to verify your email to secure your resident account.',
     'forgot-password': 'We will send a secure reset link to the email address attached to your account.',
     'reset-password': 'Set a new password to restore access to your resident portal.',
     'pending-approval': 'Your registration has been verified and is now being reviewed by the Barangay Admin.',
-    'guest-document-request': 'Non-residents may submit a document request here. The admin will review your details and send an update to your Gmail address.',
     'guest-report-request': 'Non-residents may file incident reports or community concerns. The admin will review the report and respond by email.',
     'guest-facility-request': 'Non-residents may submit facility reservations. The barangay admin will review your request and contact you by email.'
 };
@@ -1491,9 +1393,6 @@ const openModal = (mode) => {
 
     activeModal.value = mode;
     setStatus('');
-    if (mode === 'guest-document-request') {
-        resetGuestDocumentForm();
-    }
     if (mode === 'guest-report-request') {
         resetGuestReportForm();
     }
@@ -1647,10 +1546,6 @@ const handleResetPassword = async () => {
     }
 };
 
-const resetGuestDocumentForm = () => {
-    Object.assign(guestDocumentForm, guestDocumentFormDefaults);
-};
-
 const resetGuestReportForm = () => {
     Object.assign(guestReportForm, guestReportFormDefaults);
 };
@@ -1658,45 +1553,6 @@ const resetGuestReportForm = () => {
 const resetGuestReservationForm = () => {
     Object.assign(guestReservationForm, guestReservationFormDefaults);
     guestFacilityAvailability.value = null;
-};
-
-const isGuestDocumentLoading = ref(false);
-
-const handleGuestDocumentRequest = async () => {
-    if (isGuestDocumentLoading.value) return;
-    if (!guestDocumentForm.agreePrivacy) {
-        setStatus('Please accept the Privacy Policy before submitting your request.', true);
-        return;
-    }
-
-    isGuestDocumentLoading.value = true;
-    try {
-        const payload = {
-            ...guestDocumentForm,
-            email: String(guestDocumentForm.email || '').trim().toLowerCase(),
-            firstName: String(guestDocumentForm.firstName || '').trim(),
-            middleName: String(guestDocumentForm.middleName || '').trim(),
-            lastName: String(guestDocumentForm.lastName || '').trim(),
-            suffix: String(guestDocumentForm.suffix || '').trim(),
-            contactNumber: String(guestDocumentForm.contactNumber || '').trim(),
-            address: String(guestDocumentForm.address || '').trim(),
-            purpose: String(guestDocumentForm.purpose || '').trim(),
-            requestDetails: String(guestDocumentForm.requestDetails || '').trim()
-        };
-
-        const result = await apiFetch('/document-requests/public', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        resetGuestDocumentForm();
-        closeModal();
-        setStatus(`Request submitted. We will send the decision to ${result.email || payload.email}.`, false);
-    } catch (error) {
-        setStatus(error.message, true);
-    } finally {
-        isGuestDocumentLoading.value = false;
-    }
 };
 
 const isGuestReportLoading = ref(false);
@@ -1785,7 +1641,6 @@ const handleGuestReservationRequest = async () => {
 };
 
 const services = [
-    { icon: '👥', title: 'Document Requests', copy: 'Submit a barangay document request even if you are not a registered resident.', action: 'guest-document-request' },
     { icon: '🗓', title: 'Appointments & Facilities', copy: 'Schedule meetings and reserve community facilities easily.', action: 'guest-facility-request' },
     { icon: '🔔', title: 'Real-Time Announcements', copy: 'Stay updated with barangay news, advisories, and public information.' },
     { icon: '🛡', title: 'Incident Reporting', copy: 'Submit complaints and track resolution progress.', action: 'guest-report-request' },

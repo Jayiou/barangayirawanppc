@@ -40,16 +40,13 @@ const actionDefinitions = {
   documentRequest: {
     pending: [
       { label: 'Approve', action: 'approve', icon: 'check', color: 'success' },
-      { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true },
-      { label: 'Processing', action: 'processing', icon: 'cog', color: 'warning' }
+      { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
     ],
     approved: [
-      { label: 'Processing', action: 'processing', icon: 'cog', color: 'warning' },
-      { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
+      { label: 'Processing', action: 'processing', icon: 'cog', color: 'warning' }
     ],
     processing: [
-      { label: 'Ready for Pickup', action: 'ready-pickup', icon: 'box', color: 'info' },
-      { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
+      { label: 'Ready for Pickup', action: 'ready-pickup', icon: 'box', color: 'info' }
     ],
     ready_for_pickup: [
       { label: 'Complete', action: 'complete', icon: 'check-circle', color: 'success' }

@@ -10,6 +10,7 @@ const {
     getFacilityAvailability,
     getFacilityReservations,
     getFacilityReservationById,
+    deleteMyFacilityReservation,
     updateFacilityReservationStatus
 } = require('../controllers/facilityReservationController');
 
@@ -18,6 +19,7 @@ router.post('/public', publicFacilityLimiter, createPublicFacilityReservation);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyFacilityReservations);
 router.get('/availability', authMiddleware, getFacilityAvailability);
 router.get('/:id', authMiddleware, getFacilityReservationById);
+router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyFacilityReservation);
 router.get('/', authMiddleware, roleMiddleware('admin'), getFacilityReservations);
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin'), updateFacilityReservationStatus);
 

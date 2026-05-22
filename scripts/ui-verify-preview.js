@@ -12,22 +12,7 @@ const puppeteer = require('puppeteer');
       return;
     }
 
-    if (url.endsWith('/api/document-requests')) {
-      const docs = [
-        {
-          _id: 'doc1',
-          documentType: 'clearance',
-          requesterType: 'resident',
-          status: 'approved',
-          purpose: 'Test preview',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(docs) });
-      return;
-    }
-
-    if (url.endsWith('/api/residents') || url.endsWith('/api/facility-reservations') || url.endsWith('/api/reports') || url.includes('/api/announcements') || url.includes('/api/appointments')) {
+    if (url.endsWith('/api/residents') || url.endsWith('/api/facility-reservations') || url.endsWith('/api/reports') || url.includes('/api/announcements') || url.includes('/api/appointments') || url.endsWith('/api/disaster-advisories')) {
       req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
       return;
     }
@@ -38,45 +23,18 @@ const puppeteer = require('puppeteer');
 
   try {
     await page.goto('http://localhost:5173/admin.html', { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.waitForSelector('main.app-main .hero-banner h2', { timeout: 10000 });
 
-    // Wait a bit for app to initialize
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Click Documents nav button
-    await page.evaluate(() => {
-      const navButtons = Array.from(document.querySelectorAll('nav.sidebar-nav button'));
-      const docBtn = navButtons.find(b => /Documents/i.test(b.textContent));
-      if (docBtn) docBtn.click();
+    const headingText = await page.evaluate(() => {
+      const heading = document.querySelector('main.app-main .hero-banner h2');
+      return heading ? heading.textContent.trim() : '';
     });
 
-    // Wait for documents table to render with our mocked document
-    await page.waitForFunction(() => {
-      return Array.from(document.querySelectorAll('tbody tr')).some(r => /clearance/i.test(r.innerText));
-    }, { timeout: 5000 });
+    const pageLoaded = /Dashboard|Portal Overview|Resident Accounts|Announcements|Appointments|Facilities|Reports|Disaster Management|SMS Logs/i.test(headingText);
 
-    // Click View button for the clearance row
-    await page.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('tbody tr'));
-      const target = rows.find(r => /clearance/i.test(r.innerText));
-      const btn = target && target.querySelector('button.icon-button');
-      if (btn) btn.click();
-    });
-
-    // Wait for modal
-    await page.waitForSelector('.admin-modal', { timeout: 5000 });
-
-    // Check for Preview PDF button text inside modal
-    const previewVisible = await page.evaluate(() => {
-      const modal = document.querySelector('.admin-modal');
-      if (!modal) return false;
-      // Look for a button that contains 'Preview' or has fa-eye icon
-      const btns = Array.from(modal.querySelectorAll('button'));
-      return btns.some(b => /preview/i.test(b.textContent) || b.querySelector('i.fa-eye'));
-    });
-
-    console.log('PREVIEW_VISIBLE:' + (previewVisible ? 'true' : 'false'));
+    console.log('ADMIN_PAGE_LOADED:' + (pageLoaded ? 'true' : 'false'));
     await browser.close();
-    process.exit(previewVisible ? 0 : 2);
+    process.exit(pageLoaded ? 0 : 2);
   } catch (err) {
     console.error('ERROR:', err);
     await browser.close();

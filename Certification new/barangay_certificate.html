@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barangay Certificate</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background: #f3f4f6; color: #1f2937; }
+    .page {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 16px;
+      padding: 30px 30px 48px 30px;
+      margin: 16px auto 32px auto;
+      width: 210mm;
+      min-height: 297mm;
+      max-width: 210mm;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+      box-sizing: border-box;
+      position: relative;
+    }
+    @media print {
+      html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { border: none; border-radius: 0; box-shadow: none; margin: 0; padding: 24mm 18mm 28mm 18mm; width: 210mm; min-height: 297mm; max-width: 210mm; page-break-after: always; page-break-inside: avoid; }
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+    .header { display: grid; grid-template-columns: 100px 1fr 100px; align-items: start; justify-items: center; margin-bottom: 28px; text-align: center; position: relative; z-index: 2; border-bottom: 2px solid #1f2937; padding-bottom: 12px; }
+    .header-logo { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: #fff; border: 2px solid #fff; display: grid; place-items: center; flex-shrink: 0; }
+    .header-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .header-logo.right-logo { transform: translateX(-45%); border: none; background: transparent; border-radius: 0; overflow: visible; }
+    .header-content { text-align: center; margin-top: 0; margin-bottom: 0; }
+    .header-content .small { font-size: 13px; color: #6b7280; margin-bottom: 2px; display: block; }
+    .header-content h1 { margin: 8px 0 0 0; font-size: 28px; font-weight: bold; letter-spacing: 1px; }
+    .header-content h2 { margin: 6px 0 0 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+    .cert-seal { position: absolute; top: 50%; left: 50%; width: 514px; height: 514px; transform: translate(-50%, -50%); opacity: 0.2; z-index: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+    .cert-seal img { width: 100%; height: 100%; object-fit: contain; display: block; opacity: 0.2; }
+    .fill-underline { display: inline-block; min-width: 120px; border-bottom: 1px solid #1f2937; height: 1.2em; vertical-align: text-bottom; text-align: left; padding: 0 4px; }
+    .fill-underline.short { width: 80px; }
+    .fill-underline.medium { width: 200px; }
+    .fill-underline.long { width: min(100%, 340px); }
+    .body-text { font-size: 16px; text-align: justify; margin: 0 0 3mm; }
+    .certificate-body { position: absolute; left: 30px; right: 30px; bottom: 6in; z-index: 1; }
+    .signatures { position: static; height: auto; }
+    .sig-block { min-height: 120px; text-align: center; position: absolute; z-index: 2; }
+    .sig-block.secretary { left: 30px; bottom: 2in; width: calc(50% - 40px); }
+    .sig-block.punong-barangay { right: 30px; bottom: 1in; width: calc(50% - 40px); transform: none; }
+    .sig-line { border-bottom: 1px solid #1f2937; margin: 48px 0 8px; height: 1.2em; }
+    .sig-name { display: inline-block; font-weight: 700; }
+    .sig-line { border-bottom: 1px solid #1f2937; margin: 12px 0 6px; padding-bottom: 6px; }
+    .sig-line .sig-name { display: inline-block; padding: 0 6px; background: #fff; position: relative; top: 6px; }
+    .sig-title { text-align: center; font-size: 13px; color: #6b7280; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="cert-seal" aria-hidden="true">
+      <img src="logos/New irawan logo.png" alt="Barangay Seal" />
+    </div>
+    <div class="header">
+      <div class="header-logo" style="margin-left:1in;">
+        <img src="logos/New irawan logo.png" alt="Barangay Seal" />
+      </div>
+      <div class="header-content">
+        <span class="small">Republic of the Philippines</span>
+        <span class="small">Province of Palawan</span>
+        <span class="small">City of Puerto Princesa</span>
+        <h1><strong>BARANGAY IRAWAN</strong></h1>
+        <h2>Barangay Certificate</h2>
+      </div>
+      <div class="header-logo right-logo">
+        <img src="logos/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas Logo" />
+      </div>
+    </div>
+
+    <p style="margin-top:120px; font-weight:700;">TO WHOM IT MAY CONCERN:</p>
+    <div class="certificate-body">
+      <p class="body-text">
+        This is to certify that <span class="fill-underline long">{{ FULL_NAME }}</span>, <span class="fill-underline short">{{ AGE }}</span> years of age, Filipino, and a resident of Barangay <span class="fill-underline medium">{{ BARANGAY }}</span>, Municipality/City of <span class="fill-underline medium">{{ CITY }}</span>, Province of <span class="fill-underline medium">{{ PROVINCE }}</span>.
+      </p>
+      <p class="body-text">
+        This certificate is issued upon the request of the above-named person for <span class="fill-underline long">{{ PURPOSE }}</span> and for all lawful intents and purposes.
+      </p>
+      <p class="body-text">
+        Issued this <span class="fill-underline short">{{ DAY }}</span> day of <span class="fill-underline medium">{{ MONTH }}</span>, 2026 at Barangay Irawan, Puerto Princesa City, Palawan</span>.
+      </p>
+    </div>
+
+    <div class="signatures">
+      <div class="sig-block secretary">
+        <div class="sig-line"><span class="sig-name">{{ SECRETARY_NAME }}</span></div>
+        <div class="sig-title">Barangay Secretary / Authorized Officer</div>
+      </div>
+      <div class="sig-block punong-barangay">
+        <div class="sig-line"><span class="sig-name">{{ CAPTAIN_NAME }}</span></div>
+        <div class="sig-title">Punong Barangay</div>
+      </div>
+    </div>
+
+<p style="position:absolute; left:0; right:0; bottom:12px; text-align:center; font-size:10px; color:#6b7280; margin:0;">FOR RESEARCH PURPOSES ONLY</p>
+
+
+  </div>
+  
+</body>
+</html>

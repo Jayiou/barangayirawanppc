@@ -37,7 +37,7 @@
 
     <div class="page-shell app-shell" v-else>
         <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
-        <div v-if="reportAlertVisible" class="report-alert-overlay" role="dialog" aria-modal="true" aria-live="assertive">
+        <dialog v-if="reportAlertVisible" class="report-alert-overlay" aria-modal="true" aria-live="assertive" open>
             <div class="report-alert-card">
                 <span class="report-alert-eyebrow">New Incident Report</span>
                 <h3>{{ reportAlertHeading }}</h3>
@@ -50,9 +50,9 @@
                     </button>
                 </div>
             </div>
-        </div>
+        </dialog>
 
-        <aside class="app-sidebar" :class="{ open: sidebarOpen, 'notifications-blurred': reportAlertVisible }">
+        <aside class="app-sidebar" aria-label="Admin sidebar" :class="{ open: sidebarOpen, 'notifications-blurred': reportAlertVisible }">
             <button class="sidebar-close-btn" @click="sidebarOpen = false"><i class="fa-solid fa-xmark"></i></button>
             
             <!-- Sidebar Header -->
@@ -67,9 +67,10 @@
                 <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> Residents</button>
                 <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> Appointments <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
                 <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> Officials</button>
-                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i> Documents <span class="badge" v-if="pendingCounts.docs">{{ pendingCounts.docs }}</span></button>
+                
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facilities <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
+                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> Documents <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster Management</button>
                 <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> SMS Logs</button>
             </nav>
@@ -171,21 +172,6 @@
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
             </header>
-            <!-- Preview loading modal -->
-            <div v-if="previewLoading" class="preview-loading-overlay">
-                <div class="preview-loading-box">
-                    <div class="spinner" aria-hidden="true"></div>
-                    <div style="margin-top: 12px; font-weight: 600;">Generating PDF — please wait…</div>
-                    <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">This may take a few seconds on first generation.</div>
-                </div>
-            </div>
-            <div v-if="residentModalLoading" class="preview-loading-overlay">
-                <div class="preview-loading-box">
-                    <div class="spinner" aria-hidden="true"></div>
-                    <div style="margin-top: 12px; font-weight: 600;">Loading resident profile...</div>
-                    <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing full resident details for review.</div>
-                </div>
-            </div>
             <!-- Dashboard View -->
             <section class="app-view" :class="{ active: currentView === 'dashboard' }">
                 <div class="ops-dashboard-shell">
@@ -257,7 +243,7 @@
                                     </div>
                                     <div class="ops-quick-actions">
                                         <button type="button" @click="currentView = 'reports'"><i class="fa-solid fa-shield-halved"></i><span>Review reports</span></button>
-                                        <button type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-signature"></i><span>Process requests</span></button>
+                                        
                                         <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Manage bookings</span></button>
                                         <button type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-bullhorn"></i><span>Publish advisory</span></button>
                                     </div>
@@ -294,12 +280,67 @@
 
                             <div class="ops-chart-zone">
                                 <div class="ops-bar-chart" :aria-label="`${activeAnalyticsData.title} chart`">
-                                    <div v-for="row in activeAnalyticsData.trend" :key="row.label" class="ops-bar-column">
-                                        <div class="ops-bar-value">{{ row.value }}</div>
-                                        <div class="ops-bar-track">
-                                            <span :style="{ height: row.height }"></span>
+                                    <div class="ops-chart-frame">
+                                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="ops-line-chart" role="img" :aria-label="`${activeAnalyticsData.title} trend line chart`">
+                                            <defs>
+                                                <linearGradient id="opsAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.12" />
+                                                    <stop offset="50%" stop-color="#10b981" stop-opacity="0.06" />
+                                                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.01" />
+                                                </linearGradient>
+                                                <filter id="chartLineBlur">
+                                                    <feGaussianBlur in="SourceGraphic" stdDeviation="0.3" />
+                                                </filter>
+                                            </defs>
+                                            <!-- Grid Lines -->
+                                            <g class="chart-grid-lines">
+                                                <line
+                                                    v-for="(point, index) in analyticsLineDots"
+                                                    :key="`grid-${index}`"
+                                                    :x1="point.x"
+                                                    :y1="14"
+                                                    :x2="point.x"
+                                                    :y2="84"
+                                                    stroke="rgba(15, 31, 27, 0.05)"
+                                                    stroke-width="1"
+                                                    stroke-dasharray="2,3"
+                                                />
+                                            </g>
+                                            <path :d="analyticsAreaPath" fill="url(#opsAreaGradient)" class="chart-area"></path>
+                                            <path :d="analyticsLinePath" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chart-line"></path>
+                                            <g class="chart-points-group">
+                                                <circle
+                                                    v-for="(point, index) in analyticsLineDots"
+                                                    :key="point.key"
+                                                    :cx="point.x"
+                                                    :cy="point.y"
+                                                    r="0"
+                                                    fill="#10b981"
+                                                    stroke="#ffffff"
+                                                    stroke-width="1.5"
+                                                    class="chart-point"
+                                                    :class="{ 'active': hoveredTrendIndex === index }"
+                                                    @mouseenter="setHoveredTrendIndex(index)"
+                                                    @mouseleave="clearHoveredTrendIndex"
+                                                    @focus="setHoveredTrendIndex(index)"
+                                                    @blur="clearHoveredTrendIndex"
+                                                    tabindex="0"
+                                                    role="button"
+                                                    :aria-label="`Trend point ${activeAnalyticsData.trend[index]?.label}: ${activeAnalyticsData.trend[index]?.value}`"
+                                                ></circle>
+                                            </g>
+                                        </svg>
+                                        <div v-if="analyticsTooltip" class="ops-tooltip" :style="{ left: analyticsTooltip.left, top: analyticsTooltip.top }">
+                                            <small class="tooltip-label">{{ analyticsTooltip.label }}</small>
+                                            <strong>{{ analyticsTooltip.value }}</strong>
+                                            <span>{{ analyticsTooltip.tooltip }}</span>
                                         </div>
-                                        <small>{{ row.label }}</small>
+                                    </div>
+                                    <div class="ops-line-labels">
+                                        <div v-for="row in activeAnalyticsData.trend" :key="`label-${row.label}`" class="ops-line-label-item">
+                                            <small>{{ row.label }}</small>
+                                            <span>{{ row.value }}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -380,10 +421,6 @@
                                             <option value="typhoon">Typhoon</option>
                                             <option value="flood">Flood</option>
                                             <option value="landslide">Landslide</option>
-                                            <option value="earthquake">Earthquake</option>
-                                            <option value="fire">Fire</option>
-                                            <option value="storm_surge">Storm Surge</option>
-                                            <option value="other">Other</option>
                                         </select>
                                     </label>
                                     <label><span>Expected Impact Date</span><input v-model="disasterAdvisoryForm.expectedImpactDate" type="datetime-local" required></label>
@@ -395,8 +432,32 @@
                                             <option value="critical">Critical</option>
                                         </select>
                                     </label>
-                                    <label><span>Affected Purok/Zone (comma separated)</span><input v-model="disasterAdvisoryForm.affectedPuroks" type="text" placeholder="Purok 1, Purok 2"></label>
-                                    <label><span>Flood-Prone Areas (comma separated)</span><input v-model="disasterAdvisoryForm.floodProneAreas" type="text" placeholder="Riverbank Sitio, Lowland Zone"></label>
+                                    <div style="display:grid; gap:10px; padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#fbfdfc;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                                            <span style="font-weight:600;">Flood-Prone Areas</span>
+                                            <button type="button" class="ghost-button" @click="addFloodProneAreaRow"><i class="fa-solid fa-plus"></i> Add Area</button>
+                                        </div>
+                                        <div v-for="(area, index) in disasterFloodAreaRows" :key="area.id" style="display:grid; gap:10px; padding:12px; border:1px solid #e6eee9; border-radius:8px; background:#fff;">
+                                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                                <strong>Area {{ index + 1 }}</strong>
+                                                <button v-if="disasterFloodAreaRows.length > 1" type="button" class="ghost-button" @click="removeFloodProneAreaRow(index)" style="color:#b42318;"><i class="fa-solid fa-trash"></i> Remove</button>
+                                            </div>
+                                            <label>
+                                                <span>Purok</span>
+                                                <select v-model="area.purok" required @change="area.zone = ''">
+                                                    <option value="" disabled>Select Purok</option>
+                                                    <option v-for="purok in disasterPurokOptions" :key="purok" :value="purok">{{ purok }}</option>
+                                                </select>
+                                            </label>
+                                            <label v-if="getFloodProneAreaZoneOptions(area.purok).length">
+                                                <span>Zone</span>
+                                                <select v-model="area.zone" required>
+                                                    <option value="" disabled>Select Zone</option>
+                                                    <option v-for="zone in getFloodProneAreaZoneOptions(area.purok)" :key="zone" :value="zone">{{ zone }}</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </div>
                                     <label><span>Available Evacuation Centers (comma separated)</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" placeholder="Barangay Hall, Covered Court"></label>
                                     <label><span>Advisory Message</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required placeholder="Safety reminders and evacuation instructions"></textarea></label>
                                     <label><span>Status</span>
@@ -429,7 +490,7 @@
                                         <div class="fine-print" style="margin-top:4px;">Impact Date: {{ formatDate(advisory.expectedImpactDate) }}</div>
                                         <div class="fine-print">Severity: {{ normalizeLabel(advisory.severity) }}</div>
                                         <p style="margin:8px 0 0;">{{ advisory.advisoryMessage }}</p>
-                                        <small class="fine-print" style="display:block; margin-top:8px;">Purok/Zone: {{ advisory.affectedPuroks?.join(', ') || 'N/A' }}</small>
+                                        <small class="fine-print" style="display:block; margin-top:8px;">Flood-Prone Areas: {{ advisory.floodProneAreas?.join(', ') || 'N/A' }}</small>
                                         <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
                                             <button class="ghost-button" type="button" @click="editDisasterAdvisory(advisory)"><i class="fa-solid fa-pen"></i> Edit</button>
@@ -445,7 +506,7 @@
                 </div>
             </section>
             <!-- Data Table Generic Loop For Other Views -->
-            <section class="app-view" :class="{ active: ['documents', 'reservations', 'reports', 'announcements', 'residents'].includes(currentView) }">
+            <section class="app-view" :class="{ active: ['reservations', 'reports', 'announcements', 'residents', 'documents'].includes(currentView) }">
                 <div class="portal-grid">
                     <article class="content-card" style="overflow-x: auto;">
                         <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -457,17 +518,7 @@
                                 <span class="search-icon" v-if="currentView === 'residents'"><i class="fa-solid fa-search"></i></span>
                                 <input v-if="currentView === 'residents'" v-model="residentSearch" type="search" placeholder="Search residents..." style="padding-left: 30px;">
 
-                                <div v-if="currentView === 'documents'" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <button type="button" class="ghost-button" :class="{ active: documentRequestTab === 'all' }" @click="documentRequestTab = 'all'">
-                                        All <span class="badge">{{ documentRequestCounts.all }}</span>
-                                    </button>
-                                    <button type="button" class="ghost-button" :class="{ active: documentRequestTab === 'residents' }" @click="documentRequestTab = 'residents'">
-                                        Residents <span class="badge">{{ documentRequestCounts.residents }}</span>
-                                    </button>
-                                    <button type="button" class="ghost-button" :class="{ active: documentRequestTab === 'non_residents' }" @click="documentRequestTab = 'non_residents'">
-                                        Non-Residents <span class="badge">{{ documentRequestCounts.nonResidents }}</span>
-                                    </button>
-                                </div>
+                                
                                 
 
                                 <button v-if="currentView === 'announcements'" class="primary-button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> Add Announcement</button>
@@ -483,13 +534,7 @@
                                     <th scope="col">Account Status</th>
                                     <th scope="col">Actions</th>
                                 </tr>
-                                <tr v-if="currentView === 'documents'">
-                                    <th scope="col">Type</th>
-                                    <th scope="col">Requester</th>
-                                    <th scope="col">Purpose</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
-                                </tr>
+                                
                                 <tr v-if="currentView === 'reservations'">
                                     <th scope="col">Facility & Date</th>
                                     <th scope="col">Resident</th>
@@ -501,6 +546,14 @@
                                     <th scope="col">Issue</th>
                                     <th scope="col">Resident / Type</th>
                                     <th scope="col">Priority</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                                <tr v-if="currentView === 'documents'">
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Requester</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Purpose</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Actions</th>
                                 </tr>
@@ -521,17 +574,7 @@
                                         <button class="icon-button" @click="openModal('resident', item)"><i class="fa-solid fa-eye"></i> View</button>
                                     </td>
 
-                                    <td v-if="currentView === 'documents'"><strong>{{ item.documentType.replaceAll('_', ' ') }}</strong></td>
-                                    <td v-if="currentView === 'documents'">
-                                        {{ getRequestorName(item) }}
-                                        <br>
-                                        <small>{{ item.requesterType === 'non_resident' ? 'Non-Resident' : 'Resident' }}</small>
-                                    </td>
-                                    <td v-if="currentView === 'documents'">{{ item.purpose }}</td>
-                                    <td v-if="currentView === 'documents'"><StatusBadge :status="item.status" /></td>
-                                    <td v-if="currentView === 'documents'">
-                                        <button class="icon-button" @click="openModal('document', item)"><i class="fa-solid fa-eye"></i> View</button>
-                                    </td>
+                                    
 
 
                                     <td v-if="currentView === 'reservations'"><strong>{{ item.facilityName.replaceAll('_', ' ') }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small></td>
@@ -543,6 +586,14 @@
                                     </td>
 
                                     <td v-if="currentView === 'reports'"><strong>{{ item.title }}</strong><br><small>{{ formatDate(item.incidentDate) }}</small></td>
+                                    <td v-if="currentView === 'documents'"><strong>{{ formatDate(item.createdAt) }}</strong></td>
+                                    <td v-if="currentView === 'documents'">{{ getDocumentRequesterName(item) }}</td>
+                                    <td v-if="currentView === 'documents'">{{ (item.type || '').replaceAll('_',' ') }}</td>
+                                    <td v-if="currentView === 'documents'">{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
+                                    <td v-if="currentView === 'documents'"><StatusBadge :status="item.status" /></td>
+                                    <td v-if="currentView === 'documents'">
+                                        <button class="icon-button" @click="openModal('document', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                    </td>
                                     <td v-if="currentView === 'reports'">{{ getRequestorName(item) }}<br><small>{{ item.reportType.replaceAll('_', ' ') }}</small></td>
                                     <td v-if="currentView === 'reports'"><span class="priority-badge" :class="'p-' + item.priority">{{ item.priority.toUpperCase() }}</span></td>
                                     <td v-if="currentView === 'reports'"><StatusBadge :status="item.status" /></td>
@@ -726,14 +777,14 @@
 
         <!-- Dynamic Action Modal -->
         <div class="admin-modal-backdrop" v-if="activeModal" @click.self="activeModal = null">
-            <div class="admin-modal" :class="{ 'admin-modal-wide': activeModal === 'resident' }">
+            <div class="admin-modal" :class="{ 'admin-modal-wide': activeModal === 'resident' || activeModal === 'document' }">
                 <button class="admin-modal-close" @click="activeModal = null"><i class="fa-solid fa-xmark"></i></button>
 
                 <div v-if="activeModal === 'resident'">
                     <h2><i class="fa-solid fa-users-viewfinder"></i> Resident Overview Dashboard</h2>
                     <p class="fine-print">Complete resident information, verification workflow, and service history.</p>
                     <div class="resident-overview-layout">
-                        <aside class="resident-identity-card">
+                        <aside class="resident-identity-card" aria-label="Resident identity">
                             <div class="resident-avatar">
                                 <img v-if="selectedItem.profileImage" :src="selectedItem.profileImage" alt="Resident avatar">
                                 <span v-else>{{ getResidentInitials(selectedItem) }}</span>
@@ -837,11 +888,11 @@
                     </div>
                 </div>
 
-                <div v-if="['document', 'reservation', 'report', 'appointment'].includes(activeModal)">
+                <div v-if="['reservation', 'report', 'appointment'].includes(activeModal)">
                     <h2><i class="fa-solid fa-eye"></i> View Report</h2>
                     <p class="fine-print">Review complete report details, then apply a status action.</p>
 
-                    <div class="stack" style="background: #f9f9f9; padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0;">
+                    <div class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
                         <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
                             <strong>{{ detail.label }}:</strong> {{ detail.value }}
                         </p>
@@ -863,8 +914,7 @@
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="ghost-button"
-                                style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;"
-                            >
+                                style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
                                 <i class="fa-solid fa-location-dot"></i>
                                 Open in Google Maps
                             </a>
@@ -879,8 +929,7 @@
                                     :href="proofPath"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;"
-                                >
+                                    style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;">
                                     <i class="fa-regular fa-image"></i>
                                     {{ proofPath.split('/').pop() }}
                                 </a>
@@ -896,40 +945,99 @@
                         </div>
 
                         <StatusActionButtons
-                            :entityType="activeModal === 'document' ? 'documentRequest' : activeModal === 'reservation' ? 'facilityReservation' : activeModal === 'appointment' ? 'appointment' : 'report'"
+                            :entityType="activeModal === 'reservation' ? 'facilityReservation' : activeModal === 'appointment' ? 'appointment' : 'report'"
                             :currentStatus="selectedItem.status"
                             :loading="isSubmitting"
                             @action-triggered="handleStatusAction"
                         />
-
-                        <!-- Document preview and send buttons -->
-                        <div v-if="activeModal === 'document'" style="margin-top: 15px;">
-                            <div v-if="['approved', 'ready_for_pickup', 'completed'].includes(selectedItem.status)" style="display: flex; gap: 12px; margin-bottom: 12px;">
-                                <button 
-                                    type="button" 
-                                    class="ghost-button" 
-                                    @click="previewDocument(selectedItem._id)"
-                                    style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;"
-                                >
-                                    <i class="fa-solid fa-eye"></i>
-                                    Preview PDF
-                                </button>
-                            </div>
-                            <button 
-                                v-if="selectedItem.status === 'ready_for_pickup'"
-                                type="button" 
-                                class="primary-button" 
-                                @click="sendDocumentToResident" 
-                                :disabled="isSubmitting || selectedItem.documentSentAt"
-                                style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;"
-                            >
-                                <i :class="isSubmitting ? 'fa-solid fa-spinner fa-spin' : selectedItem.documentSentAt ? 'fa-solid fa-check-circle' : 'fa-solid fa-paper-plane'"></i>
-                                {{ isSubmitting ? 'Sending...' : selectedItem.documentSentAt ? 'Sent on ' + formatDate(selectedItem.documentSentAt) : 'Send to Resident' }}
-                            </button>
-                        </div>
                     </div>
                 </div>
 
+                <div v-if="activeModal === 'document'">
+                    <h2><i class="fa-solid fa-file-lines"></i> View Document Request</h2>
+                    <p class="fine-print">Review complete document request details and process the document generation.</p>
+                    
+                    <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); gap: 20px; align-items: start; margin-top: 15px;">
+                        <!-- Left Pane: Details -->
+                        <div style="display: grid; gap: 12px;">
+                            <div class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
+                                <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
+                                    <strong>{{ detail.label }}:</strong> {{ detail.value }}
+                                </p>
+                            </div>
+
+                            <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
+                                <strong style="display: block; margin-bottom: 10px;">Proof Images</strong>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <a
+                                        v-for="proofPath in selectedItem.proofFiles"
+                                        :key="proofPath"
+                                        :href="proofPath"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+                                        <i class="fa-regular fa-image"></i>
+                                        {{ proofPath.split('/').pop() }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Pane: Management & Status -->
+                        <div style="display: grid; gap: 12px;">
+                            <div v-if="isDocumentProcessing(selectedItem)" style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#fbfffc,#f3f8f6); box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
+                                <h3 style="margin:0 0 12px 0; color: #0f3f33;">Document Management</h3>
+                                <div class="stack" style="gap: 12px;">
+                                    <label><span>Formal Purpose (admin)</span><input v-model="formalPurposeInput" type="text" style="width: 100%;"></label>
+
+                                    <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
+                                        <label><span>Full name</span><input v-model="editableFields.FULL_NAME" type="text" style="width: 100%;"></label>
+                                        <label><span>Age</span><input v-model="editableFields.AGE" type="text" style="width: 100%;"></label>
+                                        <label><span>Barangay</span><input v-model="editableFields.BARANGAY" type="text" style="width: 100%;"></label>
+                                        <label><span>City</span><input v-model="editableFields.CITY" type="text" style="width: 100%;"></label>
+                                        <label><span>Province</span><input v-model="editableFields.PROVINCE" type="text" style="width: 100%;"></label>
+                                        <label><span>Purpose</span><input v-model="editableFields.PURPOSE" type="text" style="width: 100%;"></label>
+                                    </div>
+
+                                    <div style="display:flex; gap:8px; flex-direction: column;">
+                                        <button type="button" class="primary-button" @click="saveDocumentEdits" :disabled="isSubmitting" style="width: 100%;">
+                                            <i class="fa-solid fa-save"></i> {{ isSubmitting ? 'Saving...' : 'Save Edits' }}
+                                        </button>
+                                        <div style="display: grid; gap: 8px;">
+                                            <button type="button" class="primary-button" @click="generateAndSavePdf(selectedItem)" :disabled="previewLoading || isSubmitting" style="width: 100%; background: #2c3e50;">
+                                                <i class="fa-solid fa-file-pdf"></i> {{ previewLoading ? 'Generating...' : 'Generate PDF' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="isDocumentRejected(selectedItem)" style="padding:12px; border:1px solid #f1caca; border-radius:8px; background:#fff7f7; color:#7a1d1d;">
+                                This document request has been rejected.
+                            </div>
+
+                            <div v-if="isDocumentReady(selectedItem) || isDocumentCompleted(selectedItem)" style="padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#f7fbf9; color:#2d5f45;">
+                                PDF has already been generated and marked ready.
+                            </div>
+
+                            <!-- Status display and action buttons -->
+                            <div style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#f7fbf8,#f3f8f6);">
+                                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-weight: 600; color: #333;">Status:</span>
+                                    <StatusBadge :status="selectedItem.status" />
+                                    <span style="text-transform: capitalize; color: #2d5f45; font-weight: 700;">{{ selectedItem.status }}</span>
+                                </div>
+
+                                <StatusActionButtons
+                                    entityType="documentRequest"
+                                    :currentStatus="selectedItem.status"
+                                    :loading="isSubmitting"
+                                    @action-triggered="handleStatusAction"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div v-if="activeModal === 'official'">
                     <h2><i class="fa-solid fa-user-tie"></i> Official Details</h2>
                     <form class="stack" @submit.prevent="handleSaveOfficial" style="margin-top: 15px;">
@@ -1013,6 +1121,36 @@
             @confirm="submitStatusAction"
             @cancel="confirmingAction = null"
         />
+
+        <!-- Custom Confirmation Dialog -->
+        <div v-if="showConfirmDialog" class="confirm-dialog-backdrop" @click.self="cancelConfirm">
+            <div class="confirm-dialog">
+                <p class="confirm-message">{{ confirmMessage }}</p>
+                <div class="confirm-actions">
+                    <button type="button" class="ghost-button" @click="cancelConfirm">Cancel</button>
+                    <button type="button" class="primary-button" @click="confirmAction" :disabled="isConfirmSubmitting">
+                        <i v-if="isConfirmSubmitting" class="fa-solid fa-spinner fa-spin"></i>
+                        {{ isConfirmSubmitting ? 'Confirming...' : 'Confirm' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview loading modal -->
+        <div v-if="previewLoading" class="preview-loading-overlay">
+            <div class="preview-loading-box">
+                <div class="spinner" aria-hidden="true"></div>
+                <div style="margin-top: 12px; font-weight: 600;">Generating PDF...</div>
+                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing the certificate and opening it when ready.</div>
+            </div>
+        </div>
+        <div v-if="residentModalLoading" class="preview-loading-overlay">
+            <div class="preview-loading-box">
+                <div class="spinner" aria-hidden="true"></div>
+                <div style="margin-top: 12px; font-weight: 600;">Loading resident profile...</div>
+                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing full resident details for review.</div>
+            </div>
+        </div>
     </div>
 </template>
 <script setup>
@@ -1022,7 +1160,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import StatusActionButtons from '@/components/StatusActionButtons.vue';
 import StatusActionModal from '@/components/StatusActionModal.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
-import { apiFetch, formatDate } from '@/shared/client';
+import { apiFetch, formatDate, getAuth } from '@/shared/client';
 import { useAdminAuth } from '@/composables/useAdminAuth';
 import { useAdminData } from '@/composables/useAdminData';
 import { useAnnouncements } from '@/composables/useAnnouncements';
@@ -1188,10 +1326,22 @@ const showAdminPassword = ref(false);
 const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
-const currentView = ref(localStorage.getItem('admin_current_view') || 'dashboard');
+const validAdminViews = ['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs'];
+const hashView = (() => {
+    try {
+        const matched = window.location.hash.match(/view=([a-z-]+)/i);
+        return matched ? decodeURIComponent(matched[1]) : null;
+    } catch (error) {
+        return null;
+    }
+})();
+const savedAdminView = localStorage.getItem('admin_current_view');
+const initialAdminView = validAdminViews.includes(hashView)
+    ? hashView
+    : (validAdminViews.includes(savedAdminView) ? savedAdminView : 'dashboard');
+const currentView = ref(initialAdminView);
 const selectedDashboardCard = ref('reports');
 const analyticsRange = ref('monthly');
-const documentRequestTab = ref('all');
 const activeModal = ref(null);
 const residentModalLoading = ref(false);
 const confirmingAction = ref(null);
@@ -1199,15 +1349,42 @@ const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
 const isSubmitting = ref(false);
 const previewLoading = ref(false);
+const hoveredTrendIndex = ref(null);
+const setHoveredTrendIndex = (index) => {
+    hoveredTrendIndex.value = index;
+};
+const clearHoveredTrendIndex = () => {
+    hoveredTrendIndex.value = null;
+};
 const reportAlertVisible = ref(false);
 const reportAlertBusy = ref(false);
 const reportAlertReports = ref([]);
 // Persist view state on change
 watch(currentView, (newView) => {
     localStorage.setItem('admin_current_view', newView);
+    try {
+        window.history.replaceState(null, '', `#view=${encodeURIComponent(newView)}`);
+    } catch (error) {
+        window.location.hash = `view=${encodeURIComponent(newView)}`;
+    }
 });
+
+const syncViewFromHash = () => {
+    try {
+        const matched = window.location.hash.match(/view=([a-z-]+)/i);
+        const hashValue = matched ? decodeURIComponent(matched[1]) : null;
+        if (hashValue && validAdminViews.includes(hashValue) && hashValue !== currentView.value) {
+            currentView.value = hashValue;
+        }
+    } catch (error) {
+        // Ignore malformed hashes.
+    }
+};
 const selectedItem = ref({});
 const editForm = reactive({});
+const formalPurposeInput = ref('');
+const documentSearch = ref('');
+const editableFields = reactive({ FULL_NAME: '', AGE: '', BARANGAY: '', CITY: '', PROVINCE: '', PURPOSE: '', DAY: '', MONTH: '' });
 
 
 // SMS Logs State
@@ -1224,17 +1401,75 @@ const canApproveRejectResident = computed(() => !['approved', 'rejected'].includ
 const canSuspendResident = computed(() => residentAccountStatus.value === 'approved');
 const canArchiveResident = computed(() => ['rejected', 'suspended'].includes(residentAccountStatus.value));
 const disasterFilterStatus = ref('all');
+const disasterPurokOptions = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
+const disasterZoneOptionsByPurok = {
+    Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
+    Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
+};
+
+let disasterFloodAreaRowId = 0;
+
+const createFloodProneAreaRow = (entry = {}) => ({
+    id: ++disasterFloodAreaRowId,
+    purok: entry.purok || '',
+    zone: entry.zone || ''
+});
+
+const parseFloodProneAreaEntry = (value) => {
+    const text = String(value || '').trim();
+    if (!text) return createFloodProneAreaRow();
+
+    const match = text.match(/^(?:\d+\.\s*)?([^,-]+?)(?:\s*[-,]\s*(Zone\s*\d+))?$/i);
+    if (!match) return createFloodProneAreaRow({ purok: text });
+
+    return createFloodProneAreaRow({
+        purok: match[1].trim(),
+        zone: match[2] ? match[2].replace(/\s+/g, ' ').trim() : ''
+    });
+};
+
+const getFloodProneAreaZoneOptions = (purok) => disasterZoneOptionsByPurok[purok] || [];
+
+const addFloodProneAreaRow = () => {
+    disasterFloodAreaRows.value.push(createFloodProneAreaRow());
+};
+
+const removeFloodProneAreaRow = (index) => {
+    if (disasterFloodAreaRows.value.length === 1) {
+        disasterFloodAreaRows.value = [createFloodProneAreaRow()];
+        return;
+    }
+
+    disasterFloodAreaRows.value.splice(index, 1);
+};
+
+const formatFloodProneAreaRow = (row, index) => {
+    const parts = [row.purok, row.zone].filter(Boolean);
+    return `${index + 1}. ${parts.join(' - ')}`.trim();
+};
+
+const normalizeFloodProneAreaRows = (entries) => {
+    const rows = Array.isArray(entries) && entries.length
+        ? entries.map((entry) => parseFloodProneAreaEntry(entry))
+        : [createFloodProneAreaRow()];
+
+    return rows.map((row) => {
+        if (!row.purok) return row;
+        row.zone = getFloodProneAreaZoneOptions(row.purok).includes(row.zone) ? row.zone : '';
+        return row;
+    });
+};
+
 const disasterAdvisoryForm = reactive({
     _id: '',
     disasterType: 'typhoon',
     expectedImpactDate: '',
     severity: 'medium',
-    affectedPuroks: '',
-    floodProneAreas: '',
     evacuationCenters: '',
     advisoryMessage: '',
     status: 'upcoming'
 });
+const disasterFloodAreaRows = ref([createFloodProneAreaRow()]);
 
 const todayDate = computed(() => {
     const d = new Date();
@@ -1268,7 +1503,6 @@ const showToast = (message, isError = false) => {
 
 // Computed properties
 const pendingCounts = computed(() => ({
-    docs: documentRequests.value.filter(r => r.status === 'pending' || r.status === 'processing').length,
     reserves: reservations.value.filter(r => r.status === 'pending').length,
     reports: reports.value.filter(r => r.status === 'pending' || r.status === 'reviewing').length,
     appointments: appointments.value.filter(r => r.status === 'pending').length,
@@ -1281,22 +1515,18 @@ const viewTitle = computed(() => ({
     residents: 'Resident Accounts',
     appointments: 'Appointments',
     officials: 'Officials Directory',
-    documents: 'Document Requests',
     reservations: 'Facility Reservations',
     reports: 'Resident Reports',
     disaster: 'Disaster Management',
     'sms-logs': 'SMS Logs'
+    ,
+    'documents': 'Document Requests'
 }[currentView.value]));
 
-const pendingWorkload = computed(() => pendingCounts.value.docs + pendingCounts.value.reserves + pendingCounts.value.reports + pendingCounts.value.appointments);
+const pendingWorkload = computed(() => pendingCounts.value.reserves + pendingCounts.value.reports + pendingCounts.value.appointments);
 const totalResidentsCount = computed(() => residents.value.length);
 const approvedResidentsCount = computed(() => residents.value.filter((resident) => resident.userId?.accountStatus === 'approved').length);
 const activeAnnouncementsCount = computed(() => announcements.value.filter((announcement) => announcement.isActive !== false).length);
-const documentRequestCounts = computed(() => ({
-    all: documentRequests.value.length,
-    residents: documentRequests.value.filter((request) => request.requesterType !== 'non_resident').length,
-    nonResidents: documentRequests.value.filter((request) => request.requesterType === 'non_resident').length
-}));
 
 const analyticsRanges = [
     { key: 'daily', label: 'Daily' },
@@ -1318,7 +1548,7 @@ const dashboardCards = computed(() => ([
         key: 'pending',
         label: 'Pending Requests',
         value: pendingWorkload.value,
-        caption: `${pendingCounts.value.docs} documents queued`,
+        caption: `${pendingWorkload.value} in queue`,
         icon: 'fa-solid fa-inbox',
         tone: 'blue'
     },
@@ -1469,6 +1699,7 @@ const getPeriodBuckets = (range) => {
             date.setDate(now.getDate() - (6 - index));
             return {
                 label: date.toLocaleDateString([], { weekday: 'short' }),
+                tooltip: date.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }),
                 matches: (recordDate) => recordDate.toDateString() === date.toDateString()
             };
         });
@@ -1484,6 +1715,7 @@ const getPeriodBuckets = (range) => {
             end.setHours(23, 59, 59, 999);
             return {
                 label: `W${index + 1}`,
+                tooltip: `Week of ${start.toLocaleDateString([], { month: 'short', day: 'numeric' })}`,
                 matches: (recordDate) => recordDate >= start && recordDate <= end
             };
         });
@@ -1494,6 +1726,7 @@ const getPeriodBuckets = (range) => {
             const year = now.getFullYear() - (3 - index);
             return {
                 label: String(year),
+                tooltip: String(year),
                 matches: (recordDate) => recordDate.getFullYear() === year
             };
         });
@@ -1503,6 +1736,7 @@ const getPeriodBuckets = (range) => {
         const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
         return {
             label: date.toLocaleDateString([], { month: 'short' }),
+            tooltip: date.toLocaleDateString([], { month: 'long', year: 'numeric' }),
             matches: (recordDate) => recordDate.getFullYear() === date.getFullYear() && recordDate.getMonth() === date.getMonth()
         };
     });
@@ -1526,7 +1760,6 @@ const buildTrend = (records, dateKey) => {
 
 const activeAnalyticsData = computed(() => {
     const pendingRecords = [
-        ...documentRequests.value.filter((request) => ['pending', 'processing'].includes(request.status)).map((request) => ({ ...request, queueType: 'Documents' })),
         ...reservations.value.filter((reservation) => reservation.status === 'pending').map((reservation) => ({ ...reservation, queueType: 'Facilities' })),
         ...appointments.value.filter((appointment) => appointment.status === 'pending').map((appointment) => ({ ...appointment, queueType: 'Appointments' })),
         ...reports.value.filter((report) => ['pending', 'reviewing'].includes(report.status)).map((report) => ({ ...report, queueType: 'Reports' }))
@@ -1558,13 +1791,13 @@ const activeAnalyticsData = computed(() => {
             distribution: buildDistribution(pendingRecords, (record) => record.queueType, ['No pending queue']),
             summaries: [
                 { label: 'Total Queue', value: pendingWorkload.value, detail: 'Awaiting action' },
-                { label: 'Documents', value: pendingCounts.value.docs, detail: 'Review required' },
-                { label: 'Citizen Reports', value: pendingCounts.value.reports, detail: 'Operational review' }
+                { label: 'Citizen Reports', value: pendingCounts.value.reports, detail: 'Operational review' },
+                { label: 'Scheduled Appointments', value: pendingCounts.value.appointments, detail: 'Waiting confirmation' }
             ],
             insights: [
                 { label: 'Queue Pressure', value: pendingWorkload.value ? 'Active' : 'Clear', detail: 'Current workload state' },
                 { label: 'Top Queue', value: buildDistribution(pendingRecords, (record) => record.queueType)[0]?.label || 'None', detail: 'Largest pending category' },
-                { label: 'Awaiting Review', value: `${pendingCounts.value.docs + pendingCounts.value.reports}`, detail: 'Document and report actions' }
+                { label: 'Awaiting Review', value: `${pendingCounts.value.reports}`, detail: 'Report action pending' }
             ]
         },
         reports: {
@@ -1652,6 +1885,64 @@ const activeAnalyticsData = computed(() => {
     };
 });
 
+const analyticsLineDots = computed(() => {
+    const rows = activeAnalyticsData.value?.trend || [];
+    if (!rows.length) {
+        return [];
+    }
+    const maxValue = Math.max(...rows.map((row) => row.value), 1);
+    return rows.map((row, index) => {
+        const x = rows.length === 1 ? 50 : (index / (rows.length - 1)) * 100;
+        const y = 14 + (1 - (row.value / maxValue)) * 70;
+        return {
+            key: `${row.label}-${index}`,
+            x: Number(x.toFixed(2)),
+            y: Number(y.toFixed(2))
+        };
+    });
+});
+
+const analyticsLinePath = computed(() => {
+    const dots = analyticsLineDots.value;
+    if (!dots.length) {
+        return '';
+    }
+    if (dots.length === 1) {
+        return `M ${dots[0].x} ${dots[0].y} L ${dots[0].x} ${dots[0].y}`;
+    }
+    const controls = dots.slice(1).map((dot, index) => {
+        const prev = dots[index];
+        const midX = (prev.x + dot.x) / 2;
+        const midY = (prev.y + dot.y) / 2;
+        return `Q ${prev.x} ${prev.y} ${midX} ${midY}`;
+    }).join(' ');
+    const last = dots[dots.length - 1];
+    return `M ${dots[0].x} ${dots[0].y} ${controls} T ${last.x} ${last.y}`;
+});
+
+const analyticsAreaPath = computed(() => {
+    if (!analyticsLinePath.value) {
+        return '';
+    }
+    return `${analyticsLinePath.value} L 100 100 L 0 100 Z`;
+});
+
+const analyticsTooltip = computed(() => {
+    const index = hoveredTrendIndex.value;
+    const dots = analyticsLineDots.value;
+    const trend = activeAnalyticsData.value?.trend?.[index];
+    if (index === null || !dots[index] || !trend) {
+        return null;
+    }
+    return {
+        left: `${dots[index].x}%`,
+        top: `${dots[index].y}%`,
+        label: trend.label,
+        value: trend.value,
+        tooltip: trend.tooltip || trend.label
+    };
+});
+
 const peakDayLabel = computed(() => ({
     appointments: getPeakWeekday(appointments.value, 'appointmentDate'),
     reservations: getPeakWeekday(reservations.value, 'reservationDate')
@@ -1695,7 +1986,6 @@ const dashboardMetrics = computed(() => ([
 
 const workloadBars = computed(() => {
     const rows = [
-        { key: 'docs', label: 'Documents', value: pendingCounts.value.docs, tone: 'docs' },
         { key: 'reserves', label: 'Facilities', value: pendingCounts.value.reserves, tone: 'reserves' },
         { key: 'appointments', label: 'Appointments', value: pendingCounts.value.appointments, tone: 'blue' },
         { key: 'reports', label: 'Reports', value: pendingCounts.value.reports, tone: 'reports' }
@@ -1711,9 +2001,9 @@ const workloadBars = computed(() => {
 
 const workloadRingStyle = computed(() => {
     const segments = [
-        { value: pendingCounts.value.docs, color: '#d52a2a' },
         { value: pendingCounts.value.reserves, color: '#257f49' },
-        { value: pendingCounts.value.reports, color: '#a6782a' }
+        { value: pendingCounts.value.reports, color: '#a6782a' },
+        { value: pendingCounts.value.appointments, color: '#2563eb' }
     ];
 
     const total = segments.reduce((sum, segment) => sum + segment.value, 0);
@@ -1736,11 +2026,6 @@ const latestAnnouncements = computed(() => [...announcements.value]
     .sort((left, right) => new Date(right.createdAt || right.startDate || 0) - new Date(left.createdAt || left.startDate || 0))
     .slice(0, 3));
 
-const latestDocuments = computed(() => [...documentRequests.value]
-    .filter(d => d.status === 'pending' || d.status === 'processing')
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 3));
-
 const latestReports = computed(() => [...reports.value]
     .filter(r => r.status === 'pending' || r.status === 'reviewing')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -1754,19 +2039,6 @@ const latestAppointments = computed(() => [...appointments.value]
 const getRecentActivityItems = computed(() => {
     const items = [];
     
-    // Add recent documents
-    latestDocuments.value.forEach(doc => {
-        items.push({
-            id: `doc-${doc._id}`,
-            type: 'document',
-            title: `Document request: ${doc.documentType?.replaceAll('_', ' ')}`,
-            icon: 'fa-solid fa-file',
-            view: 'documents',
-            timeAgo: getTimeAgo(doc.createdAt),
-            status: doc.status
-        });
-    });
-
     // Add recent reports
     latestReports.value.forEach(report => {
         items.push({
@@ -1823,8 +2095,8 @@ const getTimeAgo = (date) => {
 };
 
 const getTimeValue = (timeAgo) => {
-    const num = parseInt(timeAgo);
-    if (isNaN(num)) return 0;
+    const num = Number.parseInt(timeAgo);
+    if (Number.isNaN(num)) return 0;
     if (timeAgo.includes('Just now')) return 0;
     if (timeAgo.includes('m ago')) return num * 60;
     if (timeAgo.includes('h ago')) return num * 3600;
@@ -1864,8 +2136,9 @@ const reportAlertMessage = computed(() => {
         return names ? `Report received: ${names}` : 'A new report is waiting for review.';
     }
 
+    const suffix = reportAlertReports.value.length > 2 ? '...' : '';
     return names
-        ? `Latest reports: ${names}${reportAlertReports.value.length > 2 ? '...' : ''}`
+        ? `Latest reports: ${names}${suffix}`
         : 'Multiple reports are waiting for review.';
 });
 
@@ -1874,11 +2147,10 @@ const resetDisasterAdvisoryForm = () => {
     disasterAdvisoryForm.disasterType = 'typhoon';
     disasterAdvisoryForm.expectedImpactDate = '';
     disasterAdvisoryForm.severity = 'medium';
-    disasterAdvisoryForm.affectedPuroks = '';
-    disasterAdvisoryForm.floodProneAreas = '';
     disasterAdvisoryForm.evacuationCenters = '';
     disasterAdvisoryForm.advisoryMessage = '';
     disasterAdvisoryForm.status = 'upcoming';
+    disasterFloodAreaRows.value = [createFloodProneAreaRow()];
 };
 
 const splitByComma = (value) => String(value || '')
@@ -1896,8 +2168,9 @@ const saveDisasterAdvisory = async () => {
         disasterType: disasterAdvisoryForm.disasterType,
         expectedImpactDate: disasterAdvisoryForm.expectedImpactDate,
         severity: disasterAdvisoryForm.severity,
-        affectedPuroks: splitByComma(disasterAdvisoryForm.affectedPuroks),
-        floodProneAreas: splitByComma(disasterAdvisoryForm.floodProneAreas),
+        floodProneAreas: disasterFloodAreaRows.value
+            .filter((area) => area.purok)
+            .map((area, index) => formatFloodProneAreaRow(area, index)),
         evacuationCenters: splitByComma(disasterAdvisoryForm.evacuationCenters),
         advisoryMessage: disasterAdvisoryForm.advisoryMessage.trim(),
         status: disasterAdvisoryForm.status
@@ -1929,11 +2202,10 @@ const saveDisasterAdvisory = async () => {
 
 const editDisasterAdvisory = (advisory) => {
     disasterAdvisoryForm._id = advisory._id;
-    disasterAdvisoryForm.disasterType = advisory.disasterType || 'other';
+    disasterAdvisoryForm.disasterType = ['typhoon', 'flood', 'landslide'].includes(advisory.disasterType) ? advisory.disasterType : 'typhoon';
     disasterAdvisoryForm.expectedImpactDate = advisory.expectedImpactDate ? new Date(advisory.expectedImpactDate).toISOString().slice(0, 16) : '';
     disasterAdvisoryForm.severity = advisory.severity || 'medium';
-    disasterAdvisoryForm.affectedPuroks = Array.isArray(advisory.affectedPuroks) ? advisory.affectedPuroks.join(', ') : '';
-    disasterAdvisoryForm.floodProneAreas = Array.isArray(advisory.floodProneAreas) ? advisory.floodProneAreas.join(', ') : '';
+    disasterFloodAreaRows.value = normalizeFloodProneAreaRows(advisory.floodProneAreas);
     disasterAdvisoryForm.evacuationCenters = Array.isArray(advisory.evacuationCenters) ? advisory.evacuationCenters.join(', ') : '';
     disasterAdvisoryForm.advisoryMessage = advisory.advisoryMessage || '';
     disasterAdvisoryForm.status = advisory.status || 'upcoming';
@@ -1941,7 +2213,7 @@ const editDisasterAdvisory = (advisory) => {
 
 const deleteDisasterAdvisory = async (advisoryId) => {
     if (!advisoryId) return;
-    if (!window.confirm('Delete this disaster advisory?')) return;
+    if (!(await showConfirm('Delete this disaster advisory?'))) return;
 
     try {
         await apiFetch(`/disaster-advisories/${advisoryId}`, { method: 'DELETE' });
@@ -1973,22 +2245,9 @@ const currentList = computed(() => {
     switch (currentView.value) {
         case 'announcements': return announcements.value;
         case 'residents': return filteredResidents.value;
-        case 'documents': {
-            const sortedDocuments = [...documentRequests.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-            if (documentRequestTab.value === 'non_residents') {
-                return sortedDocuments.filter((request) => request.requesterType === 'non_resident');
-            }
-
-            if (documentRequestTab.value === 'residents') {
-                return sortedDocuments.filter((request) => request.requesterType !== 'non_resident');
-            }
-
-            return sortedDocuments;
-        }
-
         case 'reservations': return [...reservations.value].sort((a, b) => new Date(b.reservationDate) - new Date(a.reservationDate));
         case 'reports': return [...reports.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        case 'documents': return [...(documentRequests.value || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         default: return [];
     }
 });
@@ -2026,6 +2285,37 @@ const getRequestorName = (item) => {
     return item?.requesterType === 'guest' ? 'Guest Requester' : 'Unknown Requester';
 };
 
+const getDocumentRequesterName = (item) => {
+    if (item?.resident && typeof item.resident === 'object') {
+        const fullName = [item.resident.firstName, item.resident.middleName, item.resident.lastName, item.resident.suffix].filter(Boolean).join(' ').trim();
+        if (fullName) return fullName;
+    }
+
+    if (item?.residentId && typeof item.residentId === 'object') {
+        const fullName = [item.residentId.firstName, item.residentId.middleName, item.residentId.lastName, item.residentId.suffix].filter(Boolean).join(' ').trim();
+        if (fullName) return fullName;
+    }
+
+    const fieldName = item?.adminEdits?.FULL_NAME || item?.fields?.FULL_NAME || item?.fields?.full_name || '';
+    if (String(fieldName).trim()) return String(fieldName).trim();
+
+    return getRequestorName(item);
+};
+
+const normalizeStatus = (item) => String(item?.status || '').toLowerCase();
+const isDocumentApproved = (item) => normalizeStatus(item) === 'approved';
+const isDocumentPending = (item) => normalizeStatus(item) === 'pending';
+const isDocumentProcessing = (item) => normalizeStatus(item) === 'processing';
+const isDocumentRejected = (item) => normalizeStatus(item) === 'rejected';
+const isDocumentReady = (item) => normalizeStatus(item) === 'ready_for_pickup';
+const isDocumentCompleted = (item) => normalizeStatus(item) === 'completed';
+const mergeDocumentResponse = (current, data = {}) => ({
+    ...current,
+    ...data,
+    resident: typeof data.resident === 'object' && data.resident !== null ? data.resident : current?.resident,
+    residentId: typeof data.residentId === 'object' && data.residentId !== null ? data.residentId : current?.residentId
+});
+
 const getReportMapEmbedUrl = (item) => {
     const latitude = item?.locationCoordinates?.latitude;
     const longitude = item?.locationCoordinates?.longitude;
@@ -2040,13 +2330,14 @@ const getReportMapEmbedUrl = (item) => {
 const getRequestDetails = (item) => {
     if (activeModal.value === 'document') {
         return [
-            { label: 'Requester', value: getRequestorName(item) },
-            { label: 'Requester Type', value: item.requesterType === 'non_resident' ? 'Non-Resident' : 'Resident' },
-            { label: 'Contact Number', value: item.contactNumber || item.residentId?.contactNumber },
-            { label: 'Email', value: item.email || item.residentId?.email },
-            { label: 'Address', value: item.address || item.residentId?.address },
-            { label: 'Document Type', value: item.documentType?.replaceAll('_', ' ') },
-            { label: 'Purpose', value: item.purpose },
+            { label: 'Requester', value: getDocumentRequesterName(item) },
+            { label: 'Requester Type', value: 'Resident' },
+            { label: 'Contact Number', value: item.contactNumber || item.resident?.contactNumber || item.residentId?.contactNumber },
+            { label: 'Email', value: item.email || item.resident?.email || item.residentId?.email },
+            { label: 'Address', value: item.address || item.resident?.address || item.residentId?.address },
+            { label: 'Birth Date', value: item.resident?.birthDate ? formatDate(item.resident.birthDate) : item.residentId?.birthDate ? formatDate(item.residentId.birthDate) : 'N/A' },
+            { label: 'Document Type', value: (item.documentType || item.type)?.replaceAll('_', ' ') },
+            { label: 'Original Purpose', value: item.purpose },
             { label: 'Request Details', value: item.requestDetails },
             { label: 'Requested On', value: formatDate(item.createdAt) }
         ];
@@ -2141,6 +2432,24 @@ const openModal = async (type, item) => {
 
     if (['document', 'reservation', 'report', 'appointment'].includes(type)) {
         setupRecordStatusModal(item);
+        if (type === 'document') {
+            formalPurposeInput.value = item.formalPurpose || item.purpose || '';
+            // populate editable fields from request fields and adminEdits
+            const fields = item.fields || {};
+            const adminEdits = item.adminEdits || {};
+            editableFields.FULL_NAME = adminEdits.FULL_NAME || fields.FULL_NAME || getDocumentRequesterName(item);
+            editableFields.AGE = adminEdits.AGE || fields.AGE || (
+                (item?.resident?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(item.resident.birthDate)) : (
+                    (item?.residentId?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(item.residentId.birthDate)) : ''
+                )
+            );
+            editableFields.BARANGAY = adminEdits.BARANGAY || fields.BARANGAY || 'Irawan';
+            editableFields.CITY = adminEdits.CITY || fields.CITY || 'Puerto Princesa City';
+            editableFields.PROVINCE = adminEdits.PROVINCE || fields.PROVINCE || 'Palawan';
+            editableFields.PURPOSE = adminEdits.PURPOSE || fields.PURPOSE || item.purpose || '';
+            editableFields.DAY = adminEdits.DAY || fields.DAY || '';
+            editableFields.MONTH = adminEdits.MONTH || fields.MONTH || '';
+        }
         activeModal.value = type;
         return;
     } else if (type === 'announcement') {
@@ -2187,6 +2496,170 @@ const handleSave = async () => {
         msg(error.message || 'Operation failed', true);
     } finally {
         isSubmitting.value = false;
+    }
+};
+
+const saveDocumentEdits = async () => {
+    if (!selectedItem.value?._id) return;
+    if (!isDocumentProcessing(selectedItem.value)) {
+        showToast('Move the document request to processing before saving document edits.', true);
+        return;
+    }
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
+    try {
+        const payload = {
+            fields: { ...editableFields },
+            purpose: formalPurposeInput.value || ''
+        };
+        const response = await apiFetch(`/admin/documents/${selectedItem.value._id}`, { method: 'PUT', body: JSON.stringify(payload) });
+        selectedItem.value = mergeDocumentResponse({
+            ...selectedItem.value,
+            purpose: payload.purpose,
+            adminEdits: { ...editableFields }
+        }, response?.data || {});
+        showToast('Document edits saved.');
+        await loadAll();
+    } catch (err) {
+        showToast(err.message || 'Failed to save edits.', true);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const approveDocument = async (item) => {
+    if (!item?._id) return;
+    if (!(await showConfirm('Approve this document request?'))) return;
+    try {
+        isSubmitting.value = true;
+        const response = await apiFetch(`/admin/documents/${item._id}/approve`, { method: 'PUT' });
+        selectedItem.value = mergeDocumentResponse(selectedItem.value, { ...(response?.data || {}), status: 'approved' });
+        showToast('Document approved.');
+        await loadAll();
+    } catch (err) {
+        showToast(err.message || 'Failed to approve.', true);
+    } finally { isSubmitting.value = false; }
+};
+
+const rejectDocument = async (item) => {
+    if (!item?._id) return;
+    const reason = prompt('Optional rejection reason (will be saved):', '');
+    try {
+        isSubmitting.value = true;
+        await apiFetch(`/admin/documents/${item._id}/reject`, { method: 'PUT', body: JSON.stringify({ reason }) });
+        showToast('Document rejected.');
+        await loadAll();
+        activeModal.value = null;
+    } catch (err) {
+        showToast(err.message || 'Failed to reject.', true);
+    } finally { isSubmitting.value = false; }
+};
+
+const generatePreview = async (item) => {
+    if (!item?._id) return;
+    if (!isDocumentProcessing(item)) {
+        showToast('Move the document request to processing before generating a preview.', true);
+        return;
+    }
+    try {
+        previewLoading.value = true;
+        const auth = getAuth();
+        const res = await fetch(`/api/admin/documents/${item._id}/generate`, {
+            headers: {
+                'Authorization': auth.token ? `Bearer ${auth.token}` : ''
+            }
+        });
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Failed to generate preview.');
+        }
+        const html = await res.text();
+        const win = window.open('', '_blank');
+        if (win) {
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
+        } else {
+            showToast('Popup blocked. Please allow popups to preview document.', true);
+        }
+    } catch (err) {
+        showToast(err.message || 'Failed to generate preview.', true);
+    } finally {
+        previewLoading.value = false;
+    }
+};
+
+const generateAndSavePdf = async (item) => {
+    if (!item?._id) return;
+    if (!isDocumentProcessing(item)) {
+        showToast('Move the document request to processing before generating a PDF.', true);
+        return;
+    }
+    try {
+        // If a PDF was already generated previously, open it instead of regenerating.
+        if (item.generatedFileUrl) {
+            const win = window.open(item.generatedFileUrl, '_blank');
+            if (!win) showToast('Popup blocked. Please allow popups to open the generated PDF.', true);
+            else showToast('Opening previously generated PDF.');
+            return;
+        }
+
+        // If we only have a stored filename (possibly an S3 key), ask the server
+        // for a usable URL (this will return a presigned URL for S3 keys).
+        if (item.generatedFileName) {
+            previewLoading.value = true;
+            const auth = getAuth();
+            try {
+                const resCached = await fetch(`/api/admin/documents/${item._id}/generate?pdf=1`, {
+                    method: 'POST',
+                    headers: { 'Authorization': auth.token ? `Bearer ${auth.token}` : '' }
+                });
+                if (!resCached.ok) {
+                    const errorText = await resCached.text();
+                    throw new Error(errorText || 'Failed to fetch existing generated file.');
+                }
+                const cachedData = await resCached.json();
+                if (cachedData && cachedData.fileUrl) {
+                    selectedItem.value = mergeDocumentResponse(selectedItem.value, { ...(cachedData.data || {}), status: cachedData.data?.status || 'ready_for_pickup' });
+                    const win = window.open(cachedData.fileUrl, '_blank');
+                    if (!win) showToast('Popup blocked. Please allow popups to open the generated PDF.', true);
+                    else showToast('Opening previously generated PDF.');
+                    await loadAll();
+                    return;
+                }
+            } catch (err) {
+                showToast(err.message || 'Failed to open cached PDF.', true);
+            } finally {
+                previewLoading.value = false;
+            }
+        }
+
+        previewLoading.value = true;
+        const auth = getAuth();
+        const res = await fetch(`/api/admin/documents/${item._id}/generate`, {
+            method: 'POST',
+            headers: {
+                'Authorization': auth.token ? `Bearer ${auth.token}` : ''
+            }
+        });
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Failed to generate PDF.');
+        }
+        const data = await res.json();
+        if (data && data.fileUrl) {
+            selectedItem.value = mergeDocumentResponse(selectedItem.value, { ...(data.data || {}), status: data.data?.status || 'ready_for_pickup' });
+            const win = window.open(data.fileUrl, '_blank');
+            if (!win) showToast('Popup blocked. Please allow popups to open the generated PDF.', true);
+            else showToast('PDF generated and saved. Resident notified (if email present).');
+            await loadAll();
+        } else {
+            showToast('Failed to generate PDF.', true);
+        }
+    } catch (err) {
+        showToast(err.message || 'Failed to generate PDF.', true);
+    } finally {
+        previewLoading.value = false;
     }
 };
 
@@ -2282,7 +2755,7 @@ const handleSaveAnnouncement = async () => {
 };
 
 const handleDeleteAnnouncement = async () => {
-    if (!confirm('Delete this announcement?')) return;
+    if (!(await showConfirm('Delete this announcement?'))) return;
     try {
         await deleteAnnouncement(editForm._id);
         msg('Announcement deleted successfully.');
@@ -2367,9 +2840,6 @@ const residentActivityTimeline = (resident) => ([
 const residentTransactions = (resident) => {
     const residentId = resident?._id;
     if (!residentId) return [];
-    const docs = documentRequests.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
-        key: `doc-${item._id}`, type: 'Document Request', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
-    }));
     const reservationsEntries = reservations.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
         key: `resv-${item._id}`, type: 'Facility Reservation', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
     }));
@@ -2379,8 +2849,45 @@ const residentTransactions = (resident) => {
     const appointmentsEntries = appointments.value.filter((item) => item.residentId?._id === residentId || item.residentId === residentId).map((item) => ({
         key: `apt-${item._id}`, type: 'Appointment', status: item.status, date: formatDate(item.createdAt), stage: item.status?.replaceAll('_', ' ')
     }));
-    return [...docs, ...reportsEntries, ...appointmentsEntries, ...reservationsEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return [...reportsEntries, ...appointmentsEntries, ...reservationsEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
 };
+// Confirmation Dialog State & Functions
+const showConfirmDialog = ref(false);
+const confirmMessage = ref('');
+const pendingConfirmCallback = ref(null);
+const isConfirmSubmitting = ref(false);
+
+const showConfirm = (message) => {
+    return new Promise((resolve) => {
+        confirmMessage.value = message;
+        pendingConfirmCallback.value = resolve;
+        showConfirmDialog.value = true;
+    });
+};
+
+const confirmAction = async () => {
+    isConfirmSubmitting.value = true;
+    try {
+        if (pendingConfirmCallback.value) {
+            pendingConfirmCallback.value(true);
+        }
+    } finally {
+        isConfirmSubmitting.value = false;
+        showConfirmDialog.value = false;
+        confirmMessage.value = '';
+        pendingConfirmCallback.value = null;
+    }
+};
+
+const cancelConfirm = () => {
+    if (pendingConfirmCallback.value) {
+        pendingConfirmCallback.value(false);
+    }
+    showConfirmDialog.value = false;
+    confirmMessage.value = '';
+    pendingConfirmCallback.value = null;
+};
+
 const setResidentStatusAndSave = async (status) => {
     editForm.status = status;
     await handleSave();
@@ -2415,9 +2922,9 @@ const sendResidentEmailAction = async () => {
         showToast('Resident email is missing.', true);
         return;
     }
-    const subject = window.prompt('Email subject:', 'Barangay Resident Update');
+    const subject = globalThis.prompt('Email subject:', 'Barangay Resident Update');
     if (!subject) return;
-    const message = window.prompt('Email message:', `Good day ${getFullResidentName(resident)},`) || '';
+    const message = globalThis.prompt('Email message:', `Good day ${getFullResidentName(resident)},`) || '';
     if (!message.trim()) {
         showToast('Email message is required.', true);
         return;
@@ -2439,7 +2946,7 @@ const sendResidentSMSAction = async () => {
         showToast('Resident contact number is missing.', true);
         return;
     }
-    const message = window.prompt('SMS message:', `Barangay update for ${getFullResidentName(resident)}:`) || '';
+    const message = globalThis.prompt('SMS message:', `Barangay update for ${getFullResidentName(resident)}:`) || '';
     if (!message.trim()) {
         showToast('SMS message is required.', true);
         return;
@@ -2496,15 +3003,21 @@ const submitStatusAction = async (reason) => {
                 throw new Error(`Unknown action: ${action}`);
             }
 
-            await apiFetch(`/actions/${entityType}/${selectedItem.value._id}${endpoint}`, {
+            const response = await apiFetch(`/actions/${entityType}/${selectedItem.value._id}${endpoint}`, {
                 method: 'POST',
                 body: JSON.stringify({ reason: reason || '' })
             });
+
+            if (activeModal.value === 'document') {
+                selectedItem.value = mergeDocumentResponse(selectedItem.value, response?.data || {});
+            }
         }
 
         msg(`Request ${action}ed successfully`);
         await loadAll();
-        activeModal.value = null;
+        if (activeModal.value !== 'document') {
+            activeModal.value = null;
+        }
         confirmingAction.value = null;
     } catch (error) {
         msg(error.message || 'Action failed', true);
@@ -2513,55 +3026,7 @@ const submitStatusAction = async (reason) => {
     }
 };
 
-const sendDocumentToResident = async () => {
-    if (!selectedItem.value?._id) {
-        msg('Invalid document request', true);
-        return;
-    }
 
-    if (selectedItem.value.documentSentAt) {
-        msg('Document has already been sent to this resident', true);
-        return;
-    }
-
-    isSubmitting.value = true;
-    try {
-        const response = await apiFetch(`/document-requests/${selectedItem.value._id}/send-to-resident`, {
-            method: 'POST'
-        });
-
-        msg('Document sent to resident successfully');
-        
-        // Update the selected item with the sent timestamp
-        selectedItem.value.documentSentAt = new Date().toISOString();
-        
-        await loadAll();
-    } catch (error) {
-        msg(error.message || 'Failed to send document to resident', true);
-    } finally {
-        isSubmitting.value = false;
-    }
-};
-
-const previewDocument = async (documentId) => {
-    previewLoading.value = true;
-    try {
-        const previewUrl = `/preview.html?documentId=${encodeURIComponent(documentId)}`;
-        const link = document.createElement('a');
-        link.href = previewUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch (error) {
-        msg(error.message || 'Failed to open document preview', true);
-        console.error('Preview error:', error);
-    } finally {
-        previewLoading.value = false;
-    }
-};
 
 const loadSMSLogs = async (page = 1) => {
     try {
@@ -2630,6 +3095,11 @@ watch(unreadReports, (newReports) => {
 onBeforeUnmount(() => {
     clearToast();
     stopNotificationPolling();
+    try {
+        window.removeEventListener('hashchange', syncViewFromHash);
+    } catch (error) {
+        // ignore
+    }
 });
 
 watch(isAuthenticated, async (authed) => {
@@ -2649,6 +3119,11 @@ watch(isAuthenticated, async (authed) => {
 onMounted(() => {
     initSession();
     initSoundSettings();
+    try {
+        window.addEventListener('hashchange', syncViewFromHash);
+    } catch (error) {
+        // ignore
+    }
 });
 </script>
 
@@ -2967,10 +3442,9 @@ onMounted(() => {
 .pending-action-btn {
     width: 100%;
     padding: 10px 12px;
-    border: none;
     border-radius: var(--radius-md);
     background: white;
-    border: 1px solid var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
     color: var(--accent);
     font-weight: 600;
     font-size: 0.9rem;
@@ -3695,10 +4169,265 @@ onMounted(() => {
 
 .ops-bar-chart {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    align-items: end;
-    gap: 10px;
-    padding: 16px 16px 12px;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+    padding: 24px 20px 18px;
+    position: relative;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 252, 251, 0.92));
+    border: 1px solid rgba(15, 31, 27, 0.06);
+    box-shadow: 0 4px 16px rgba(15, 31, 27, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ops-bar-chart:hover {
+    border-color: rgba(15, 31, 27, 0.1);
+    box-shadow: 0 8px 24px rgba(15, 31, 27, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ops-chart-frame {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(248, 252, 251, 0.2));
+    padding: 16px;
+    backdrop-filter: blur(2px);
+}
+
+/* Modern Analytics Chart Styles */
+.ops-line-chart {
+    width: 100%;
+    min-height: 280px;
+    display: block;
+    overflow: visible;
+    filter: drop-shadow(0 2px 8px rgba(15, 31, 27, 0.04));
+    transition: filter 0.3s ease;
+}
+
+.ops-line-chart:hover {
+    filter: drop-shadow(0 4px 12px rgba(15, 31, 27, 0.08));
+}
+
+/* Chart Area Gradient Fill */
+.chart-area {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.9;
+}
+
+.chart-area:hover {
+    opacity: 1;
+}
+
+/* Grid Lines */
+.chart-grid-lines line {
+    transition: stroke-opacity 0.2s ease;
+}
+
+.ops-line-chart:hover .chart-grid-lines line {
+    stroke-opacity: 0.12;
+}
+
+/* Chart Line - Smooth Animated Stroke */
+.chart-line {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawLine 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transition: stroke-width 0.2s ease, filter 0.2s ease;
+    will-change: stroke-width;
+}
+
+.ops-line-chart:hover .chart-line {
+    stroke-width: 2.4;
+    filter: drop-shadow(0 2px 6px rgba(16, 185, 129, 0.15));
+}
+
+/* Chart Point Markers - Hidden by Default */
+.chart-point {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    r: 0;
+    will-change: r, filter;
+}
+
+.chart-point:hover,
+.chart-point.active {
+    r: 3.5;
+    filter: drop-shadow(0 3px 8px rgba(16, 185, 129, 0.3));
+    animation: pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1) 1;
+}
+
+.chart-point:focus {
+    outline: 2px solid rgba(16, 185, 129, 0.5);
+    outline-offset: 2px;
+}
+
+/* Smooth Line Draw Animation */
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Pulse Animation for Hover Points */
+@keyframes pulse {
+    0% {
+        r: 3.5;
+        opacity: 1;
+    }
+    50% {
+        r: 5.5;
+        opacity: 0.8;
+    }
+    100% {
+        r: 3.5;
+        opacity: 1;
+    }
+}
+
+/* Tooltip - Modern Card Style */
+.ops-tooltip {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 12px));
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(15, 31, 27, 0.96), rgba(15, 31, 27, 0.92));
+    backdrop-filter: blur(8px);
+    color: #f8fbf9;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    box-shadow: 0 12px 28px rgba(15, 31, 27, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: tooltipPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes tooltipPop {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-100% - 4px)) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, calc(-100% - 12px)) scale(1);
+    }
+}
+
+.ops-tooltip .tooltip-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(248, 251, 249, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    opacity: 0.85;
+}
+
+.ops-tooltip strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+    font-weight: 700;
+    color: #10b981;
+}
+
+.ops-tooltip span {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.9;
+    color: rgba(248, 251, 249, 0.85);
+}
+
+/* Chart Labels - Enhanced Typography */
+.ops-line-labels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(15, 31, 27, 0.08);
+}
+
+.ops-line-label-item {
+    text-align: center;
+    color: #2d5f45;
+    transition: all 0.2s ease;
+    padding: 4px 0;
+}
+
+.ops-line-label-item small {
+    display: block;
+    font-size: 0.72rem;
+    color: #60756d;
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.ops-line-label-item span {
+    display: block;
+    font-weight: 700;
+    color: #10b981;
+    font-size: 1.15rem;
+    transition: color 0.2s ease;
+}
+
+.ops-line-label-item:hover span {
+    color: #059669;
+}
+
+/* Responsive Chart Design */
+@media (max-width: 1024px) {
+    .ops-line-chart {
+        min-height: 240px;
+    }
+    
+    .ops-line-labels {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 6px;
+        margin-top: 16px;
+    }
+    
+    .ops-line-label-item small {
+        font-size: 0.65rem;
+    }
+    
+    .ops-line-label-item span {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .ops-line-chart {
+        min-height: 200px;
+    }
+    
+    .ops-bar-chart {
+        padding: 12px 12px 8px;
+    }
+    
+    .ops-line-labels {
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        gap: 4px;
+        margin-top: 12px;
+    }
+    
+    .ops-line-label-item small {
+        font-size: 0.6rem;
+    }
+    
+    .ops-line-label-item span {
+        font-size: 0.9rem;
+    }
+    
+    .chart-point:hover,
+    .chart-point.active {
+        r: 2.5;
+    }
 }
 
 .ops-bar-column {
@@ -4554,16 +5283,17 @@ onMounted(() => {
     inset: 0;
     display: grid;
     place-items: center;
-    background: rgba(0,0,0,0.35);
-    z-index: 1200;
+    background: rgba(15, 23, 42, 0.62);
+    z-index: 100000;
 }
 .preview-loading-box {
     background: white;
     padding: 22px 26px;
-    border-radius: 10px;
+    border-radius: 8px;
     text-align: center;
     box-shadow: 0 12px 40px rgba(0,0,0,0.28);
     width: 360px;
+    max-width: calc(100vw - 32px);
 }
 .preview-loading-box .spinner {
     width: 48px;
@@ -4573,6 +5303,117 @@ onMounted(() => {
     border-top-color: #2c3e50;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+}
+
+/* Admin modal backdrop and container */
+.admin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 23, 42, 0.48);
+    z-index: 9000;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.admin-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 100%;
+    overflow-y: auto;
+    position: relative;
+    z-index: 9001;
+}
+
+.admin-modal-wide {
+    max-width: 1200px !important;
+}
+
+.admin-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    color: #333;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+    z-index: 9010;
+}
+
+.admin-modal-close:hover {
+    background: rgba(0, 0, 0, 0.12);
+    transform: rotate(90deg);
+}
+
+/* Custom Confirmation Dialog */
+.confirm-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 23, 42, 0.52);
+    z-index: 9100;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.confirm-dialog {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    animation: slideUp 0.3s ease-out;
+}
+
+.confirm-message {
+    margin: 0 0 20px 0;
+    font-size: 1rem;
+    color: #333;
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.confirm-actions button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.confirm-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>
 

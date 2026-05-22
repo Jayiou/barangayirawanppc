@@ -10,6 +10,7 @@ const {
     getMyReports,
     getReports,
     getReportById,
+    deleteMyReport,
     updateReportStatus
 } = require('../controllers/reportController');
 
@@ -17,6 +18,7 @@ router.post('/', authMiddleware, roleMiddleware('resident'), upload.array('proof
 router.post('/public', publicReportLimiter, createPublicReport);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyReports);
 router.get('/:id', authMiddleware, getReportById);
+router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyReport);
 router.get('/', authMiddleware, roleMiddleware('admin'), getReports);
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin'), updateReportStatus);
 

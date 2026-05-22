@@ -426,6 +426,33 @@ exports.getFacilityReservationById = asyncHandler(async (req, res) => {
     res.json(reservation);
 });
 
+exports.deleteMyFacilityReservation = asyncHandler(async (req, res) => {
+    const terminalStatuses = ['rejected', 'completed', 'cancelled'];
+    const reservation = await FacilityReservation.findById(req.params.id);
+
+    if (!reservation) {
+        throw createHttpError(404, 'Facility reservation not found', {
+            code: 'FACILITY_RESERVATION_NOT_FOUND'
+        });
+    }
+
+    const resident = await Resident.findOne({ userId: req.user.id });
+    if (!resident || !reservation.residentId || reservation.residentId.toString() !== resident._id.toString()) {
+        throw createHttpError(403, 'Access denied', {
+            code: 'FACILITY_RESERVATION_FORBIDDEN'
+        });
+    }
+
+    if (!terminalStatuses.includes(reservation.status)) {
+        throw createHttpError(400, `Cannot delete reservation with status: ${reservation.status}`, {
+            code: 'FACILITY_RESERVATION_DELETE_NOT_ALLOWED'
+        });
+    }
+
+    await FacilityReservation.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Facility reservation deleted successfully' });
+});
+
 exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
     const statusData = pickFields(req.body, reservationStatusFields);
 

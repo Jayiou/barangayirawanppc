@@ -37,6 +37,17 @@ const statusAuditLogSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ''
+        },
+        actionDescription: {
+            type: String,
+            trim: true,
+            default: '',
+            description: 'Detailed description of what action was performed'
+        },
+        additionalData: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null,
+            description: 'Extra context data relevant to this status change (e.g., document type, resident name)'
         }
     },
     {
@@ -48,5 +59,6 @@ const statusAuditLogSchema = new mongoose.Schema(
 statusAuditLogSchema.index({ entityType: 1, entityId: 1 });
 statusAuditLogSchema.index({ changedBy: 1 });
 statusAuditLogSchema.index({ createdAt: -1 });
+statusAuditLogSchema.index({ entityType: 1, createdAt: -1 });
 
 module.exports = mongoose.model('StatusAuditLog', statusAuditLogSchema);

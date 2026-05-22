@@ -6,7 +6,6 @@ export function useStatusCRUD(resourceType) {
     const editForm = reactive({ status: '', adminNotes: '' });
 
     const pathMap = {
-        document: '/document-requests',
         reservation: '/facility-reservations',
         report: '/reports'
     };

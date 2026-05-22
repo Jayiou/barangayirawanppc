@@ -440,6 +440,35 @@ const cancelAppointment = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Delete appointment from resident history after it reaches a terminal state
+ */
+const deleteMyAppointment = asyncHandler(async (req, res) => {
+    const terminalStatuses = ['rejected', 'cancelled', 'completed', 'expired'];
+    const userId = req.user._id;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+        throw createHttpError(404, 'Appointment not found');
+    }
+
+    const resident = await Resident.findById(appointment.residentId);
+    if (!resident || resident.userId.toString() !== userId.toString()) {
+        throw createHttpError(403, 'You do not have permission to delete this appointment');
+    }
+
+    if (!terminalStatuses.includes(appointment.status)) {
+        throw createHttpError(400, `Cannot delete appointment with status: ${appointment.status}`);
+    }
+
+    await Appointment.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+        success: true,
+        message: 'Appointment deleted successfully'
+    });
+});
+
 // ============================================
 // ADMIN - APPOINTMENT MANAGEMENT
 // ============================================
@@ -632,6 +661,7 @@ module.exports = {
     getMyAppointments,
     getAppointmentDetail,
     cancelAppointment,
+    deleteMyAppointment,
     // Admin Appointments
     getAllAppointments,
     approveAppointment,

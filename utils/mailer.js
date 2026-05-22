@@ -252,17 +252,12 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
 const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath) => {
     try {
         const docTypeFormatted = formatLabel(documentType);
-        
-        const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
-            to: toEmail,
-            subject: `${docTypeFormatted} from Barangay Irawan`,
-            html: `
+        let htmlBody = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid #257f49; background-color: #f9f9f9; margin: 20px 0;">
-                        <p style="margin: 0; font-size: 16px;">Your requested <strong>${docTypeFormatted}</strong> is now ready! Please find the document attached to this email.</p>
+                        <p style="margin: 0; font-size: 16px;">Your requested <strong>${docTypeFormatted}</strong> is now ready!</p>
                     </div>
                     <p><strong>Document Details:</strong></p>
                     <ul style="line-height: 1.8;">
@@ -276,14 +271,22 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
                     <hr style="border: none; border-top: 1px solid #e0e0e0; margin-top: 30px;">
                     <p style="font-size: 12px; color: #888; text-align: center;">This is an automated email. Please do not reply to this address.</p>
                 </div>
-            `,
-            attachments: [
-                {
-                    filename: `${documentType}.pdf`,
-                    path: filePath
-                }
-            ]
+            `;
+
+        const mailOptions = {
+            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            to: toEmail,
+            subject: `${docTypeFormatted} from Barangay Irawan`,
+            html: htmlBody
         };
+
+        // If filePath is remote (presigned URL), include link in email instead of attachment
+        if (typeof filePath === 'string' && (filePath.startsWith('http://') || filePath.startsWith('https://')) ) {
+            mailOptions.html = htmlBody + `\n<p style="margin-top:12px; text-align:center;"><a href="${filePath}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#257f49; color:#fff; padding:10px 14px; border-radius:6px; text-decoration:none;">Download Document</a></p>`;
+        } else if (typeof filePath === 'string' && filePath) {
+            mailOptions.attachments = [{ filename: `${documentType}.pdf`, path: filePath }];
+        }
+        
 
         if (!smtpAuth) {
             console.log('Skipping document email send because no SendGrid API key or SMTP credentials are configured');

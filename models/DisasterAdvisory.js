@@ -4,8 +4,8 @@ const disasterAdvisorySchema = new mongoose.Schema(
     {
         disasterType: {
             type: String,
-            enum: ['typhoon', 'flood', 'landslide', 'earthquake', 'fire', 'storm_surge', 'other'],
-            default: 'other'
+            enum: ['typhoon', 'flood', 'landslide'],
+            default: 'typhoon'
         },
         expectedImpactDate: {
             type: Date,

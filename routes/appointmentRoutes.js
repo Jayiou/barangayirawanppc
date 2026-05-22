@@ -23,6 +23,7 @@ const {
     getMyAppointments,
     getAppointmentDetail,
     cancelAppointment,
+    deleteMyAppointment,
     // Admin Appointments
     getAllAppointments,
     approveAppointment,
@@ -82,6 +83,11 @@ router.get('/:id', authMiddleware, getAppointmentDetail);
  * Cancel appointment (resident)
  */
 router.put('/:id/cancel', authMiddleware, cancelAppointment);
+
+/**
+ * Delete appointment from resident history after terminal state
+ */
+router.delete('/:id', authMiddleware, deleteMyAppointment);
 
 // ============================================
 // ADMIN ROUTES

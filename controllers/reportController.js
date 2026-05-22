@@ -359,6 +359,29 @@ exports.getReportById = asyncHandler(async (req, res) => {
     res.json(report);
 });
 
+exports.deleteMyReport = asyncHandler(async (req, res) => {
+    const terminalStatuses = ['resolved', 'rejected', 'closed'];
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+        throw createHttpError(404, 'Report not found', { code: 'REPORT_NOT_FOUND' });
+    }
+
+    const resident = await Resident.findOne({ userId: req.user.id });
+    if (!resident || !report.residentId || report.residentId.toString() !== resident._id.toString()) {
+        throw createHttpError(403, 'Access denied', { code: 'REPORT_FORBIDDEN' });
+    }
+
+    if (!terminalStatuses.includes(report.status)) {
+        throw createHttpError(400, `Cannot delete report with status: ${report.status}`, {
+            code: 'REPORT_DELETE_NOT_ALLOWED'
+        });
+    }
+
+    await Report.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Report deleted successfully' });
+});
+
 exports.updateReportStatus = asyncHandler(async (req, res) => {
     const statusData = pickFields(req.body, reportStatusFields);
 

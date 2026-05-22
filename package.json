@@ -7,7 +7,8 @@
     "start": "node server.js",
     "test": "node --test --test-isolation=none tests/*.test.js",
     "build:frontend": "vite build --config frontend/vite.config.js",
-    "dev:frontend": "vite --config frontend/vite.config.js"
+    "dev:frontend": "vite --config frontend/vite.config.js",
+    "generate-sample-pdf": "node scripts/generate-sample-pdf.js"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,10 @@
     "multer": "^2.1.1",
     "nodemailer": "^8.0.5",
     "puppeteer": "^24.43.1"
+  },
+  "optionalDependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^8.0.1",

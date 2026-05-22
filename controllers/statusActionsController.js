@@ -1,203 +1,14 @@
-const DocumentRequest = require('../models/DocumentRequest');
 const FacilityReservation = require('../models/FacilityReservation');
 const Report = require('../models/Report');
+const DocumentRequest = require('../models/DocumentRequest');
 const User = require('../models/User');
 const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { isValidTransition } = require('../utils/statusWorkflows');
 const { logStatusChange } = require('../utils/statusLogger');
-const { sendDocumentStatusEmail, sendStatusUpdateEmail } = require('../utils/mailer');
-const { sendDocumentStatusSMS, sendStatusUpdateSMS } = require('../utils/sms');
-
-// ============ DOCUMENT REQUEST ACTIONS ============
-
-exports.approveDocumentRequest = asyncHandler(async (req, res) => {
-    const doc = await DocumentRequest.findById(req.params.id).populate('residentId');
-
-    if (!doc) {
-        throw createHttpError(404, 'Document request not found');
-    }
-
-    if (!isValidTransition('documentRequest', doc.status, 'approved')) {
-        throw createHttpError(400, `Cannot approve document with status: ${doc.status}`);
-    }
-
-    const previousStatus = doc.status;
-    doc.status = 'approved';
-    await doc.save();
-
-    // Log change
-    await logStatusChange('DocumentRequest', doc._id, previousStatus, 'approved', req.user, '', req.ip);
-
-    // Send notifications
-    const resident = await Resident.findById(doc.residentId).populate('userId');
-    if (resident) {
-        const email = resident.userId?.email || resident.email;
-        const phone = resident.contactNumber;
-        const fullName = `${resident.firstName} ${resident.lastName}`;
-
-        if (email) {
-            await sendDocumentStatusEmail(email, fullName, doc.documentType, 'approved', '');
-        }
-        if (phone) {
-            await sendDocumentStatusSMS(phone, fullName, doc.documentType, 'approved', doc._id.toString());
-        }
-    }
-
-    res.json({ success: true, message: 'Document approved', data: doc });
-});
-
-exports.rejectDocumentRequest = asyncHandler(async (req, res) => {
-    const { reason } = req.body;
-
-    if (!reason || !reason.trim()) {
-        throw createHttpError(400, 'Reason for rejection is required');
-    }
-
-    const doc = await DocumentRequest.findById(req.params.id).populate('residentId');
-
-    if (!doc) {
-        throw createHttpError(404, 'Document request not found');
-    }
-
-    if (!isValidTransition('documentRequest', doc.status, 'rejected')) {
-        throw createHttpError(400, `Cannot reject document with status: ${doc.status}`);
-    }
-
-    const previousStatus = doc.status;
-    doc.status = 'rejected';
-    doc.adminNotes = reason;
-    await doc.save();
-
-    // Log change
-    await logStatusChange('DocumentRequest', doc._id, previousStatus, 'rejected', req.user, reason, req.ip);
-
-    // Send notifications
-    const resident = await Resident.findById(doc.residentId).populate('userId');
-    if (resident) {
-        const email = resident.userId?.email || resident.email;
-        const phone = resident.contactNumber;
-        const fullName = `${resident.firstName} ${resident.lastName}`;
-
-        if (email) {
-            await sendDocumentStatusEmail(email, fullName, doc.documentType, 'rejected', reason);
-        }
-        if (phone) {
-            await sendDocumentStatusSMS(phone, fullName, doc.documentType, 'rejected', doc._id.toString());
-        }
-    }
-
-    res.json({ success: true, message: 'Document rejected', data: doc });
-});
-
-exports.markDocumentProcessing = asyncHandler(async (req, res) => {
-    const doc = await DocumentRequest.findById(req.params.id);
-
-    if (!doc) {
-        throw createHttpError(404, 'Document request not found');
-    }
-
-    if (!isValidTransition('documentRequest', doc.status, 'processing')) {
-        throw createHttpError(400, `Cannot mark as processing from status: ${doc.status}`);
-    }
-
-    const previousStatus = doc.status;
-    doc.status = 'processing';
-    await doc.save();
-
-    // Log change
-    await logStatusChange('DocumentRequest', doc._id, previousStatus, 'processing', req.user, '', req.ip);
-
-    // Send notification
-    const resident = await Resident.findById(doc.residentId).populate('userId');
-    if (resident) {
-        const email = resident.userId?.email || resident.email;
-        const phone = resident.contactNumber;
-        const fullName = `${resident.firstName} ${resident.lastName}`;
-
-        if (email) {
-            await sendDocumentStatusEmail(email, fullName, doc.documentType, 'processing', '');
-        }
-        if (phone) {
-            await sendDocumentStatusSMS(phone, fullName, doc.documentType, 'processing', doc._id.toString());
-        }
-    }
-
-    res.json({ success: true, message: 'Document marked as processing', data: doc });
-});
-
-exports.markDocumentReadyPickup = asyncHandler(async (req, res) => {
-    const doc = await DocumentRequest.findById(req.params.id).populate('residentId');
-
-    if (!doc) {
-        throw createHttpError(404, 'Document request not found');
-    }
-
-    if (!isValidTransition('documentRequest', doc.status, 'ready_for_pickup')) {
-        throw createHttpError(400, `Cannot mark as ready from status: ${doc.status}`);
-    }
-
-    const previousStatus = doc.status;
-    doc.status = 'ready_for_pickup';
-    await doc.save();
-
-    // Log change
-    await logStatusChange('DocumentRequest', doc._id, previousStatus, 'ready_for_pickup', req.user, '', req.ip);
-
-    // Send notification
-    const resident = await Resident.findById(doc.residentId).populate('userId');
-    if (resident) {
-        const email = resident.userId?.email || resident.email;
-        const phone = resident.contactNumber;
-        const fullName = `${resident.firstName} ${resident.lastName}`;
-
-        if (email) {
-            await sendDocumentStatusEmail(email, fullName, doc.documentType, 'ready_for_pickup', '');
-        }
-        if (phone) {
-            await sendDocumentStatusSMS(phone, fullName, doc.documentType, 'ready_for_pickup', doc._id.toString());
-        }
-    }
-
-    res.json({ success: true, message: 'Document marked as ready for pickup', data: doc });
-});
-
-exports.completeDocumentRequest = asyncHandler(async (req, res) => {
-    const doc = await DocumentRequest.findById(req.params.id).populate('residentId');
-
-    if (!doc) {
-        throw createHttpError(404, 'Document request not found');
-    }
-
-    if (!isValidTransition('documentRequest', doc.status, 'completed')) {
-        throw createHttpError(400, `Cannot complete from status: ${doc.status}`);
-    }
-
-    const previousStatus = doc.status;
-    doc.status = 'completed';
-    await doc.save();
-
-    // Log change
-    await logStatusChange('DocumentRequest', doc._id, previousStatus, 'completed', req.user, '', req.ip);
-
-    // Send notification
-    const resident = await Resident.findById(doc.residentId).populate('userId');
-    if (resident) {
-        const email = resident.userId?.email || resident.email;
-        const phone = resident.contactNumber;
-        const fullName = `${resident.firstName} ${resident.lastName}`;
-
-        if (email) {
-            await sendDocumentStatusEmail(email, fullName, doc.documentType, 'completed', '');
-        }
-        if (phone) {
-            await sendDocumentStatusSMS(phone, fullName, doc.documentType, 'completed', doc._id.toString());
-        }
-    }
-
-    res.json({ success: true, message: 'Document marked as completed', data: doc });
-});
+const { sendStatusUpdateEmail } = require('../utils/mailer');
+const { sendStatusUpdateSMS } = require('../utils/sms');
 
 // ============ FACILITY RESERVATION ACTIONS ============
 
@@ -225,7 +36,7 @@ exports.approveFacilityReservation = asyncHandler(async (req, res) => {
 exports.rejectFacilityReservation = asyncHandler(async (req, res) => {
     const { reason } = req.body;
 
-    if (!reason || !reason.trim()) {
+    if (!reason?.trim()) {
         throw createHttpError(400, 'Reason for rejection is required');
     }
 
@@ -269,6 +80,80 @@ exports.completeFacilityReservation = asyncHandler(async (req, res) => {
     await logStatusChange('FacilityReservation', res_obj._id, previousStatus, 'completed', req.user, '', req.ip);
 
     res.json({ success: true, message: 'Facility reservation marked as completed', data: res_obj });
+});
+
+// ============ DOCUMENT REQUEST ACTIONS ============
+
+const updateDocumentRequestStatus = async (req, res, targetStatus, message) => {
+    const { reason } = req.body;
+    console.log('Update Doc Req id param:', req.params.id); const documentRequest = await DocumentRequest.findById(req.params.id).populate('resident', 'firstName lastName'); console.log('DOC_ID:', req.params.id, 'FOUND:', !!documentRequest);
+
+    if (!documentRequest) {
+        throw createHttpError(404, 'Document request not found');
+    }
+
+    if (targetStatus === 'rejected' && !reason?.trim()) {
+        throw createHttpError(400, 'Reason for rejection is required');
+    }
+
+    if (!isValidTransition('documentRequest', documentRequest.status, targetStatus)) {
+        throw createHttpError(400, `Cannot transition document request from ${documentRequest.status} to ${targetStatus}`);
+    }
+
+    const previousStatus = documentRequest.status;
+    documentRequest.status = targetStatus;
+    if (targetStatus === 'rejected') {
+        documentRequest.adminNotes = reason;
+    }
+    await documentRequest.save();
+
+    // Build detailed action description
+    const residentName = documentRequest.resident 
+        ? `${documentRequest.resident.firstName} ${documentRequest.resident.lastName}`
+        : 'Unknown Resident';
+    const actionDescription = `${documentRequest.type} document - ${targetStatus}${reason ? ` (${reason})` : ''}`;
+    
+    // Prepare additional data for audit log
+    const additionalData = {
+        documentType: documentRequest.type,
+        residentName,
+        residentId: documentRequest.resident?._id,
+        purpose: documentRequest.purpose
+    };
+
+    await logStatusChange(
+        'DocumentRequest',
+        documentRequest._id,
+        previousStatus,
+        targetStatus,
+        req.user,
+        reason || '',
+        req.ip,
+        actionDescription,
+        additionalData
+    );
+
+    res.json({ success: true, message, data: documentRequest });
+};
+
+exports.approveDocumentRequest = asyncHandler(async (req, res) => {
+    await updateDocumentRequestStatus(req, res, 'approved', 'Document request approved');
+});
+
+exports.rejectDocumentRequest = asyncHandler(async (req, res) => {
+    await updateDocumentRequestStatus(req, res, 'rejected', 'Document request rejected');
+});
+
+exports.processDocumentRequest = asyncHandler(async (req, res) => {
+    await updateDocumentRequestStatus(req, res, 'processing', 'Document request marked as processing');
+});
+
+exports.readyDocumentRequest = asyncHandler(async (req, res) => {
+    await updateDocumentRequestStatus(req, res, 'ready_for_pickup', 'Document request marked as ready for pickup');
+});
+
+exports.completeDocumentRequest = asyncHandler(async (req, res) => {
+    await updateDocumentRequestStatus(req, res, 'completed', 'Document request marked as completed');
 });
 
 // ============ REPORT ACTIONS ============
@@ -339,7 +224,7 @@ exports.resolveReport = asyncHandler(async (req, res) => {
 exports.rejectReport = asyncHandler(async (req, res) => {
     const { reason } = req.body;
 
-    if (!reason || !reason.trim()) {
+    if (!reason?.trim()) {
         throw createHttpError(400, 'Reason for rejection is required');
     }
 

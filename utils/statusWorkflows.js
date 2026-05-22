@@ -1,13 +1,4 @@
 const workflows = {
-    documentRequest: {
-        pending: ['approved', 'rejected', 'processing'],
-        approved: ['processing', 'rejected'],
-        processing: ['ready_for_pickup', 'rejected'],
-        ready_for_pickup: ['completed'],
-        rejected: [],
-        completed: [],
-        cancelled: []
-    },
     facilityReservation: {
         pending: ['approved', 'rejected', 'cancelled'],
         approved: ['completed', 'rescheduled', 'rejected'],
@@ -23,6 +14,14 @@ const workflows = {
         resolved: ['closed'],
         rejected: [],
         closed: []
+    },
+    documentRequest: {
+        pending: ['approved', 'rejected'],
+        approved: ['processing'],
+        processing: ['ready_for_pickup'],
+        ready_for_pickup: ['completed'],
+        rejected: [],
+        completed: []
     },
     user: {
         pending_approval: ['approved', 'rejected'],
@@ -65,7 +64,7 @@ const isValidTransition = (entityType, currentStatus, newStatus) => {
 };
 
 const getValidTransitions = (entityType, currentStatus) => {
-    if (!workflows[entityType] || !workflows[entityType][currentStatus]) {
+    if (!workflows[entityType]?.[currentStatus]) {
         return [];
     }
     return workflows[entityType][currentStatus];

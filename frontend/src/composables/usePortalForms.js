@@ -3,7 +3,7 @@ import { apiFetch } from '@/shared/client';
 
 export function usePortalForms() {
     const submissionLock = ref(false);
-    const documentForm = reactive({ documentType: 'barangay_clearance', purpose: '', requestDetails: '' });
+    
     const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', purpose: '', reservationDetails: '' });
     const reportForm = reactive({
         reportType: 'noise_complaint',
@@ -49,14 +49,7 @@ export function usePortalForms() {
         }
     };
 
-    const submitDocumentRequest = async (loadDocuments) => submitForm(
-        '/document-requests',
-        documentForm,
-        'Document requested.',
-        documentForm,
-        { documentType: 'barangay_clearance', purpose: '', requestDetails: '' },
-        loadDocuments
-    );
+    
 
     const submitReservation = async (loadReservations, loadFacilityAvailability) => {
         const result = await submitForm(
@@ -109,7 +102,7 @@ export function usePortalForms() {
     );
 
     return {
-        documentForm, reservationForm, reportForm, reportProofFiles,
-        submitDocumentRequest, submitReservation, submitReport
+        reservationForm, reportForm, reportProofFiles,
+        submitReservation, submitReport
     };
 }
