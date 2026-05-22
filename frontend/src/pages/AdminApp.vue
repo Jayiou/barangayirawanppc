@@ -189,22 +189,34 @@
                     <div class="ops-dashboard-layout">
                         <section class="ops-left-section">
                             <div class="ops-stat-grid">
-                                <button
-                                    v-for="card in dashboardCards"
-                                    :key="card.key"
-                                    type="button"
-                                    class="ops-stat-card"
-                                    :class="[`tone-${card.tone}`, { active: selectedDashboardCard === card.key }]"
-                                    @click="selectedDashboardCard = card.key"
-                                >
-                                    <span class="ops-card-glow"></span>
-                                    <span class="ops-stat-icon"><i :class="card.icon"></i></span>
-                                    <span class="ops-stat-meta">
-                                        <span class="ops-stat-label">{{ card.label }}</span>
-                                        <strong>{{ card.value }}</strong>
-                                        <small>{{ card.caption }}</small>
-                                    </span>
-                                </button>
+                                <template v-if="isDataLoading">
+                                    <div v-for="i in 3" :key="'skel-stat-' + i" class="ops-stat-card skeleton-card" style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                                        <SkeletonLoader type="avatar" style="margin: 0; width: 38px; height: 38px;" />
+                                        <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                                            <SkeletonLoader type="text" width="60%" style="margin: 0;" />
+                                            <SkeletonLoader type="text" width="40%" style="margin: 0; height: 1.5rem;" />
+                                            <SkeletonLoader type="text" width="80%" style="margin: 0; height: 0.8rem;" />
+                                        </div>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <button
+                                        v-for="card in dashboardCards"
+                                        :key="card.key"
+                                        type="button"
+                                        class="ops-stat-card"
+                                        :class="[`tone-${card.tone}`, { active: selectedDashboardCard === card.key }]"
+                                        @click="selectedDashboardCard = card.key"
+                                    >
+                                        <span class="ops-card-glow"></span>
+                                        <span class="ops-stat-icon"><i :class="card.icon"></i></span>
+                                        <span class="ops-stat-meta">
+                                            <span class="ops-stat-label">{{ card.label }}</span>
+                                            <strong>{{ card.value }}</strong>
+                                            <small>{{ card.caption }}</small>
+                                        </span>
+                                    </button>
+                                </template>
                             </div>
 
                             <div class="ops-side-panels">
@@ -566,6 +578,18 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <template v-if="isDataLoading && (!currentList || currentList.length === 0)">
+                                    <tr v-for="i in 5" :key="'skel-main-' + i" class="table-row">
+                                        <td colspan="5">
+                                            <div style="display: flex; gap: 20px; align-items: center;">
+                                                <SkeletonLoader type="text" width="25%" style="margin: 0;" />
+                                                <SkeletonLoader type="text" width="35%" style="margin: 0;" />
+                                                <SkeletonLoader type="text" width="15%" style="margin: 0;" />
+                                                <SkeletonLoader type="button" width="80px" style="margin: 0;" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
                                 <tr v-for="item in currentList" :key="item._id" class="table-row hoverable">
                                     <td v-if="currentView === 'residents'"><strong>{{ item.firstName }} {{ item.lastName }}</strong></td>
                                     <td v-if="currentView === 'residents'">{{ item.address }}</td>
@@ -642,6 +666,18 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <template v-if="isDataLoading && (!appointments || appointments.length === 0)">
+                                        <tr v-for="i in 5" :key="'skel-apt-' + i" class="table-row">
+                                            <td colspan="5">
+                                                <div style="display: flex; gap: 20px; align-items: center;">
+                                                    <SkeletonLoader type="text" width="25%" style="margin: 0;" />
+                                                    <SkeletonLoader type="text" width="35%" style="margin: 0;" />
+                                                    <SkeletonLoader type="text" width="15%" style="margin: 0;" />
+                                                    <SkeletonLoader type="button" width="80px" style="margin: 0;" />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
                                     <tr v-for="item in appointments" :key="item._id" class="table-row hoverable">
                                         <td><strong>{{ item.officialId?.name }}</strong><br><small>{{ item.officialId?.position }}</small></td>
                                         <td>{{ item.residentId?.firstName }} {{ item.residentId?.lastName }}</td>
@@ -685,6 +721,18 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <template v-if="isDataLoading && (!officials || officials.length === 0)">
+                                        <tr v-for="i in 5" :key="'skel-off-' + i" class="table-row">
+                                            <td colspan="6">
+                                                <div style="display: flex; gap: 20px; align-items: center;">
+                                                    <SkeletonLoader type="avatar" style="margin: 0;" />
+                                                    <SkeletonLoader type="text" width="30%" style="margin: 0;" />
+                                                    <SkeletonLoader type="text" width="20%" style="margin: 0;" />
+                                                    <SkeletonLoader type="button" width="80px" style="margin: 0;" />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
                                     <tr v-for="item in officials" :key="item._id" class="table-row hoverable">
                                         <td>
                                             <div class="table-avatar" :style="item.picture ? { backgroundImage: `url(${item.picture})` } : {}">
@@ -1156,6 +1204,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
+import SkeletonLoader from '@/components/SkeletonLoader.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import StatusActionButtons from '@/components/StatusActionButtons.vue';
 import StatusActionModal from '@/components/StatusActionModal.vue';
@@ -1315,7 +1364,7 @@ const resetSound = async () => {
     }
 };
 
-const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, msg, loadAll } = useAdminData();
+const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus, openResidentProof } = useResidents(residents);

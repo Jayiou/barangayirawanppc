@@ -1685,3 +1685,46 @@ textarea { resize: vertical; }
     }
 }
 
+
+/* Skeleton Loading */
+@keyframes skeleton-pulse {
+  0% { background-color: #e2e8f0; }
+  50% { background-color: #cbd5e1; }
+  100% { background-color: #e2e8f0; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+.skeleton-text {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+.skeleton-text.short {
+  width: 50%;
+}
+.skeleton-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+}
+.skeleton-button {
+  width: 100px;
+  height: 36px;
+  border-radius: 6px;
+}
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}

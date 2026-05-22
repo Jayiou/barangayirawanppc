@@ -1,4 +1,6 @@
+const fs = require('fs');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 const formatLabel = (text) => {
     if (!text) return text;
@@ -31,12 +33,73 @@ const transporter = nodemailer.createTransport({
     auth: smtpAuth
 });
 
+if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+const useSendGrid = Boolean(process.env.SENDGRID_API_KEY);
+
+const normalizeSendGridAttachments = (attachments = []) => {
+    return attachments.map((attachment) => {
+        if (attachment.content) {
+            return {
+                ...attachment,
+                content: typeof attachment.content === 'string' ? attachment.content : attachment.content.toString('base64')
+            };
+        }
+
+        if (attachment.path) {
+            const fileData = fs.readFileSync(attachment.path);
+            return {
+                filename: attachment.filename || attachment.path.split('/').pop(),
+                type: attachment.contentType || 'application/octet-stream',
+                content: fileData.toString('base64'),
+                disposition: attachment.contentDisposition || 'attachment'
+            };
+        }
+
+        return {
+            filename: attachment.filename || 'attachment',
+            content: String(attachment)
+        };
+    });
+};
+
+const sendMail = async (mailOptions) => {
+    if (useSendGrid) {
+        const sgMessage = {
+            to: mailOptions.to,
+            from: mailOptions.from,
+            subject: mailOptions.subject,
+            text: mailOptions.text,
+            html: mailOptions.html,
+            replyTo: mailOptions.replyTo,
+            headers: mailOptions.headers,
+            attachments: mailOptions.attachments ? normalizeSendGridAttachments(mailOptions.attachments) : undefined
+        };
+
+        return sgMail.send(sgMessage);
+    }
+
+    return transporter.sendMail(mailOptions);
+};
+
+// Default headers and reply-to for better deliverability when domain setup is limited.
+const LIST_UNSUBSCRIBE = process.env.EMAIL_LIST_UNSUBSCRIBE || FROM_EMAIL;
+const REPLY_TO = process.env.EMAIL_REPLY_TO || FROM_EMAIL;
+const defaultMailHeaders = {
+    'List-Unsubscribe': `<mailto:${LIST_UNSUBSCRIBE}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+};
+
 const sendOtpEmail = async (toEmail, otpCode, name) => {
     try {
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: 'Verify your Barangay Connect Registration',
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\nThank you for registering. To complete your registration and proceed to Admin Approval, please verify your email using the OTP below:\n\n${otpCode}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
@@ -57,7 +120,7 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`OTP Email sent to ${toEmail}`);
     } catch (error) {
         console.error('Error sending OTP Email:', error);
@@ -72,6 +135,9 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: 'Reset your Barangay Connect password',
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\nWe received a request to reset your password. Please copy and paste the link below in your browser:\n\n${resetLink}\n\nThis link will expire in 30 minutes.\n\nIf you did not request this, you can ignore this email.`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
@@ -92,7 +158,7 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`Password reset email sent to ${toEmail}`);
     } catch (error) {
         console.error('Error sending Password Reset Email:', error);
@@ -111,6 +177,9 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
@@ -129,7 +198,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`Status Email sent to ${toEmail} for status: ${status}`);
     } catch (error) {
         console.error('Error sending Status Update Email:', error);
@@ -168,6 +237,9 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNotes ? `Admin Note: ${adminNotes}\n` : ''}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
@@ -187,7 +259,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log('Document Status Email sent to ' + toEmail + ' for status: ' + status);
     } catch (error) {
         console.error('Error sending Document Status Update Email:', error);
@@ -223,6 +295,9 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNotes ? `Admin Note: ${adminNotes}\n` : ''}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
@@ -242,7 +317,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`Request Status Email sent to ${toEmail} for status: ${status}`);
     } catch (error) {
         console.error('Error sending Request Status Update Email:', error);
@@ -273,15 +348,21 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
                 </div>
             `;
 
+        const textBody = `Hello ${name},\n\nYour requested ${docTypeFormatted} is now ready!\n\nDocument Details:\n- Document Type: ${docTypeFormatted}\n- Issued by: Barangay Irawan, Puerto Princesa City\n- Date Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\nIf you have any questions or concerns about your document, please don't hesitate to contact the Barangay Hall.\n\nThank you,\nBarangay Administration`;
+
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: `${docTypeFormatted} from Barangay Irawan`,
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: textBody,
             html: htmlBody
         };
 
         // If filePath is remote (presigned URL), include link in email instead of attachment
         if (typeof filePath === 'string' && (filePath.startsWith('http://') || filePath.startsWith('https://')) ) {
+            mailOptions.text = textBody + `\n\nDownload Link: ${filePath}`;
             mailOptions.html = htmlBody + `\n<p style="margin-top:12px; text-align:center;"><a href="${filePath}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#257f49; color:#fff; padding:10px 14px; border-radius:6px; text-decoration:none;">Download Document</a></p>`;
         } else if (typeof filePath === 'string' && filePath) {
             mailOptions.attachments = [{ filename: `${documentType}.pdf`, path: filePath }];
@@ -293,7 +374,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`Generated document email sent to ${toEmail} for document: ${documentType}`);
     } catch (error) {
         console.error('Error sending generated document email:', error);
@@ -307,6 +388,9 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
             to: toEmail,
             subject: subject || 'Barangay Resident Notification',
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name || 'Resident'},\n\n${(message || '').replace(/<[^>]+>/g, '')}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
@@ -325,7 +409,7 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             return;
         }
 
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log(`Custom resident email sent to ${toEmail}`);
     } catch (error) {
         console.error('Error sending custom resident email:', error);

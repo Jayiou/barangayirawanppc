@@ -14,6 +14,8 @@ export function useAdminData() {
     const dashboardStatus = ref('Loading portal...');
     const dashboardError = ref(false);
 
+    const isDataLoading = ref(true);
+
     const msg = (txt, isError = false) => {
         dashboardStatus.value = txt;
         dashboardError.value = isError;
@@ -21,6 +23,7 @@ export function useAdminData() {
 
     const loadAll = async () => {
         try {
+            isDataLoading.value = true;
             msg('Loading portal data...', false);
 
             // Avoid calling admin-only endpoints when there is no auth token
@@ -56,8 +59,10 @@ export function useAdminData() {
             appointments.value = normalize(results[5]);
             officials.value = normalize(results[6]);
             disasterIncidents.value = normalize(results[7]);
+            isDataLoading.value = false;
             msg('Dashboard ready.', false);
         } catch (error) {
+            isDataLoading.value = false;
             msg('Failed to load data. Please try again.', true);
             console.error('Data loading error:', error);
         }
@@ -84,6 +89,7 @@ export function useAdminData() {
         disasterIncidents,
         dashboardStatus,
         dashboardError,
+        isDataLoading,
         msg,
         loadAll
     };
