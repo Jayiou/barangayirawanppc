@@ -1,22 +1,29 @@
-const fs = require('fs');
+const fs = require('node:fs');
 const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 
 const formatLabel = (text) => {
     if (!text) return text;
     return text
-        .replace(/_/g, ' ')
+        .replaceAll('_', ' ')
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
 };
 
-const FROM_EMAIL = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'no-reply@barangay.local';
+const FROM_EMAIL = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SENDGRID_FROM || 'no-reply@barangay.local';
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || FROM_EMAIL;
+
+const hasValidFromDomain = !FROM_EMAIL.endsWith('.local') && !FROM_EMAIL.endsWith('.localhost');
+if (process.env.SENDGRID_API_KEY && !hasValidFromDomain) {
+    console.warn('Warning: SENDGRID_API_KEY is configured but EMAIL_FROM is not set to a real verified sender address. Set EMAIL_FROM to a valid, verified domain to improve deliverability.');
+}
 
 // Build transporter dynamically: prefer SendGrid API key (SMTP relay), fallback to EMAIL_USER/EMAIL_PASS
 const smtpHost = process.env.EMAIL_HOST || 'smtp.sendgrid.net';
 const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
 const smtpSecure = smtpPort === 465;
+const useSendGrid = Boolean(process.env.SENDGRID_API_KEY);
 
 let smtpAuth = null;
 if (process.env.SENDGRID_API_KEY) {
@@ -36,7 +43,6 @@ const transporter = nodemailer.createTransport({
 if (process.env.SENDGRID_API_KEY) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
-const useSendGrid = Boolean(process.env.SENDGRID_API_KEY);
 
 const normalizeSendGridAttachments = (attachments = []) => {
     return attachments.map((attachment) => {
@@ -232,6 +238,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
         }
 
         const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
+        const adminNoteText = adminNotes ? `Admin Note: ${adminNotes}\n` : '';
 
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
@@ -239,7 +246,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNotes ? `Admin Note: ${adminNotes}\n` : ''}\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
@@ -290,6 +297,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
         }
 
         const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
+        const adminNoteText = adminNotes ? `Admin Note: ${adminNotes}\n` : '';
 
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
@@ -297,7 +305,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNotes ? `Admin Note: ${adminNotes}\n` : ''}\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
