@@ -633,7 +633,7 @@
                                 </div>
 
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 4</span>
+                                    <span class="eyebrow">Section 3</span>
                                     <h4>Account Information</h4>
                                 </div>
                                 <div class="input-group">
