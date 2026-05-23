@@ -10,6 +10,11 @@ export function useReportNotifications() {
     let customAudioElement = null;
     let playbackSessionId = 0;
     let fallbackOscillators = [];
+    const defaultAlertSound = {
+        url: '/uploads/adminSound-1779017460161-656986062.mp3',
+        loop: false,
+        volume: 1
+    };
 
     const getAudioContext = () => {
         if (!sharedAudioContext) {
@@ -57,21 +62,8 @@ export function useReportNotifications() {
         });
     };
 
-    // Custom sound config stored in localStorage so admin can provide their own file/url.
     const getCustomSoundConfig = () => {
-        try {
-            const url = globalThis.localStorage.getItem('adminAlertSoundUrl');
-            const loopRaw = globalThis.localStorage.getItem('adminAlertSoundLoop');
-            const volumeRaw = globalThis.localStorage.getItem('adminAlertSoundVolume');
-            const loop = loopRaw === 'true';
-            const volume = volumeRaw ? Math.max(0, Math.min(2, Number(volumeRaw))) : 1;
-            if (url) {
-                return { url, loop, volume };
-            }
-        } catch (e) {
-            // ignore
-        }
-        return null;
+        return defaultAlertSound;
     };
 
     const setCustomSound = (url, { loop = true, volume = 1 } = {}) => {
