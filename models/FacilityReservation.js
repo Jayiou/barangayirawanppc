@@ -50,7 +50,7 @@ const facilityReservationSchema = new mongoose.Schema(
         },
         facilityName: {
             type: String,
-            enum: ['barangay_hall', 'covered_court', 'multi_purpose_hall'],
+            enum: ['chair', 'tent', 'table', 'barangay_hall', 'covered_court', 'multi_purpose_hall'],
             required: true
         },
         reservationDate: {
@@ -76,6 +76,26 @@ const facilityReservationSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ''
+        },
+        quantity: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+        chairQuantity: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+        tentQuantity: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+        tableQuantity: {
+            type: Number,
+            min: 0,
+            default: 0
         },
         status: {
             type: String,

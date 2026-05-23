@@ -11,18 +11,33 @@ const reservationFields = [
     'reservationDate',
     'startTime',
     'endTime',
+    'quantity',
     'purpose',
-    'reservationDetails'
+    'reservationDetails',
+    'chairQuantity',
+    'tentQuantity',
+    'tableQuantity'
 ];
 
 const reservationRequesterFields = ['firstName', 'middleName', 'lastName', 'suffix', 'contactNumber', 'email', 'address'];
 const reservationStatusFields = ['status', 'adminNotes'];
 const OPERATING_HOURS = {
     start: '08:00',
-    end: '17:00'
+    end: '24:00'
 };
-const SLOT_DURATION_MINUTES = 60;
-const CONFLICT_STATUSES = ['approved', 'rescheduled'];
+const SLOT_DURATION_MINUTES = 30;
+const CONFLICT_STATUSES = ['pending', 'approved', 'rescheduled'];
+const FACILITY_INVENTORY = {
+    chair: 300,
+    tent: 30,
+    table: 20
+};
+const INVENTORY_FACILITY_NAMES = Object.keys(FACILITY_INVENTORY);
+const INVENTORY_LABELS = {
+    chair: 'chairs',
+    tent: 'tents',
+    table: 'tables'
+};
 
 const pickFields = (source, fields) => fields.reduce((accumulator, field) => {
     if (source[field] !== undefined) {
@@ -34,15 +49,132 @@ const pickFields = (source, fields) => fields.reduce((accumulator, field) => {
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
-const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const timePattern = /^(?:([01]\d|2[0-3]):([0-5]\d)|24:00)$/;
 const normalizeText = (value) => String(value || '').trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
 
 const isValidTime = (value) => hasText(value) && timePattern.test(value.trim());
 
 const toMinutes = (value) => {
-    const [hours, minutes] = value.split(':').map(Number);
+    const normalized = String(value || '').trim();
+
+    if (normalized === '24:00') {
+        return 24 * 60;
+    }
+
+    const [hours, minutes] = normalized.split(':').map(Number);
     return (hours * 60) + minutes;
+};
+
+const formatYMD = (date) => (
+    date.getFullYear()
+    + '-'
+    + String(date.getMonth() + 1).padStart(2, '0')
+    + '-'
+    + String(date.getDate()).padStart(2, '0')
+);
+
+const isValidReservationDate = (reservationDate, minDaysAhead = 1) => {
+    if (!isValidDate(reservationDate)) {
+        return false;
+    }
+
+    const selectedDate = new Date(`${formatYMD(new Date(reservationDate))}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() + minDaysAhead);
+
+    return selectedDate >= minDate;
+};
+
+const toReservationQuantity = (value) => {
+    if (value === undefined || value === null || value === '') {
+        return 0;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 0) {
+        return null;
+    }
+
+    return parsed;
+};
+
+const getReservationQuantity = (reservation) => {
+    const quantity = Number(reservation.quantity);
+    if (Number.isFinite(quantity) && quantity > 0) {
+        return quantity;
+    }
+
+    const chairQuantity = Number(reservation.chairQuantity);
+    const tentQuantity = Number(reservation.tentQuantity);
+    const tableQuantity = Number(reservation.tableQuantity);
+
+    if (Number.isFinite(chairQuantity) || Number.isFinite(tentQuantity) || Number.isFinite(tableQuantity)) {
+        return (Number.isFinite(chairQuantity) ? chairQuantity : 0) + (Number.isFinite(tentQuantity) ? tentQuantity : 0) + (Number.isFinite(tableQuantity) ? tableQuantity : 0);
+    }
+
+    return 0;
+};
+
+const getFacilityInventoryCapacity = (facilityName) => FACILITY_INVENTORY[facilityName] || null;
+
+const isInventoryFacility = (facilityName) => INVENTORY_FACILITY_NAMES.includes(String(facilityName || '').trim());
+
+const buildInventoryTotals = (reservations = []) => reservations.reduce((totals, reservation) => {
+    const quantity = getReservationQuantity(reservation);
+    if (reservation.facilityName === 'chair') {
+        totals.chair += quantity;
+    } else if (reservation.facilityName === 'tent') {
+        totals.tent += quantity;
+    } else if (reservation.facilityName === 'table') {
+        totals.table += quantity;
+    }
+    return totals;
+}, { chair: 0, tent: 0, table: 0 });
+
+const buildInventoryAvailability = (reservations = []) => {
+    const reservedQuantities = buildInventoryTotals(reservations);
+
+    return {
+        inventory: FACILITY_INVENTORY,
+        reservedQuantities,
+        availableQuantities: {
+            chair: Math.max(FACILITY_INVENTORY.chair - reservedQuantities.chair, 0),
+            tent: Math.max(FACILITY_INVENTORY.tent - reservedQuantities.tent, 0),
+            table: Math.max(FACILITY_INVENTORY.table - reservedQuantities.table, 0)
+        }
+    };
+};
+
+const validateReservationInventory = (payload) => {
+    if (!isInventoryFacility(payload.facilityName)) {
+        return null;
+    }
+
+    const quantity = toReservationQuantity(payload.quantity ?? payload.chairQuantity ?? payload.tentQuantity ?? payload.tableQuantity);
+
+    if (quantity === null) {
+        return 'quantity must be a whole number greater than or equal to 0';
+    }
+
+    const capacity = getFacilityInventoryCapacity(payload.facilityName);
+    if (!capacity) {
+        return null;
+    }
+
+    if (quantity <= 0) {
+        return 'Please reserve at least 1 item';
+    }
+
+    if (quantity > capacity) {
+        return `quantity cannot exceed ${capacity}`;
+    }
+
+    return null;
 };
 
 const sameDayRange = (value) => {
@@ -103,7 +235,8 @@ const buildResidentReservationPayload = (residentId, reservationData) => ({
     contactNumber: '',
     email: '',
     address: '',
-    ...reservationData
+    ...reservationData,
+    quantity: toReservationQuantity(reservationData.quantity ?? reservationData.chairQuantity ?? reservationData.tentQuantity ?? reservationData.tableQuantity) || 0
 });
 
 const buildGuestReservationPayload = (reservationData) => ({
@@ -116,7 +249,8 @@ const buildGuestReservationPayload = (reservationData) => ({
     suffix: normalizeText(reservationData.suffix),
     contactNumber: normalizeText(reservationData.contactNumber),
     email: normalizeText(reservationData.email).toLowerCase(),
-    address: normalizeText(reservationData.address)
+    address: normalizeText(reservationData.address),
+    quantity: toReservationQuantity(reservationData.quantity ?? reservationData.chairQuantity ?? reservationData.tentQuantity ?? reservationData.tableQuantity) || 0
 });
 
 const getReservationRequesterName = (reservation) => {
@@ -138,6 +272,10 @@ const validateReservationData = (payload) => {
         return 'Please provide a valid reservationDate';
     }
 
+    if (payload.reservationDate !== undefined && !isValidReservationDate(payload.reservationDate)) {
+        return 'Reservations must be scheduled at least 1 day in advance';
+    }
+
     if (payload.startTime !== undefined && !hasText(payload.startTime)) {
         return 'Please provide a valid startTime';
     }
@@ -154,6 +292,12 @@ const validateReservationData = (payload) => {
 
     if (timeWindowError) {
         return timeWindowError;
+    }
+
+    const inventoryError = validateReservationInventory(payload);
+
+    if (inventoryError) {
+        return inventoryError;
     }
 
     return null;
@@ -203,7 +347,110 @@ const findConflictingReservation = async ({
     }) || null;
 };
 
-const buildAvailableSlots = (reservations) => {
+const findOverlappingInventoryReservations = async ({
+    facilityName,
+    reservationDate,
+    startTime,
+    endTime,
+    excludeReservationId
+}) => {
+    const { day, nextDay } = sameDayRange(reservationDate);
+    const reservations = await FacilityReservation.find({
+        facilityName,
+        reservationDate: {
+            $gte: day,
+            $lt: nextDay
+        },
+        status: { $in: CONFLICT_STATUSES }
+    });
+
+    const requestedStart = toMinutes(startTime);
+    const requestedEnd = toMinutes(endTime);
+
+    return reservations.filter((reservation) => {
+        if (reservation._id?.toString() === excludeReservationId?.toString()) {
+            return false;
+        }
+
+        return rangesOverlap(
+            requestedStart,
+            requestedEnd,
+            toMinutes(reservation.startTime),
+            toMinutes(reservation.endTime)
+        );
+    });
+};
+
+const validateInventoryAvailability = async ({
+    facilityName,
+    reservationDate,
+    startTime,
+    endTime,
+    quantity,
+    chairQuantity,
+    tentQuantity,
+    tableQuantity,
+    excludeReservationId
+}) => {
+    if (!isInventoryFacility(facilityName)) {
+        return null;
+    }
+
+    const capacity = getFacilityInventoryCapacity(facilityName);
+    const requestedQuantity = toReservationQuantity(quantity ?? chairQuantity ?? tentQuantity ?? tableQuantity);
+
+    if (!capacity) {
+        return null;
+    }
+
+    if (requestedQuantity === null || requestedQuantity <= 0) {
+        return 'Please reserve at least 1 item';
+    }
+
+    const overlappingReservations = await findOverlappingInventoryReservations({
+        facilityName,
+        reservationDate,
+        startTime,
+        endTime,
+        excludeReservationId
+    });
+
+    const reservedQuantity = overlappingReservations.reduce((total, reservation) => total + getReservationQuantity(reservation), 0);
+
+    if ((reservedQuantity + requestedQuantity) > capacity) {
+        const availableQuantity = Math.max(capacity - reservedQuantity, 0);
+        return `Only ${availableQuantity} ${INVENTORY_LABELS[facilityName] || 'items'} are available for the selected time.`;
+    }
+
+    return null;
+};
+
+const buildAvailableSlots = (reservations, isInventoryView = false) => {
+    if (isInventoryView) {
+        const slots = [];
+
+        for (
+            let current = toMinutes(OPERATING_HOURS.start);
+            current + SLOT_DURATION_MINUTES <= toMinutes(OPERATING_HOURS.end);
+            current += SLOT_DURATION_MINUTES
+        ) {
+            const slotStart = current;
+            const slotEnd = current + SLOT_DURATION_MINUTES;
+
+            const startHours = String(Math.floor(slotStart / 60)).padStart(2, '0');
+            const startMinutes = String(slotStart % 60).padStart(2, '0');
+            const endHours = String(Math.floor(slotEnd / 60)).padStart(2, '0');
+            const endMinutes = String(slotEnd % 60).padStart(2, '0');
+
+            slots.push({
+                startTime: `${startHours}:${startMinutes}`,
+                endTime: `${endHours}:${endMinutes}`
+            });
+        }
+
+        return slots;
+    }
+
     const slots = [];
     const reservedRanges = reservations.map((reservation) => ({
         start: toMinutes(reservation.startTime),
@@ -260,12 +507,22 @@ exports.createFacilityReservation = asyncHandler(async (req, res) => {
         });
     }
 
-    const conflictingReservation = await findConflictingReservation(reservationData);
+    const inventoryError = await validateInventoryAvailability(reservationData);
 
-    if (conflictingReservation) {
-        throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+    if (inventoryError) {
+        throw createHttpError(409, inventoryError, {
             code: 'FACILITY_RESERVATION_CONFLICT'
         });
+    }
+
+    if (!isInventoryFacility(reservationData.facilityName)) {
+        const conflictingReservation = await findConflictingReservation(reservationData);
+
+        if (conflictingReservation) {
+            throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+                code: 'FACILITY_RESERVATION_CONFLICT'
+            });
+        }
     }
 
     const resident = await Resident.findOne({ userId: req.user.id });
@@ -287,7 +544,7 @@ exports.createFacilityReservation = asyncHandler(async (req, res) => {
 
 exports.createPublicFacilityReservation = asyncHandler(async (req, res) => {
     const reservationData = pickFields(req.body, [...reservationFields, ...reservationRequesterFields]);
-    const validationError = validateReservationData(reservationData) || validateGuestReservationData(reservationData);
+    const validationError = validateGuestReservationData(reservationData) || validateReservationData(reservationData);
 
     if (
         !reservationData.facilityName
@@ -323,12 +580,22 @@ exports.createPublicFacilityReservation = asyncHandler(async (req, res) => {
         });
     }
 
-    const conflictingReservation = await findConflictingReservation(reservationData);
+    const inventoryError = await validateInventoryAvailability(reservationData);
 
-    if (conflictingReservation) {
-        throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+    if (inventoryError) {
+        throw createHttpError(409, inventoryError, {
             code: 'FACILITY_RESERVATION_CONFLICT'
         });
+    }
+
+    if (!isInventoryFacility(reservationData.facilityName)) {
+        const conflictingReservation = await findConflictingReservation(reservationData);
+
+        if (conflictingReservation) {
+            throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+                code: 'FACILITY_RESERVATION_CONFLICT'
+            });
+        }
     }
 
     const reservation = await FacilityReservation.create(buildGuestReservationPayload(reservationData));
@@ -356,7 +623,7 @@ exports.getMyFacilityReservations = asyncHandler(async (req, res) => {
 });
 
 exports.getFacilityAvailability = asyncHandler(async (req, res) => {
-    const { facilityName, date } = req.query;
+    const { facilityName, date, startTime, endTime } = req.query;
 
     if (!facilityName || !date) {
         throw createHttpError(400, 'facilityName and date are required', {
@@ -370,6 +637,8 @@ exports.getFacilityAvailability = asyncHandler(async (req, res) => {
         });
     }
 
+    const inventoryCapacity = getFacilityInventoryCapacity(facilityName);
+
     const { day, nextDay } = sameDayRange(date);
     const reservations = await FacilityReservation.find({
         facilityName,
@@ -380,17 +649,49 @@ exports.getFacilityAvailability = asyncHandler(async (req, res) => {
         status: { $in: CONFLICT_STATUSES }
     }).sort({ startTime: 1 });
 
+    const inventory = buildInventoryAvailability(reservations);
+    const isInventoryView = isInventoryFacility(facilityName) && inventoryCapacity !== null;
+    const requestedStart = startTime && isValidTime(startTime) ? startTime : null;
+    const requestedEnd = endTime && isValidTime(endTime) ? endTime : null;
+    const relevantReservations = isInventoryView && requestedStart && requestedEnd
+        ? reservations.filter((reservation) => rangesOverlap(
+            toMinutes(requestedStart),
+            toMinutes(requestedEnd),
+            toMinutes(reservation.startTime),
+            toMinutes(reservation.endTime)
+        ))
+        : reservations;
+    const reservedQuantity = isInventoryView
+        ? relevantReservations.reduce((total, reservation) => total + getReservationQuantity(reservation), 0)
+        : 0;
+    const availableQuantity = isInventoryView
+        ? Math.max(inventoryCapacity - reservedQuantity, 0)
+        : null;
+
     res.json({
         facilityName,
         date,
         operatingHours: OPERATING_HOURS,
+        inventory: FACILITY_INVENTORY,
+        inventoryQuantity: inventoryCapacity,
+        reservedQuantity,
+        availableQuantity,
+        selectedAvailability: isInventoryView ? {
+            facilityName,
+            inventoryQuantity: inventoryCapacity,
+            reservedQuantity,
+            availableQuantity
+        } : null,
+        ...inventory,
         reservedSlots: reservations.map((reservation) => ({
             id: reservation._id,
+            facilityName: reservation.facilityName,
             startTime: reservation.startTime,
             endTime: reservation.endTime,
-            status: reservation.status
+            status: reservation.status,
+            quantity: getReservationQuantity(reservation)
         })),
-        availableSlots: buildAvailableSlots(reservations)
+        availableSlots: buildAvailableSlots(reservations, isInventoryView)
     });
 });
 
@@ -437,7 +738,7 @@ exports.deleteMyFacilityReservation = asyncHandler(async (req, res) => {
     }
 
     const resident = await Resident.findOne({ userId: req.user.id });
-    if (!resident || !reservation.residentId || reservation.residentId.toString() !== resident._id.toString()) {
+    if (!resident || reservation.residentId?.toString() !== resident?._id?.toString()) {
         throw createHttpError(403, 'Access denied', {
             code: 'FACILITY_RESERVATION_FORBIDDEN'
         });

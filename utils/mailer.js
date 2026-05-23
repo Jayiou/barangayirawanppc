@@ -178,6 +178,18 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
         const statusMessage = isApproved 
             ? 'Congratulations! Your account registration has been <strong>APPROVED</strong> by the Barangay Admin. You may now login to the portal.'
             : 'We regret to inform you that your account registration has been <strong>REJECTED</strong>. Please ensure all your details and proof of residency are correct, and try registering again or visit the Barangay Hall for clarification.';
+        const forgotPasswordReminderText = isApproved
+            ? '\n\nIf you forgot your password, click the Forgot Password button in the login form and provide your registered email to reset your password.'
+            : '';
+        const forgotPasswordReminderHtml = isApproved
+            ? `
+                    <div style="padding: 12px; border-left: 5px solid #235b82; background-color: #f2f8fd; margin: 16px 0;">
+                        <p style="margin: 0; font-size: 14px; color: #1f3e58;">
+                            If you forgot your password, click the <strong>Forgot Password</strong> button in the login form and provide your registered email to reset your password.
+                        </p>
+                    </div>
+                `
+            : '';
 
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
@@ -185,7 +197,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             subject: `Barangay Connect - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}${forgotPasswordReminderText}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
@@ -193,6 +205,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
                     </div>
+                    ${forgotPasswordReminderHtml}
                     <p>Thank you,</p>
                     <p><strong>Barangay Administration</strong></p>
                 </div>

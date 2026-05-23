@@ -6,23 +6,23 @@
             <div class="landing-topbar-inner">
                 <BrandMark initials="BI" eyebrow="Management System" title="Barangay Irawan" />
                 <nav class="landing-nav" aria-label="Main navigation">
-                    <a href="#home">Home</a>
-                    <a href="#vmg">VMG</a>
-                    <a href="#services">Services</a>
-                    <a href="#officials">Officials</a>
-                    <a href="#announcements">Announcements</a>
-                    <a href="#location">Location</a>
+                    <a href="#home">{{ texts.landing.nav.home }}</a>
+                    <a href="#vmg">{{ texts.landing.nav.vmg }}</a>
+                    <a href="#services">{{ texts.landing.nav.services }}</a>
+                    <a href="#officials">{{ texts.landing.nav.officials }}</a>
+                    <a href="#announcements">{{ texts.landing.nav.announcements }}</a>
+                    <a href="#location">{{ texts.landing.nav.location }}</a>
                     <button type="button" class="landing-auth-btn" @click="openModal('login')">
                         <i class="fa-solid fa-right-to-bracket"></i>
-                        Login
+                        {{ texts.landing.nav.login }}
                     </button>
                     <button type="button" class="landing-auth-btn" @click="openModal('register')">
                         <i class="fa-solid fa-user-plus"></i>
-                        Register
+                        {{ texts.landing.nav.register }}
                     </button>
                     <button v-if="pendingOtpEmail" type="button" class="landing-auth-btn pending-otp-btn" @click="resumeOtpVerification">
                         <i class="fa-solid fa-shield-halved"></i>
-                        Continue OTP
+                        {{ texts.landing.nav.continueOtp }}
                     </button>
                 </nav>
             </div>
@@ -31,12 +31,11 @@
         <section class="landing-hero" id="home">
             <div class="landing-hero-overlay"></div>
             <div class="landing-hero-content">
-                <span class="eyebrow light animate-section slide-up">Barangay Digital Services</span>
-                <h2 class="animate-section slide-up">Welcome to Barangay Irawan</h2>
-                <h3 class="animate-section slide-up">Puerto Princesa City</h3>
+                <span class="eyebrow light animate-section slide-up">{{ texts.landing.hero.eyebrow }}</span>
+                <h2 class="animate-section slide-up">{{ texts.landing.hero.title }}</h2>
+                <h3 class="animate-section slide-up">{{ texts.landing.hero.subtitle }}</h3>
                 <p class="animate-section slide-up">
-                    Your gateway to efficient, modern barangay services. Access documents, schedule
-                    appointments, report incidents, and stay connected with your community, all in one place.
+                    {{ texts.landing.hero.copy }}
                 </p>
             </div>
         </section>
@@ -87,8 +86,8 @@
         </section>
         <section class="landing-services-section animate-section slide-up" id="services">
             <div class="landing-section-heading center">
-                <h3>Barangay Services</h3>
-                <p>Everything you need to connect with Barangay Irawan and access essential community services.</p>
+                <h3>{{ texts.landing.sections.servicesTitle }}</h3>
+                <p>{{ texts.landing.sections.servicesCopy }}</p>
             </div>
 
             <div class="landing-service-grid">
@@ -106,18 +105,18 @@
                     <div class="landing-service-icon">{{ service.icon }}</div>
                     <h4>{{ service.title }}</h4>
                     <p>{{ service.copy }}</p>
-                    <span v-if="service.action" class="landing-service-cta">Request online</span>
+                    <span v-if="service.action" class="landing-service-cta">{{ texts.landing.actions.requestOnline }}</span>
                 </article>
             </div>
         </section>
 
         <section class="landing-officials-section animate-section slide-up" id="officials">
             <div class="landing-section-heading center">
-                <h3>Barangay Officials</h3>
-                <p>Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.</p>
+                <h3>{{ texts.landing.sections.officialsTitle }}</h3>
+                <p>{{ texts.landing.sections.officialsCopy }}</p>
             </div>
 
-            <div v-if="officialsLoading" class="officials-loading">Loading officials...</div>
+            <div v-if="officialsLoading" class="officials-loading">{{ texts.landing.actions.loadingOfficials }}</div>
             <div v-else-if="sortedOfficials.length === 0" class="empty-state">No officials are available right now. Please check back later.</div>
             <div v-else class="officials-sections">
                 <!-- Barangay Captain (Solo Row) -->
@@ -247,7 +246,7 @@
                         </a>
                     </div>
 
-                    <div class="fine-print">© 2026 Barangay Irawan. All rights reserved.</div>
+                    <div class="fine-print">{{ texts.landing.footer.rights }}</div>
                 </div>
             </div>
         </footer>
@@ -260,12 +259,10 @@
                 <div class="auth-modal-visual">
                     <div class="visual-overlay"></div>
                     <div class="visual-content">
-                        <BrandMark initials="BI" eyebrow="Barangay Irawan" title="Resident Portal" />
+                        <BrandMark initials="BI" eyebrow="Barangay Irawan" :title="texts.landing.auth[activeModal]?.visualTitle || 'Resident Portal'" />
                         <div class="visual-text">
                             <h3>{{ getVisualTitle(activeModal) }}</h3>
-                            <p>
-                                {{ getVisualCopy(activeModal) }}
-                            </p>
+                            <p>{{ getVisualCopy(activeModal) }}</p>
                         </div>
                     </div>
                 </div>
@@ -276,7 +273,7 @@
                         <h2>{{ getModalTitle(activeModal) }}</h2>
                         <div class="auth-toggle" v-if="['login', 'register', 'forgot-password', 'reset-password'].includes(activeModal)">
                             <span class="toggle-text">
-                                {{ activeModal === 'login' ? "Don't have an account?" : activeModal === 'forgot-password' || activeModal === 'reset-password' ? 'Need to go back?' : 'Already have an account?' }}
+                                {{ getToggleText(activeModal) }}
                             </span>
                             <button type="button" class="toggle-link" @click="switchAuthMode">
                                 {{ getToggleLabel(activeModal) }}
@@ -291,8 +288,8 @@
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-flag"></i>
                                     <div>
-                                        <strong>Non-Resident Report</strong>
-                                        <p>Submit an incident report, complaint, or community concern. The admin will review it and email the update.</p>
+                                        <strong>{{ texts.landing.auth.guestReport.bannerTitle }}</strong>
+                                        <p>{{ texts.landing.auth.guestReport.bannerCopy }}</p>
                                     </div>
                                 </div>
 
@@ -370,12 +367,12 @@
 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestReportForm.agreePrivacy"> I agree to the <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="guestReportForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="isGuestReportLoading || !guestReportForm.agreePrivacy">
-                                    {{ isGuestReportLoading ? 'Submitting...' : 'Submit Report' }} <i :class="isGuestReportLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                    {{ isGuestReportLoading ? texts.landing.auth.guestReport.submitting : texts.landing.auth.guestReport.submit }} <i :class="isGuestReportLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
 
@@ -383,26 +380,24 @@
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-building-circle-check"></i>
                                     <div>
-                                        <strong>Non-Resident Facility Request</strong>
-                                        <p>Reserve a barangay facility for your event. The admin will confirm availability and send an update by email.</p>
+                                        <strong>{{ texts.landing.auth.guestReservation.bannerTitle }}</strong>
+                                        <p>{{ texts.landing.auth.guestReservation.bannerCopy }}</p>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-facility-name">Facility</label>
+                                        <label for="guest-facility-name">Facility Type</label>
                                         <div class="custom-select">
                                             <select id="guest-facility-name" v-model="guestReservationForm.facilityName" required @change="loadGuestFacilityAvailability">
-                                                <option value="barangay_hall">Barangay Hall</option>
-                                                <option value="covered_court">Covered Court</option>
-                                                <option value="multi_purpose_hall">Multi-Purpose Hall</option>
+                                                <option v-for="option in FACILITY_ITEM_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
                                     </div>
                                     <div class="input-group">
                                         <label for="guest-facility-date">Reservation Date</label>
-                                        <input id="guest-facility-date" v-model="guestReservationForm.reservationDate" type="date" required @change="loadGuestFacilityAvailability">
+                                            <input id="guest-facility-date" v-model="guestReservationForm.reservationDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="loadGuestFacilityAvailability">
                                     </div>
                                 </div>
 
@@ -416,7 +411,7 @@
                                         <div class="input-group">
                                             <label for="guest-facility-start">Start Time</label>
                                             <div class="custom-select">
-                                                <select id="guest-facility-start" v-model="guestReservationForm.startTime" required @change="guestReservationForm.endTime = ''">
+                                                <select id="guest-facility-start" v-model="guestReservationForm.startTime" required @change="guestReservationForm.endTime = ''; loadGuestFacilityAvailabilityForTime()">
                                                     <option disabled value="">Select start</option>
                                                     <option v-for="slot in guestFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                                 </select>
@@ -426,7 +421,7 @@
                                         <div class="input-group">
                                             <label for="guest-facility-end">End Time</label>
                                             <div class="custom-select">
-                                                <select id="guest-facility-end" v-model="guestReservationForm.endTime" required :disabled="!guestReservationForm.startTime">
+                                                <select id="guest-facility-end" v-model="guestReservationForm.endTime" required :disabled="!guestReservationForm.startTime" @change="loadGuestFacilityAvailabilityForTime()">
                                                     <option disabled value="">Select end</option>
                                                     <option v-for="slot in guestFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                                 </select>
@@ -436,14 +431,26 @@
                                     </div>
                                     <div class="facility-reserved-list" v-if="guestFacilityTimeOptions.reservedSlots.length">
                                         <span>Reserved ranges</span>
-                                        <small v-for="slot in guestFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved</small>
+                                        <small v-for="slot in guestFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="getFacilityReservationQuantity(slot) > 0">x{{ getFacilityReservationQuantity(slot) }}</span></small>
                                     </div>
+                                    <div class="facility-reserved-list" v-if="guestReservationRequiresQuantity && guestFacilityAvailability">
+                                        <span>Inventory summary</span>
+                                        <small>{{ formatFacilityInventorySummary(guestFacilityAvailability) }}</small>
+                                    </div>
+                                    <!-- Standard flow helper text removed -->
                                 </div>
 
                                 <div class="input-group">
                                     <label for="guest-facility-purpose">Purpose</label>
                                     <input id="guest-facility-purpose" v-model="guestReservationForm.purpose" type="text" placeholder="Wedding, meeting, celebration, etc." required>
                                 </div>
+
+                                    <div class="two-col-grid" v-if="guestReservationRequiresQuantity">
+                                        <div class="input-group">
+                                            <label for="guest-facility-quantity">Quantity</label>
+                                            <input id="guest-facility-quantity" v-model.number="guestReservationForm.quantity" type="number" min="1" :max="selectedGuestReservationItem.max" placeholder="0">
+                                        </div>
+                                    </div>
 
                                 <div class="input-group">
                                     <label for="guest-facility-details">Reservation Details</label>
@@ -479,29 +486,29 @@
 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestReservationForm.agreePrivacy"> I agree to the <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="guestReservationForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
                                     </label>
                                 </div>
 
-                                <button type="submit" class="auth-submit-btn" :disabled="isGuestReservationLoading || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime">
-                                    {{ isGuestReservationLoading ? 'Submitting...' : 'Submit Request' }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                <button type="submit" class="auth-submit-btn" :disabled="isGuestReservationLoading || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime || (guestReservationRequiresQuantity && !guestReservationForm.quantity)">
+                                    {{ isGuestReservationLoading ? texts.landing.auth.guestReservation.submitting : texts.landing.auth.guestReservation.submit }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
 
                             <!-- Login Form -->
                             <form v-if="activeModal === 'login'" class="modern-form" @submit.prevent="handleLogin">
                                 <div class="input-group">
-                                    <label for="login-username">Username</label>
+                                    <label for="login-username">{{ texts.landing.auth.login.username }}</label>
                                     <div class="input-wrapper">
                                         <i class="fa-regular fa-user"></i>
-                                        <input id="login-username" name="username" v-model="loginForm.username" type="text" autocomplete="username" placeholder="Enter your username" required>
+                                        <input id="login-username" name="username" v-model="loginForm.username" type="text" autocomplete="username" :placeholder="texts.landing.auth.login.usernamePlaceholder" required>
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="login-password">Password</label>
+                                    <label for="login-password">{{ texts.landing.auth.login.password }}</label>
                                     <div class="input-wrapper has-toggle">
                                         <i class="fa-solid fa-lock"></i>
-                                        <input id="login-password" name="password" v-model="loginForm.password" :type="passwordVisibility.login ? 'text' : 'password'" autocomplete="off" placeholder="Enter your password" required>
+                                        <input id="login-password" name="password" v-model="loginForm.password" :type="passwordVisibility.login ? 'text' : 'password'" autocomplete="off" :placeholder="texts.landing.auth.login.passwordPlaceholder" required>
                                         <button
                                             type="button"
                                             class="password-toggle-btn"
@@ -513,10 +520,10 @@
                                     </div>
                                 </div>
                                 <button type="submit" class="auth-submit-btn" :disabled="isLoginLoading">
-                                    {{ isLoginLoading ? 'Signing in...' : 'Login to Portal' }} <i :class="isLoginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrow-right'"></i>
+                                    {{ isLoginLoading ? texts.landing.auth.login.signingIn : texts.landing.auth.login.button }} <i :class="isLoginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrow-right'"></i>
                                 </button>
                                 <button type="button" class="auth-secondary-btn" @click="openModal('forgot-password')">
-                                    Forgot password?
+                                    {{ texts.landing.auth.login.forgot }}
                                 </button>
                             </form>
 
@@ -712,12 +719,12 @@
                                 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="registerForm.agreePrivacy"> I agree to the <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="registerForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="isRegisterLoading || !registerForm.agreePrivacy">
-                                    {{ isRegisterLoading ? 'Submitting...' : 'Submit Registration' }} <i :class="isRegisterLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-user-plus'"></i>
+                                    {{ isRegisterLoading ? texts.landing.auth.register.submitting : texts.landing.auth.register.submit }} <i :class="isRegisterLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-user-plus'"></i>
                                 </button>
                             </form>
 
@@ -968,7 +975,7 @@ import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
-import { buildFacilityTimeOptions, formatFacilityRange } from '@/shared/facilityTimeSlots';
+import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
@@ -977,6 +984,26 @@ import { usePasswordReset } from '@/composables/usePasswordReset';
 const { loginForm, registerForm, proofOfResidencyFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail } = useLandingAuth();
 const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanupRecaptchaWidget } = useRecaptcha();
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
+
+const landingText = {
+    nav: { home: 'Home', vmg: 'VMG', services: 'Services', officials: 'Officials', announcements: 'Announcements', location: 'Location', appointments: 'Appointments', facilities: 'Facilities', login: 'Login', register: 'Register', continueOtp: 'Continue OTP' },
+    hero: { eyebrow: 'Barangay Digital Services', title: 'Welcome to Barangay Irawan', subtitle: 'Puerto Princesa City', copy: 'Your gateway to efficient, modern barangay services. Access documents, schedule appointments, report incidents, and stay connected with your community, all in one place.' },
+    sections: { servicesTitle: 'Barangay Services', servicesCopy: 'Everything you need to connect with Barangay Irawan and access essential community services.', officialsTitle: 'Barangay Officials', officialsCopy: 'Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.', announcementsTitle: 'Announcements', announcementsCopy: 'Stay informed with the latest barangay updates and reminders.' },
+    actions: { requestOnline: 'Request online', loadingOfficials: 'Loading officials...' },
+    footer: { rights: '© 2026 Barangay Irawan. All rights reserved.' },
+    auth: {
+        login: { title: 'Resident Login', visualTitle: 'Welcome Back!', visualCopy: 'Access your digital barangay services, view announcements, and manage requests seamlessly.', username: 'Username', password: 'Password', usernamePlaceholder: 'Enter your username', passwordPlaceholder: 'Enter your password', button: 'Login to Portal', signingIn: 'Signing in...', forgot: 'Forgot password?', toggleNoAccount: "Don't have an account?", toggleLabel: 'Create an account' },
+        register: { title: 'Resident Registration', visualTitle: 'Join Our Community', visualCopy: 'Create an account to streamline your appointments, reports, and facility submissions.', submit: 'Submit Registration', submitting: 'Submitting...', toggleHaveAccount: 'Already have an account?', toggleLabel: 'Log in here', privacy: 'I agree to the', passwordRules: 'Password must include:' },
+        otp: { title: 'Email Verification', visualTitle: 'Verify Your Email', visualCopy: 'We need to verify your email to secure your resident account.', instruction: 'We\'ve sent a 6-digit verification code to your email. Check your inbox (or spam folder).', verify: 'Verify Email', verifying: 'Verifying...', resend: 'Resend OTP', resending: 'Resending...', cancel: 'Cancel & Go to Login' },
+        forgot: { title: 'Forgot Password', visualTitle: 'Reset Access Safely', visualCopy: 'We will send a secure reset link to the email address attached to your account.', instruction: 'Enter the email address linked to your account. We will send a reset link if it exists.', button: 'Send Reset Link', sending: 'Sending...' },
+        reset: { title: 'Reset Password', visualTitle: 'Choose a New Password', visualCopy: 'Set a new password to restore access to your resident portal.', instruction: 'Choose a strong new password to restore access to your account.', button: 'Save New Password', saving: 'Saving...' },
+        pending: { title: 'Registration Received', visualTitle: 'Account Pending Approval', visualCopy: 'Your registration has been verified and is now being reviewed by the Barangay Admin.' },
+        guestReport: { title: 'Non-Resident Incident Report', visualTitle: 'Report Without Registration', visualCopy: 'Non-residents may file incident reports or community concerns. The admin will review the report and respond by email.', bannerTitle: 'Non-Resident Report', bannerCopy: 'Submit an incident report, complaint, or community concern. The admin will review it and email the update.', submit: 'Submit Report', submitting: 'Submitting...' },
+        guestReservation: { title: 'Non-Resident Facility Request', visualTitle: 'Reserve Without Registration', visualCopy: 'Non-residents may submit facility reservations. The barangay admin will review your request and contact you by email.', bannerTitle: 'Non-Resident Facility Request', bannerCopy: 'Reserve a barangay facility for your event. The admin will confirm availability and send an update by email.', submit: 'Submit Request', submitting: 'Submitting...' }
+    }
+};
+
+const texts = ref({ landing: landingText });
 
 // Local state
 const activeModal = ref('');
@@ -1055,10 +1082,11 @@ const guestReportFormDefaults = {
 };
 const guestReportForm = reactive({ ...guestReportFormDefaults });
 const guestReservationFormDefaults = {
-    facilityName: 'covered_court',
+    facilityName: 'barangay_hall',
     reservationDate: '',
     startTime: '',
     endTime: '',
+    quantity: 0,
     purpose: '',
     reservationDetails: '',
     firstName: '',
@@ -1074,10 +1102,13 @@ const guestReservationForm = reactive({ ...guestReservationFormDefaults });
 const guestFacilityAvailability = ref(null);
 const isGuestFacilityAvailabilityLoading = ref(false);
 const guestFacilityTimeOptions = computed(() => buildFacilityTimeOptions(guestFacilityAvailability.value, guestReservationForm.startTime));
+const selectedGuestReservationItem = computed(() => getFacilityItemOption(guestReservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
+const guestReservationRequiresQuantity = computed(() => selectedGuestReservationItem.value?.isInventory === true);
 
 const loadGuestFacilityAvailability = async () => {
     guestReservationForm.startTime = '';
     guestReservationForm.endTime = '';
+    guestReservationForm.quantity = guestReservationRequiresQuantity.value ? Math.max(Number(guestReservationForm.quantity) || 1, 1) : 0;
 
     if (!guestReservationForm.facilityName || !guestReservationForm.reservationDate) {
         guestFacilityAvailability.value = null;
@@ -1089,6 +1120,28 @@ const loadGuestFacilityAvailability = async () => {
         const query = new URLSearchParams({
             facilityName: guestReservationForm.facilityName,
             date: guestReservationForm.reservationDate
+        }).toString();
+        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability?' + query);
+    } catch (error) {
+        guestFacilityAvailability.value = null;
+        setStatus(error.message || 'Failed to load facility schedule.', true);
+    } finally {
+        isGuestFacilityAvailabilityLoading.value = false;
+    }
+};
+
+const loadGuestFacilityAvailabilityForTime = async () => {
+    if (!guestReservationForm.facilityName || !guestReservationForm.reservationDate) {
+        return;
+    }
+
+    isGuestFacilityAvailabilityLoading.value = true;
+    try {
+        const query = new URLSearchParams({
+            facilityName: guestReservationForm.facilityName,
+            date: guestReservationForm.reservationDate,
+            ...(guestReservationForm.startTime ? { startTime: guestReservationForm.startTime } : {}),
+            ...(guestReservationForm.endTime ? { endTime: guestReservationForm.endTime } : {})
         }).toString();
         guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability?' + query);
     } catch (error) {
@@ -1242,48 +1295,59 @@ const loadRecaptcha = () => {
 };
 
 // UI helpers
-const modalTitles = {
-    login: 'Resident Login',
-    register: 'Resident Registration',
-    otp: 'Email Verification',
-    'forgot-password': 'Forgot Password',
-    'reset-password': 'Reset Password',
-    'pending-approval': 'Registration Received',
-    'guest-report-request': 'Non-Resident Incident Report',
-    'guest-facility-request': 'Non-Resident Facility Request'
+const getModalTitle = (mode) => {
+    const auth = texts.value.landing.auth;
+    if (mode === 'login') return auth.login.title;
+    if (mode === 'register') return auth.register.title;
+    if (mode === 'otp') return auth.otp.title;
+    if (mode === 'forgot-password') return auth.forgot.title;
+    if (mode === 'reset-password') return auth.reset.title;
+    if (mode === 'pending-approval') return auth.pending.title;
+    if (mode === 'guest-report-request') return auth.guestReport.title;
+    if (mode === 'guest-facility-request') return auth.guestReservation.title;
+    return 'Resident Portal';
 };
 
-const visualTitles = {
-    login: 'Welcome Back!',
-    register: 'Join Our Community',
-    otp: 'Verify Your Email',
-    'forgot-password': 'Reset Access Safely',
-    'reset-password': 'Choose a New Password',
-    'pending-approval': 'Account Pending Approval',
-    'guest-report-request': 'Report Without Registration',
-    'guest-facility-request': 'Reserve Without Registration'
+const getVisualTitle = (mode) => {
+    const auth = texts.value.landing.auth;
+    if (mode === 'login') return auth.login.visualTitle;
+    if (mode === 'register') return auth.register.visualTitle;
+    if (mode === 'otp') return auth.otp.visualTitle;
+    if (mode === 'forgot-password') return auth.forgot.visualTitle;
+    if (mode === 'reset-password') return auth.reset.visualTitle;
+    if (mode === 'pending-approval') return auth.pending.visualTitle;
+    if (mode === 'guest-report-request') return auth.guestReport.visualTitle;
+    if (mode === 'guest-facility-request') return auth.guestReservation.visualTitle;
+    return 'Resident Portal';
 };
 
-const visualCopies = {
-    login: 'Access your digital barangay services, view announcements, and manage requests seamlessly.',
-    register: 'Create an account to streamline your appointments, reports, and facility submissions.',
-    otp: 'We need to verify your email to secure your resident account.',
-    'forgot-password': 'We will send a secure reset link to the email address attached to your account.',
-    'reset-password': 'Set a new password to restore access to your resident portal.',
-    'pending-approval': 'Your registration has been verified and is now being reviewed by the Barangay Admin.',
-    'guest-report-request': 'Non-residents may file incident reports or community concerns. The admin will review the report and respond by email.',
-    'guest-facility-request': 'Non-residents may submit facility reservations. The barangay admin will review your request and contact you by email.'
+const getVisualCopy = (mode) => {
+    const auth = texts.value.landing.auth;
+    if (mode === 'login') return auth.login.visualCopy;
+    if (mode === 'register') return auth.register.visualCopy;
+    if (mode === 'otp') return auth.otp.visualCopy;
+    if (mode === 'forgot-password') return auth.forgot.visualCopy;
+    if (mode === 'reset-password') return auth.reset.visualCopy;
+    if (mode === 'pending-approval') return auth.pending.visualCopy;
+    if (mode === 'guest-report-request') return auth.guestReport.visualCopy;
+    if (mode === 'guest-facility-request') return auth.guestReservation.visualCopy;
+    return 'Access barangay services securely from any device.';
 };
-
-const getModalTitle = (mode) => modalTitles[mode] || 'Resident Portal';
-const getVisualTitle = (mode) => visualTitles[mode] || 'Resident Portal';
-const getVisualCopy = (mode) => visualCopies[mode] || 'Access barangay services securely from any device.';
 
 const getToggleLabel = (mode) => {
-    if (mode === 'login') return 'Create an account';
-    if (mode === 'register') return 'Log in here';
+    const auth = texts.value.landing.auth;
+    if (mode === 'login') return auth.login.toggleLabel;
+    if (mode === 'register') return auth.register.toggleLabel;
     if (mode === 'forgot-password' || mode === 'reset-password') return 'Back to Login';
-    return 'Log in here';
+    return auth.login.toggleLabel;
+};
+
+const getToggleText = (mode) => {
+    const auth = texts.value.landing.auth;
+    if (mode === 'login') return auth.login.toggleNoAccount;
+    if (mode === 'register') return auth.register.toggleHaveAccount;
+    if (mode === 'forgot-password' || mode === 'reset-password') return 'Need to go back?';
+    return '';
 };
 
 const switchAuthMode = () => {
@@ -1541,6 +1605,17 @@ const handleGuestReservationRequest = async () => {
             address: String(guestReservationForm.address || '').trim()
         };
 
+        const quantity = Number(guestReservationForm.quantity || 0);
+        if (payload.facilityName === 'chair') {
+            payload.chairQuantity = quantity;
+        } else if (payload.facilityName === 'tent') {
+            payload.tentQuantity = quantity;
+        } else if (payload.facilityName === 'table') {
+            payload.tableQuantity = quantity;
+        } else {
+            payload.quantity = 0;
+        }
+
         const result = await apiFetch('/facility-reservations/public', {
             method: 'POST',
             body: JSON.stringify(payload)
@@ -1556,13 +1631,13 @@ const handleGuestReservationRequest = async () => {
     }
 };
 
-const services = [
-    { icon: '🗓', title: 'Appointments & Facilities', copy: 'Schedule meetings and reserve community facilities easily.', action: 'guest-facility-request' },
-    { icon: '🔔', title: 'Real-Time Announcements', copy: 'Stay updated with barangay news, advisories, and public information.' },
-    { icon: '🛡', title: 'Incident Reporting', copy: 'Submit complaints and track resolution progress.', action: 'guest-report-request' },
-    { icon: '📍', title: 'Disaster Management', copy: 'Receive emergency alerts and access support information.' },
-    { icon: '🏢', title: 'Community Hub', copy: 'Connect with your barangay and access essential services.' }
-];
+const services = computed(() => [
+    { icon: '🗓', title: texts.value.landing.nav.appointments + ' & ' + texts.value.landing.nav.facilities, copy: texts.value.landing.hero.copy, action: 'guest-facility-request' },
+    { icon: '🔔', title: texts.value.landing.nav.announcements, copy: texts.value.landing.sections.announcementsCopy },
+    { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.auth.guestReport.visualCopy, action: 'guest-report-request' },
+    { icon: '📍', title: texts.value.landing.nav.location, copy: texts.value.landing.sections.officialsCopy },
+    { icon: '🏢', title: 'Community Hub', copy: texts.value.landing.sections.servicesCopy }
+]);
 
 const handleServiceClick = (service) => {
     if (service.action) {
@@ -1570,11 +1645,11 @@ const handleServiceClick = (service) => {
     }
 };
 
-const announcements = [
-    { title: 'Community Cleanup Drive', copy: 'Saturday, 7:00 AM at the covered court assembly area. Volunteers are encouraged to register in advance.' },
-    { title: 'Document Request Window', copy: 'Certificate processing runs from 8:00 AM to 4:00 PM on weekdays with pickup notices posted inside the portal.' },
-    { title: 'Facility Booking Reminder', copy: 'Residents are advised to check available slots before sending reservation requests for the multi-purpose hall.' }
-];
+const announcements = computed(() => [
+    { title: 'Community Cleanup Drive', copy: texts.value.landing.sections.servicesCopy },
+    { title: 'Document Request Window', copy: texts.value.landing.sections.announcementsCopy },
+    { title: 'Facility Booking Reminder', copy: texts.value.landing.sections.officialsCopy }
+]);
 
 onMounted(() => {
     console.log('[LandingApp] onMounted hook called');

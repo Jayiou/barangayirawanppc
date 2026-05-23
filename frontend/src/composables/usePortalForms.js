@@ -4,7 +4,7 @@ import { apiFetch } from '@/shared/client';
 export function usePortalForms() {
     const submissionLock = ref(false);
     
-    const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', purpose: '', reservationDetails: '' });
+    const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', quantity: 0, purpose: '', reservationDetails: '' });
     const reportForm = reactive({
         reportType: 'noise_complaint',
         description: '',
@@ -52,17 +52,45 @@ export function usePortalForms() {
     
 
     const submitReservation = async (loadReservations, loadFacilityAvailability) => {
+        const selectedFacilityName = reservationForm.facilityName;
+        const selectedReservationDate = reservationForm.reservationDate;
+        const selectedStartTime = reservationForm.startTime;
+        const selectedEndTime = reservationForm.endTime;
+
+        // Prepare payload and map inventory quantity into the specific fields
+        const normalizedQuantity = Number(reservationForm.quantity);
+        const payload = {
+            facilityName: reservationForm.facilityName,
+            reservationDate: reservationForm.reservationDate,
+            startTime: reservationForm.startTime,
+            endTime: reservationForm.endTime,
+            purpose: reservationForm.purpose,
+            reservationDetails: reservationForm.reservationDetails
+        };
+
+        if (payload.facilityName === 'chair') {
+            payload.chairQuantity = Number.isFinite(normalizedQuantity) ? normalizedQuantity : 0;
+        } else if (payload.facilityName === 'tent') {
+            payload.tentQuantity = Number.isFinite(normalizedQuantity) ? normalizedQuantity : 0;
+        } else if (payload.facilityName === 'table') {
+            payload.tableQuantity = Number.isFinite(normalizedQuantity) ? normalizedQuantity : 0;
+        } else {
+            payload.quantity = 0;
+        }
+
         const result = await submitForm(
             '/facility-reservations',
-            reservationForm,
+            payload,
             'Facility reserved.',
             reservationForm,
-            { facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', purpose: '', reservationDetails: '' },
+            { facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', quantity: 0, purpose: '', reservationDetails: '' },
             loadReservations
         );
+
         if (result.success && loadFacilityAvailability) {
-            await loadFacilityAvailability(reservationForm.facilityName, reservationForm.reservationDate);
+            await loadFacilityAvailability(selectedFacilityName, selectedReservationDate, selectedStartTime, selectedEndTime);
         }
+
         return result;
     };
 

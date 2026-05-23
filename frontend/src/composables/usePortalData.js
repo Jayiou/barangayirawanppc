@@ -1,5 +1,6 @@
 import { ref, reactive } from 'vue';
 import { apiFetch, getAuth } from '@/shared/client';
+import { formatFacilityInventorySummary } from '@/shared/facilityTimeSlots';
 
 const isObjectId = (value) => /^[a-fA-F\d]{24}$/.test(String(value || '').trim());
 
@@ -131,19 +132,24 @@ export function usePortalData() {
         }
     };
 
-    const loadFacilityAvailability = async (facilityName, reservationDate) => {
+    const loadFacilityAvailability = async (facilityName, reservationDate, startTime = '', endTime = '') => {
         if (!facilityName || !reservationDate) {
             facilityAvailability.value = 'Pick a facility and date to load available slots.';
             facilityAvailabilityDetails.value = null;
             return;
         }
         try {
-            const query = new URLSearchParams({ facilityName, date: reservationDate }).toString();
+            const query = new URLSearchParams({
+                facilityName,
+                date: reservationDate,
+                ...(startTime ? { startTime } : {}),
+                ...(endTime ? { endTime } : {})
+            }).toString();
             const response = await apiFetch('/facility-reservations/availability?' + query);
             facilityAvailabilityDetails.value = response;
             const available = response.availableSlots?.length > 0 ? response.availableSlots.map((slot) => slot.startTime + '-' + slot.endTime).join(', ') : 'No open slots';
             const reserved = response.reservedSlots?.length > 0 ? response.reservedSlots.map((slot) => slot.startTime + '-' + slot.endTime + ' (' + slot.status + ')').join(', ') : 'None';
-            facilityAvailability.value = 'Available: ' + available + '. Reserved: ' + reserved;
+            facilityAvailability.value = 'Available: ' + available + '. Reserved: ' + reserved + '. ' + formatFacilityInventorySummary(response);
         } catch (error) {
             console.error('Failed to load facility availability:', error);
             facilityAvailability.value = 'Failed to load availability.';

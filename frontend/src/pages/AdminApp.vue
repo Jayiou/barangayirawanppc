@@ -1,23 +1,23 @@
 <template>
         <div v-if="initializing" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; flex-direction: column;">
-        <div style="width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-        <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">Initializing admin session...</p>
-    </div>
+            <div style="width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">{{ texts.admin.initializing }}</p>
+        </div>
     <div v-else-if="!isAuthenticated" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; padding: 20px;">
         <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center;">
             <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
             <BrandMark initials="BC" eyebrow="Barangay Admin" title="Barangay Connect" style="margin-bottom: 2rem;" />
             <form class="stack" @submit.prevent="loginAdmin" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="section-head" style="text-align: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">Administrator Login</h3>
-                    <p class="fine-print" style="margin-top: 0.5rem;">Sign in to manage the barangay portal</p>
+                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ texts.admin.login.heading }}</h3>
+                    <p class="fine-print" style="margin-top: 0.5rem;">{{ texts.admin.login.sub }}</p>
                 </div>
                 <label>
-                    <span>Username</span>
+                    <span>{{ texts.admin.login.username }}</span>
                     <input v-model="loginForm.username" type="text" required>
                 </label>
                 <label>
-                    <span>Password</span>
+                    <span>{{ texts.admin.login.password }}</span>
                     <div style="position: relative; display: flex; align-items: center;">
                         <input v-model="loginForm.password" :type="showAdminPassword ? 'text' : 'password'" required style="padding-right: 42px; width: 100%;">
                         <button
@@ -30,7 +30,7 @@
                         </button>
                     </div>
                 </label>
-                <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? 'Signing in...' : 'Log In' }}</button>
+                <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? texts.admin.login.signingIn : texts.admin.login.login }}</button>
             </form>
         </div>
     </div>
@@ -61,18 +61,18 @@
             </div>
 
             <!-- Sidebar Navigation -->
-            <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
-                <button :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> Announcements</button>
-                <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> Residents</button>
-                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> Appointments <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
-                <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> Officials</button>
-                
-                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> Facilities <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
-                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> Reports <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
-                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> Documents <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
-                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> Disaster Management</button>
-                <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> SMS Logs</button>
+                <nav class="sidebar-nav">
+                <button :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
+                <button :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
+                <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
+                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
+                <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
+
+                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
+                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
+                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
+                <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ texts.admin.sidebar.smsLogs }}</button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -83,7 +83,7 @@
                     <div class="user-email">{{ user.email }}</div>
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
-                    <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+                    <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> {{ texts.admin.sidebar.logout }}</button>
                     <button type="button" class="ghost-button sound-settings-btn" @click="soundSettingsModalOpen = true" title="Alert sound settings">
                         <i class="fa-solid fa-gear"></i>
                     </button>
@@ -95,7 +95,7 @@
         <div v-if="soundSettingsModalOpen" class="modal-overlay" @click.self="soundSettingsModalOpen = false">
             <div class="sound-settings-modal">
                 <div class="modal-header">
-                    <h3><i class="fa-solid fa-volume"></i> Alert Sound Settings</h3>
+                    <h3><i class="fa-solid fa-volume"></i> {{ texts.admin.sidebar.soundSettings }}</h3>
                     <button type="button" class="modal-close-btn" @click="soundSettingsModalOpen = false">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -108,12 +108,12 @@
                             <input type="file" accept="audio/*" @change="onAdminSoundChange" />
                             <span class="file-input-label">
                                 <i class="fa-solid fa-cloud-arrow-up"></i>
-                                Choose Audio File
+                                {{ texts.admin.sound.chooseFile }}
                             </span>
                         </label>
                         <button v-if="adminSoundFile" class="primary-button" type="button" @click="uploadAdminSound" :disabled="adminSoundUploading" style="width: 100%; margin-top: 8px;">
                             <i :class="adminSoundUploading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'"></i>
-                            {{ adminSoundUploading ? 'Uploading...' : 'Upload Sound' }}
+                            {{ adminSoundUploading ? texts.admin.sound.uploading : texts.admin.sound.upload }}
                         </button>
                         <div v-if="adminSoundMessage" :class="['alert-message', adminSoundMessage.includes('successful') ? 'success' : 'error']">
                             {{ adminSoundMessage }}
@@ -125,31 +125,31 @@
                         <div class="control-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" v-model="soundLoop" @change="updateSoundConfig" />
-                                <span>Loop alert sound</span>
+                                <span>{{ texts.admin.sound.loopLabel }}</span>
                             </label>
                         </div>
 
                         <div class="control-group">
                             <div class="volume-header">
-                                <span class="volume-label">Volume</span>
+                                <span class="volume-label">{{ texts.admin.sound.volume }}</span>
                                 <span class="volume-value">{{ soundVolume.toFixed(1) }}x</span>
                             </div>
                             <input id="sound-volume-range" type="range" v-model.number="soundVolume" min="0" max="2" step="0.1" @change="updateSoundConfig" class="volume-slider" />
                             <div class="volume-labels">
-                                <span>Silent</span>
-                                <span>Normal</span>
-                                <span>Loud</span>
+                                <span>{{ texts.admin.sound.silent }}</span>
+                                <span>{{ texts.admin.sound.normal }}</span>
+                                <span>{{ texts.admin.sound.loud }}</span>
                             </div>
                         </div>
 
                         <div class="button-group">
                             <button class="secondary-button" type="button" @click="testSound" :disabled="soundTesting">
                                 <i :class="soundTesting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-play'"></i>
-                                {{ soundTesting ? 'Playing...' : 'Test' }}
+                                {{ soundTesting ? texts.admin.sound.playing : texts.admin.sound.test }}
                             </button>
                             <button class="secondary-button" type="button" @click="resetSound">
                                 <i class="fa-solid fa-rotate-right"></i>
-                                Reset
+                                {{ texts.admin.sound.reset }}
                             </button>
                         </div>
 
@@ -161,8 +161,8 @@
                     <!-- No Sound Message -->
                     <div v-else class="empty-state">
                         <i class="fa-solid fa-volume-mute"></i>
-                        <p>Using default alert tones</p>
-                        <small>Upload a custom audio file to change</small>
+                        <p>{{ texts.admin.sound.usingDefault }}</p>
+                        <small>{{ texts.admin.sound.uploading }}</small>
                     </div>
                 </div>
             </div>
@@ -336,6 +336,7 @@
                                                     @mouseleave="clearHoveredTrendIndex"
                                                     @focus="setHoveredTrendIndex(index)"
                                                     @blur="clearHoveredTrendIndex"
+                                                    @keydown="setHoveredTrendIndex(index)"
                                                     tabindex="0"
                                                     role="button"
                                                     :aria-label="`Trend point ${activeAnalyticsData.trend[index]?.label}: ${activeAnalyticsData.trend[index]?.value}`"
@@ -601,7 +602,7 @@
                                     
 
 
-                                    <td v-if="currentView === 'reservations'"><strong>{{ item.facilityName.replaceAll('_', ' ') }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small></td>
+                                    <td v-if="currentView === 'reservations'"><strong>{{ normalizeLabel(item.facilityName) }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small><br><small v-if="isInventoryReservation(item)">Quantity: {{ item.quantity || item.chairQuantity || item.tentQuantity || item.tableQuantity || 0 }}</small><small v-else>Time-slot reservation</small></td>
                                     <td v-if="currentView === 'reservations'">{{ getRequestorName(item) }}</td>
                                     <td v-if="currentView === 'reservations'">{{ item.purpose }}</td>
                                     <td v-if="currentView === 'reservations'"><StatusBadge :status="item.status" /></td>
@@ -825,7 +826,7 @@
 
         <!-- Dynamic Action Modal -->
         <div class="admin-modal-backdrop" v-if="activeModal" @click.self="activeModal = null">
-            <div class="admin-modal" :class="{ 'admin-modal-wide': activeModal === 'resident' || activeModal === 'document' }">
+            <div class="admin-modal" :class="{ 'admin-modal-wide': activeModal === 'resident' || activeModal === 'document' || activeModal === 'report' }">
                 <button class="admin-modal-close" @click="activeModal = null"><i class="fa-solid fa-xmark"></i></button>
 
                 <div v-if="activeModal === 'resident'">
@@ -864,7 +865,6 @@
                             <div class="resident-tab-content" v-if="residentTab === 'personal'">
                                 <div class="resident-info-grid">
                                     <p><strong>Full Name:</strong> {{ getFullResidentName(selectedItem) }}</p>
-                                    <p><strong>Middle Name:</strong> {{ selectedItem.middleName || 'N/A' }}</p>
                                     <p><strong>Suffix:</strong> {{ selectedItem.suffix || 'N/A' }}</p>
                                     <p><strong>Birthdate / Age:</strong> {{ formatDate(selectedItem.birthDate) }} ({{ calculateAge(selectedItem.birthDate) }})</p>
                                     <p><strong>Sex:</strong> {{ selectedItem.sex || 'N/A' }}</p>
@@ -875,7 +875,6 @@
                                     <p><strong>Email:</strong> {{ selectedItem.email || selectedItem.userId?.email || 'N/A' }}</p>
                                     <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
                                     <p><strong>Purok/Zone:</strong> {{ formatPurokZone(selectedItem) }}</p>
-                                    <p><strong>Voter Status:</strong> {{ selectedItem.voterStatus || 'N/A' }}</p>
                                 </div>
                             </div>
                             <div class="resident-tab-content" v-else-if="residentTab === 'activity'">
@@ -913,50 +912,57 @@
                 </div>
 
                 <div v-if="['reservation', 'report', 'appointment'].includes(activeModal)">
-                    <h2><i class="fa-solid fa-eye"></i> View Report</h2>
-                    <p class="fine-print">Review complete report details, then apply a status action.</p>
+                    <h2><i class="fa-solid fa-eye"></i>
+                        {{ activeModal === 'report' ? 'View Report' : activeModal === 'reservation' ? 'View Reservation' : 'View Appointment' }}
+                    </h2>
+                    <p class="fine-print">{{ activeModal === 'report' ? 'Review complete report details, then apply a status action.' : activeModal === 'reservation' ? 'Review reservation details and manage the booking.' : 'Review appointment details and manage scheduling.' }}</p>
 
-                    <div class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
-                        <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
-                            <strong>{{ detail.label }}:</strong> {{ detail.value }}
-                        </p>
-                    </div>
-
-                    <div v-if="activeModal === 'report'" style="margin: 12px 0 16px; display: grid; gap: 12px;">
-                        <div v-if="selectedItem.locationCoordinates?.latitude && selectedItem.locationCoordinates?.longitude" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
-                            <strong style="display: block; margin-bottom: 6px;">Pinned Location</strong>
-                            <p style="margin: 0 0 8px; color: #4f6b5d;">{{ selectedItem.locationCoordinates.latitude }}, {{ selectedItem.locationCoordinates.longitude }}</p>
-                            <iframe
-                                :src="getReportMapEmbedUrl(selectedItem)"
-                                title="Report location map"
-                                style="width: 100%; height: 200px; border: 1px solid #dce6e1; border-radius: 8px; margin: 6px 0 10px;"
-                                loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade"
-                            ></iframe>
-                            <a
-                                :href="`https://www.google.com/maps?q=${selectedItem.locationCoordinates.latitude},${selectedItem.locationCoordinates.longitude}`"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="ghost-button"
-                                style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
-                                <i class="fa-solid fa-location-dot"></i>
-                                Open in Google Maps
-                            </a>
+                    <div v-if="activeModal === 'report'" class="report-modal-grid">
+                        <div class="report-modal-left">
+                            <div class="stack report-details-card">
+                                <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
+                                    <strong>{{ detail.label }}:</strong> {{ detail.value }}
+                                </p>
+                            </div>
                         </div>
 
-                        <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
-                            <strong style="display: block; margin-bottom: 10px;">Proof Images</strong>
-                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                <a
-                                    v-for="proofPath in selectedItem.proofFiles"
-                                    :key="proofPath"
-                                    :href="proofPath"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;">
-                                    <i class="fa-regular fa-image"></i>
-                                    {{ proofPath.split('/').pop() }}
-                                </a>
+                        <div class="report-modal-right">
+                            <div v-if="selectedItem.locationCoordinates?.latitude && selectedItem.locationCoordinates?.longitude" class="report-side-card">
+                                <strong class="report-side-title">Pinned Location</strong>
+                                <p class="report-side-coordinates">{{ selectedItem.locationCoordinates.latitude }}, {{ selectedItem.locationCoordinates.longitude }}</p>
+                                <iframe
+                                    :src="getReportMapEmbedUrl(selectedItem)"
+                                    title="Report location map"
+                                    class="report-map-frame"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                ></iframe>
+                                <button type="button" class="ghost-button report-map-link" @click="openLocationPreview(selectedItem)">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    View location in system
+                                </button>
+                            </div>
+
+                            <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" class="report-side-card">
+                                <strong class="report-side-title">Proof Images</strong>
+                                <div class="proof-preview-grid">
+                                    <div
+                                        v-for="proofPath in selectedItem.proofFiles"
+                                        :key="proofPath"
+                                        class="proof-preview-card proof-preview-button"
+                                        role="button"
+                                        tabindex="0"
+                                        @click="openProofPreview(proofPath)"
+                                        @keydown.enter.prevent="openProofPreview(proofPath)"
+                                        @keydown.space.prevent="openProofPreview(proofPath)">
+                                        <img
+                                            :src="resolveProofImageUrl(proofPath)"
+                                            :alt="getProofImageLabel(proofPath)"
+                                            class="proof-preview-image"
+                                        >
+                                        <span class="proof-preview-label">{{ getProofImageLabel(proofPath) }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -981,7 +987,7 @@
                     <h2><i class="fa-solid fa-file-lines"></i> View Document Request</h2>
                     <p class="fine-print">Review complete document request details and process the document generation.</p>
                     
-                    <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); gap: 20px; align-items: start; margin-top: 15px;">
+                    <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr); gap: 24px; align-items: start; margin-top: 15px;">
                         <!-- Left Pane: Details -->
                         <div style="display: grid; gap: 12px;">
                             <div class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
@@ -992,17 +998,18 @@
 
                             <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
                                 <strong style="display: block; margin-bottom: 10px;">Proof Images</strong>
-                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                    <a
+                                <div class="proof-preview-grid">
+                                    <div
                                         v-for="proofPath in selectedItem.proofFiles"
                                         :key="proofPath"
-                                        :href="proofPath"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;">
-                                        <i class="fa-regular fa-image"></i>
-                                        {{ proofPath.split('/').pop() }}
-                                    </a>
+                                        class="proof-preview-card">
+                                        <img
+                                            :src="resolveProofImageUrl(proofPath)"
+                                            :alt="getProofImageLabel(proofPath)"
+                                            class="proof-preview-image"
+                                        >
+                                        <span class="proof-preview-label">{{ getProofImageLabel(proofPath) }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1175,6 +1182,28 @@
                 <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing full resident details for review.</div>
             </div>
         </div>
+        <div v-if="recordPreview.open" class="record-preview-overlay" @click.self="closeRecordPreview">
+            <div class="record-preview-modal" :class="{ 'record-preview-map': recordPreview.type === 'map' }">
+                <button type="button" class="record-preview-close" @click="closeRecordPreview" aria-label="Close preview">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 class="record-preview-title">{{ recordPreview.title }}</h3>
+                <img
+                    v-if="recordPreview.type === 'image'"
+                    :src="recordPreview.src"
+                    :alt="recordPreview.alt"
+                    class="record-preview-image"
+                >
+                <iframe
+                    v-else
+                    :src="recordPreview.src"
+                    title="Pinned location preview"
+                    class="record-preview-map-frame"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+            </div>
+        </div>
     </div>
 </template>
 <script setup>
@@ -1195,6 +1224,48 @@ import { useReportNotifications } from '@/composables/useReportNotifications';
 
 // Composables
 const { isAuthenticated, user, loginForm, loginStatus, loginError, loginLoading, initializing, loginAdmin, logout, initSession } = useAdminAuth();
+
+const texts = {
+    admin: {
+        initializing: 'Initializing admin session...',
+        login: {
+            heading: 'Administrator Login',
+            sub: 'Sign in to manage the barangay portal',
+            username: 'Username',
+            password: 'Password',
+            signingIn: 'Signing in...',
+            login: 'Log In'
+        },
+        sidebar: {
+            dashboard: 'Dashboard',
+            announcements: 'Announcements',
+            residents: 'Residents',
+            appointments: 'Appointments',
+            officials: 'Officials',
+            facilities: 'Facilities',
+            reports: 'Reports',
+            documents: 'Documents',
+            disaster: 'Disaster Management',
+            smsLogs: 'SMS Logs',
+            logout: 'Log Out',
+            soundSettings: 'Alert sound settings'
+        },
+        sound: {
+            chooseFile: 'Choose Audio File',
+            upload: 'Upload Sound',
+            uploading: 'Uploading...',
+            loopLabel: 'Loop alert sound',
+            volume: 'Volume',
+            silent: 'Silent',
+            normal: 'Normal',
+            loud: 'Loud',
+            test: 'Test',
+            playing: 'Playing...',
+            reset: 'Reset',
+            usingDefault: 'Using default alert tones'
+        }
+    }
+};
 
 const confirmLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
@@ -1351,19 +1422,24 @@ const showAdminPassword = ref(false);
 const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
-const validAdminViews = ['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs'];
+const validAdminViews = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs']);
 const hashView = (() => {
     try {
-        const matched = window.location.hash.match(/view=([a-z-]+)/i);
+        const matched = globalThis.location.hash.match(/view=([a-z-]+)/i);
         return matched ? decodeURIComponent(matched[1]) : null;
     } catch (error) {
         return null;
     }
 })();
 const savedAdminView = localStorage.getItem('admin_current_view');
-const initialAdminView = validAdminViews.includes(hashView)
-    ? hashView
-    : (validAdminViews.includes(savedAdminView) ? savedAdminView : 'dashboard');
+let initialAdminView;
+if (validAdminViews.has(hashView)) {
+    initialAdminView = hashView;
+} else if (validAdminViews.has(savedAdminView)) {
+    initialAdminView = savedAdminView;
+} else {
+    initialAdminView = 'dashboard';
+}
 const currentView = ref(initialAdminView);
 const selectedDashboardCard = ref('reports');
 const analyticsRange = ref('monthly');
@@ -1374,6 +1450,13 @@ const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
 const isSubmitting = ref(false);
 const previewLoading = ref(false);
+const recordPreview = reactive({
+    open: false,
+    type: '',
+    title: '',
+    src: '',
+    alt: ''
+});
 const hoveredTrendIndex = ref(null);
 const setHoveredTrendIndex = (index) => {
     hoveredTrendIndex.value = index;
@@ -1388,17 +1471,17 @@ const reportAlertReports = ref([]);
 watch(currentView, (newView) => {
     localStorage.setItem('admin_current_view', newView);
     try {
-        window.history.replaceState(null, '', `#view=${encodeURIComponent(newView)}`);
+        globalThis.history.replaceState(null, '', `#view=${encodeURIComponent(newView)}`);
     } catch (error) {
-        window.location.hash = `view=${encodeURIComponent(newView)}`;
+        globalThis.location.hash = `view=${encodeURIComponent(newView)}`;
     }
 });
 
 const syncViewFromHash = () => {
     try {
-        const matched = window.location.hash.match(/view=([a-z-]+)/i);
+        const matched = globalThis.location.hash.match(/view=([a-z-]+)/i);
         const hashValue = matched ? decodeURIComponent(matched[1]) : null;
-        if (hashValue && validAdminViews.includes(hashValue) && hashValue !== currentView.value) {
+        if (hashValue && validAdminViews.has(hashValue) && hashValue !== currentView.value) {
             currentView.value = hashValue;
         }
     } catch (error) {
@@ -1668,6 +1751,10 @@ const normalizeLabel = (value) => {
         .replaceAll('_', ' ')
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
+
+const INVENTORY_FACILITY_NAMES = new Set(['chair', 'tent']);
+
+const isInventoryReservation = (reservation) => INVENTORY_FACILITY_NAMES.has(String(reservation?.facilityName || '').trim());
 
 const countByStatus = (records, statusList) => statusList.reduce((total, status) => total + records.filter((record) => record.status === status).length, 0);
 
@@ -2350,6 +2437,61 @@ const getReportMapEmbedUrl = (item) => {
     return `https://maps.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`;
 };
 
+const resolveProofImageUrl = (value) => {
+    const rawValue = typeof value === 'string' ? value : value?.url || value?.path || value?.imagePath || '';
+
+    if (!rawValue) {
+        return '';
+    }
+
+    if (/^(https?:)?\/\//i.test(rawValue) || rawValue.startsWith('data:') || rawValue.startsWith('blob:')) {
+        return rawValue;
+    }
+
+    return rawValue.startsWith('/') ? rawValue : `/${rawValue}`;
+};
+
+const getProofImageLabel = (value) => {
+    const rawValue = typeof value === 'string' ? value : value?.url || value?.path || value?.imagePath || '';
+
+    if (!rawValue) {
+        return 'Proof image';
+    }
+
+    const fileName = rawValue.split('/').pop();
+    return fileName || 'Proof image';
+};
+
+const openProofPreview = (proofPath) => {
+    const src = resolveProofImageUrl(proofPath);
+    if (!src) return;
+
+    recordPreview.type = 'image';
+    recordPreview.title = 'Proof Image Preview';
+    recordPreview.src = src;
+    recordPreview.alt = getProofImageLabel(proofPath);
+    recordPreview.open = true;
+};
+
+const openLocationPreview = (item) => {
+    const src = getReportMapEmbedUrl(item);
+    if (!src) return;
+
+    recordPreview.type = 'map';
+    recordPreview.title = 'Pinned Location Preview';
+    recordPreview.src = src;
+    recordPreview.alt = 'Pinned location map';
+    recordPreview.open = true;
+};
+
+const closeRecordPreview = () => {
+    recordPreview.open = false;
+    recordPreview.type = '';
+    recordPreview.title = '';
+    recordPreview.src = '';
+    recordPreview.alt = '';
+};
+
 const getRequestDetails = (item) => {
     if (activeModal.value === 'document') {
         return [
@@ -2372,9 +2514,10 @@ const getRequestDetails = (item) => {
             { label: 'Contact Number', value: item.contactNumber || item.residentId?.contactNumber },
             { label: 'Email', value: item.email || item.residentId?.email },
             { label: 'Address', value: item.address || item.residentId?.address },
-            { label: 'Facility', value: item.facilityName?.replaceAll('_', ' ') },
+            { label: 'Facility', value: normalizeLabel(item.facilityName) },
             { label: 'Reservation Date', value: formatDate(item.reservationDate) },
             { label: 'Time', value: `${item.startTime || 'N/A'} - ${item.endTime || 'N/A'}` },
+            { label: isInventoryReservation(item) ? 'Quantity' : 'Reservation Type', value: isInventoryReservation(item) ? (item.quantity ?? item.chairQuantity ?? item.tentQuantity ?? item.tableQuantity ?? 0) : 'Time-slot reservation' },
             { label: 'Purpose', value: item.purpose },
             { label: 'Request Details', value: item.reservationDetails },
             { label: 'Requested On', value: formatDate(item.createdAt) }
@@ -2419,8 +2562,25 @@ const setupResidentModal = (item) => {
     residentTab.value = 'personal';
 };
 
-const setupRecordStatusModal = (item) => {
+const setupRecordStatusModal = async (type, item) => {
     confirmingAction.value = null;
+
+    if (!item || !item._id) return;
+
+    try {
+        let path = '';
+        if (type === 'reservation') path = `/facility-reservations/${item._id}`;
+        else if (type === 'report') path = `/reports/${item._id}`;
+        else if (type === 'appointment') path = `/appointments/${item._id}`;
+        else return;
+
+        const full = await apiFetch(path);
+        if (full) {
+            selectedItem.value = { ...full };
+        }
+    } catch (err) {
+        showToast(err.message || 'Failed to load details.', true);
+    }
 };
 
 const setupAnnouncementModal = async (item) => {
@@ -2452,7 +2612,7 @@ const openModal = async (type, item) => {
     }
 
     if (['document', 'reservation', 'report', 'appointment'].includes(type)) {
-        setupRecordStatusModal(item);
+        await setupRecordStatusModal(type, item);
         if (type === 'document') {
             formalPurposeInput.value = item.formalPurpose || item.purpose || '';
             // populate editable fields from request fields and adminEdits
@@ -3036,7 +3196,7 @@ onBeforeUnmount(() => {
     clearToast();
     stopNotificationPolling();
     try {
-        window.removeEventListener('hashchange', syncViewFromHash);
+        globalThis.removeEventListener('hashchange', syncViewFromHash);
     } catch (error) {
         // ignore
     }
@@ -3060,7 +3220,7 @@ onMounted(() => {
     initSession();
     initSoundSettings();
     try {
-        window.addEventListener('hashchange', syncViewFromHash);
+        globalThis.addEventListener('hashchange', syncViewFromHash);
     } catch (error) {
         // ignore
     }
@@ -5255,22 +5415,192 @@ onMounted(() => {
     z-index: 9000;
     padding: 20px;
     backdrop-filter: blur(4px);
+    overflow: auto;
 }
 
 .admin-modal {
     background: white;
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 90vw;
+    width: min(1480px, 96vw);
+    min-width: 1120px;
+    max-width: 1480px;
     max-height: 90vh;
-    width: 100%;
     overflow-y: auto;
     position: relative;
     z-index: 9001;
 }
 
 .admin-modal-wide {
-    max-width: 1200px !important;
+    max-width: 1480px !important;
+}
+
+.proof-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.proof-preview-card {
+    border: 1px solid #dce6e1;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff, #f8fcfa);
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.proof-preview-button {
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.proof-preview-button:hover,
+.proof-preview-button:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(13, 74, 42, 0.22);
+    box-shadow: 0 10px 24px rgba(13, 74, 42, 0.08);
+    outline: none;
+}
+
+.proof-preview-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #eef4f1;
+    border: 1px solid rgba(13, 74, 42, 0.08);
+}
+
+.proof-preview-label {
+    font-size: 0.88rem;
+    color: #41584d;
+    word-break: break-word;
+}
+
+.report-modal-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+    gap: 24px;
+    align-items: start;
+    margin-top: 15px;
+    margin-bottom: 16px;
+}
+
+.report-modal-left,
+.report-modal-right {
+    min-width: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.report-details-card {
+    background: linear-gradient(180deg, #fbfffc, #f7fbf8);
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent);
+    margin: 0;
+    box-shadow: 0 6px 18px rgba(13, 74, 42, 0.03);
+}
+
+.report-side-card {
+    padding: 12px;
+    border: 1px solid #dce6e1;
+    border-radius: 8px;
+    background: #fcfefe;
+    display: grid;
+    gap: 10px;
+}
+
+.report-side-title {
+    display: block;
+    margin-bottom: 0;
+}
+
+.report-side-coordinates {
+    margin: 0;
+    color: #4f6b5d;
+}
+
+.report-map-frame {
+    width: 100%;
+    height: 240px;
+    border: 1px solid #dce6e1;
+    border-radius: 8px;
+}
+
+.report-map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    width: fit-content;
+}
+
+.record-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(15, 23, 42, 0.72);
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+}
+
+.record-preview-modal {
+    position: relative;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+    width: min(980px, 96vw);
+    max-height: 92vh;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+    overflow: auto;
+}
+
+.record-preview-map {
+    width: min(1200px, 96vw);
+}
+
+.record-preview-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #24312b;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.record-preview-title {
+    margin: 0;
+    padding-right: 48px;
+    color: #0f3f33;
+}
+
+.record-preview-image {
+    width: 100%;
+    max-height: 78vh;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #eef4f1;
+}
+
+.record-preview-map-frame {
+    width: 100%;
+    height: min(72vh, 760px);
+    border: 1px solid #dce6e1;
+    border-radius: 10px;
+    background: #eef4f1;
 }
 
 .admin-modal-close {

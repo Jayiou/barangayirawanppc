@@ -24,13 +24,13 @@
 
             <!-- Sidebar Navigation -->
             <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'profile' }" type="button" title="My Profile" aria-label="My Profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">My Profile</span></button>
-                <button :class="{ active: currentView === 'appointments' }" type="button" title="Appointments" aria-label="Appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">Appointments</span></button>
-                
-                <button :class="{ active: currentView === 'documents' }" type="button" title="Documents" aria-label="Documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">Documents</span></button>
-                <button :class="{ active: currentView === 'reservations' }" type="button" title="Facility Reservations" aria-label="Facility Reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">Facility Reservations</span></button>
-                <button :class="{ active: currentView === 'reports' }" type="button" title="Reports" aria-label="Reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">Reports</span></button>
-                <button :class="{ active: currentView === 'disaster' }" type="button" title="Disaster Advisories" aria-label="Disaster Advisories" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">Disaster Advisories</span></button>
+                <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
+                <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">{{ texts.nav.appointments }}</span></button>
+
+                <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">{{ texts.nav.documents }}</span></button>
+                <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">{{ texts.nav.reservations }}</span></button>
+                <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ texts.nav.reports }}</span></button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ texts.nav.disaster }}</span></button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -61,28 +61,36 @@
             <!-- My Profile View -->
             <section class="app-view" :class="{ active: currentView === 'profile' }">
                 <div class="portal-grid">
-                    <article class="content-card">
+                    <article class="content-card profile-card">
                         <div class="section-head">
-                            <span class="eyebrow">My Profile</span>
-                            <h3>Resident profile details</h3>
+                            <div>
+                                <span class="eyebrow">{{ texts.profile.eyebrow }}</span>
+                                <h3>{{ texts.profile.heading }}</h3>
+                                <p class="lead">{{ texts.profile.lead }}</p>
+                            </div>
+                            <div class="profile-avatar-preview">
+                                <img v-if="profile.profileImage" :src="profile.profileImage" alt="Profile avatar" />
+                                <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
+                            </div>
                         </div>
+
                         <form class="stack" @submit.prevent="saveProfile">
-                            <div class="form-grid">
-                                <label><span>First name</span><input v-model="profile.firstName" type="text" required></label>
-                                <label><span>Last name</span><input v-model="profile.lastName" type="text" required></label>
-                                <label><span>Middle name</span><input v-model="profile.middleName" type="text"></label>
-                                <label><span>Suffix</span><input v-model="profile.suffix" type="text"></label>
+                            <div class="form-grid two-column">
+                                <label><span>{{ texts.profile.labels.firstName }}</span><input v-model="profile.firstName" type="text" placeholder="Juan" required></label>
+                                <label><span>{{ texts.profile.labels.lastName }}</span><input v-model="profile.lastName" type="text" placeholder="Dela Cruz" required></label>
+                                <label><span>{{ texts.profile.labels.middleName }}</span><input v-model="profile.middleName" type="text" placeholder="Santos"></label>
+                                <label><span>{{ texts.profile.labels.suffix }}</span><input v-model="profile.suffix" type="text" placeholder="Jr., Sr."></label>
                                 <label>
-                                    <span>Sex</span>
+                                    <span>{{ texts.profile.labels.sex }}</span>
                                     <select v-model="profile.sex" required>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
                                         <option value="other">Other</option>
                                     </select>
                                 </label>
-                                <label><span>Birth date</span><input v-model="profile.birthDate" type="date" required></label>
+                                <label><span>{{ texts.profile.labels.birthDate }}</span><input v-model="profile.birthDate" type="date" required></label>
                                 <label>
-                                    <span>Civil status</span>
+                                    <span>{{ texts.profile.labels.civilStatus }}</span>
                                     <select v-model="profile.civilStatus">
                                         <option value="single">Single</option>
                                         <option value="married">Married</option>
@@ -90,16 +98,18 @@
                                         <option value="separated">Separated</option>
                                     </select>
                                 </label>
-                                <label><span>Contact number</span><input v-model="profile.contactNumber" type="text"></label>
-                                <label><span>Email</span><input v-model="profile.email" type="email"></label>
-                                <label><span>Address</span><input v-model="profile.address" type="text" required></label>
-                                <label><span>Purok</span><input v-model="profile.purok" type="text"></label>
-                                <label><span>Citizenship</span><input v-model="profile.citizenship" type="text"></label>
-                                <label><span>Occupation</span><input v-model="profile.occupation" type="text"></label>
+                                <label><span>{{ texts.profile.labels.contactNumber }}</span><input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+63XXXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$"></label>
+                                <label><span>{{ texts.profile.labels.email }}</span><input v-model="profile.email" type="email" placeholder="juan@example.com"></label>
+                                <label><span>{{ texts.profile.labels.address }}</span><input v-model="profile.address" type="text" required></label>
+                                <label><span>{{ texts.profile.labels.purok }}</span><input v-model="profile.purok" type="text"></label>
+                                <label v-if="profile.purok"><span>{{ texts.profile.labels.zone }}</span><input v-model="profile.zone" type="text" placeholder="Select zone if required"></label>
+                                <small v-if="profile.purok" class="fine-print">{{ texts.profile.labels.zoneHelper }}</small>
+                                <label><span>{{ texts.profile.labels.citizenship }}</span><input v-model="profile.citizenship" type="text" placeholder="Filipino"></label>
+                                <label><span>{{ texts.profile.labels.occupation }}</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
 
-                                <label><span>Profile image URL</span><input v-model="profile.profileImage" type="url"></label>
+                                <label><span>{{ texts.profile.labels.profileImage }}</span><input v-model="profile.profileImage" type="url" placeholder="https://..."></label>
                             </div>
-                            <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Resident Profile' }}</button>
+                            <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? texts.profile.labels.saving : texts.profile.labels.save }}</button>
                         </form>
                     </article>
                 </div>
@@ -111,19 +121,19 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">Appointments</span>
-                                <h3>My appointments</h3>
+                                <span class="eyebrow">{{ texts.appointments.eyebrow }}</span>
+                                <h3>{{ texts.appointments.heading }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'appointment'">Request Appointment</button>
+                            <button class="primary-button" @click="activeModal = 'appointment'">{{ texts.appointments.requestButton }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="appointmentSearch" type="search" placeholder="Search appointments">
+                        <input class="portal-search-input" v-model="appointmentSearch" type="search" :placeholder="texts.appointments.searchPlaceholder">
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
                                     <tr><th>Date</th><th>Official</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!filteredAppointments.length"><td colspan="5" class="portal-empty-cell">No appointments found.</td></tr>
+                                    <tr v-if="!filteredAppointments.length"><td colspan="5" class="portal-empty-cell">{{ texts.appointments.empty }}</td></tr>
                                     <tr v-for="item in filteredAppointments" :key="item._id">
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
                                         <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
@@ -148,19 +158,19 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">Document Requests</span>
-                                <h3>Request official barangay documents</h3>
+                                <span class="eyebrow">{{ texts.documents.eyebrow }}</span>
+                                <h3>{{ texts.documents.heading }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'document'">Request Document</button>
+                            <button class="primary-button" @click="activeModal = 'document'">{{ texts.documents.requestButton }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="documentSearch" type="search" placeholder="Search requests">
+                        <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="texts.documents.searchPlaceholder">
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
                                     <tr><th>Date</th><th>Type</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!filteredDocumentRequests.length"><td colspan="5" class="portal-empty-cell">No document requests yet.</td></tr>
+                                    <tr v-if="!filteredDocumentRequests.length"><td colspan="5" class="portal-empty-cell">{{ texts.documents.empty }}</td></tr>
                                     <tr v-for="item in filteredDocumentRequests" :key="item._id">
                                         <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ normalizeLabel(item.type) }}</td>
@@ -183,19 +193,26 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">Facility Reservations</span>
-                                <h3>My reservations</h3>
+                                <span class="eyebrow">{{ texts.reservations.eyebrow }}</span>
+                                <h3>{{ texts.reservations.heading }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'reservation'">Reserve Facility</button>
+                            <button class="primary-button" @click="activeModal = 'reservation'">{{ texts.reservations.requestButton }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="reservationSearch" type="search" placeholder="Search reservations">
+                        <input class="portal-search-input" v-model="reservationSearch" type="search" :placeholder="texts.reservations.searchPlaceholder">
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead><tr><th>Date</th><th>Facility</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!filteredReservations.length"><td colspan="5" class="portal-empty-cell">No reservations found.</td></tr>
+                                    <tr v-if="!filteredReservations.length"><td colspan="5" class="portal-empty-cell">{{ texts.reservations.empty }}</td></tr>
                                     <tr v-for="item in filteredReservations" :key="item._id">
-                                        <td>{{ formatDate(item.reservationDate) }}<br><small>{{ item.startTime }}-{{ item.endTime }}</small></td>
+                                        <td>
+                                            {{ formatDate(item.reservationDate) }}<br>
+                                            <small>{{ item.startTime }}-{{ item.endTime }}</small><br>
+                                            <small>
+                                                {{ getFacilityItemLabel(item.facilityName) }}
+                                                <span v-if="getFacilityReservationQuantity(item) > 0"> x{{ getFacilityReservationQuantity(item) }}</span>
+                                            </small>
+                                        </td>
                                         <td>{{ normalizeLabel(item.facilityName) }}</td>
                                         <td>{{ item.purpose }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
@@ -217,7 +234,7 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">Reports</span>
+                                <span class="eyebrow">{{ texts.reports.eyebrow }}</span>
                                 <h3>My submitted reports</h3>
                             </div>
                             <button class="primary-button" @click="activeModal = 'report'">Submit New Report</button>
@@ -278,7 +295,7 @@
                 <button class="landing-modal-close" @click="closeModal">X</button>
                 
                 <div v-if="activeModal === 'appointment'">
-                    <h2>Request Appointment</h2>
+                    <h2>{{ texts.modals.appointmentRequest }}</h2>
                     <p class="fine-print">Schedule a meeting with a barangay official.</p>
                     <form class="stack" @submit.prevent="handleSubmitAppointment">
                         <label><span>Official</span>
@@ -322,11 +339,16 @@
                 </div>
 
                 <div v-if="activeModal === 'reservation'">
-                    <h2>Reserve Facility</h2>
+                    <h2>{{ texts.modals.reservationRequest }}</h2>
                     <p class="fine-print">Book a barangay facility for your event.</p>
                     <form class="stack" @submit.prevent="handleSubmitReservation">
-                        <label><span>Facility</span><select v-model="reservationForm.facilityName" required @change="handleReservationAvailabilityChange"><option value="barangay_hall">Barangay Hall</option><option value="covered_court">Covered Court</option><option value="multi_purpose_hall">Multi Purpose Hall</option></select></label>
-                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="handleReservationAvailabilityChange"></label>
+                        <label>
+                            <span>Facility Type</span>
+                            <select v-model="reservationForm.facilityName" required @change="handleReservationAvailabilityChange">
+                                <option v-for="option in FACILITY_ITEM_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+                            </select>
+                        </label>
+                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="handleReservationAvailabilityChange"></label>
                         <div class="facility-slot-picker" v-if="reservationForm.facilityName && reservationForm.reservationDate">
                             <div class="facility-slot-head">
                                 <span>Facility Time Slot</span>
@@ -336,14 +358,14 @@
                             <div v-else class="facility-slot-grid">
                                 <label>
                                     <span>Start Time</span>
-                                    <select v-model="reservationForm.startTime" required @change="reservationForm.endTime = ''">
+                                    <select v-model="reservationForm.startTime" required @change="reservationForm.endTime = ''; handleReservationTimeChange()">
                                         <option disabled value="">Select start</option>
                                         <option v-for="slot in portalFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                     </select>
                                 </label>
                                 <label>
                                     <span>End Time</span>
-                                    <select v-model="reservationForm.endTime" required :disabled="!reservationForm.startTime">
+                                    <select v-model="reservationForm.endTime" required :disabled="!reservationForm.startTime" @change="handleReservationTimeChange()">
                                         <option disabled value="">Select end</option>
                                         <option v-for="slot in portalFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                     </select>
@@ -351,14 +373,23 @@
                             </div>
                             <div class="facility-reserved-list" v-if="portalFacilityTimeOptions.reservedSlots.length">
                                 <span>Reserved ranges</span>
-                                <small v-for="slot in portalFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved</small>
+                                <small v-for="slot in portalFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="slot.quantity">x{{ slot.quantity }}</span></small>
+                                <small v-if="facilityAvailabilityDetails && facilityAvailabilityDetails.availableQuantity !== undefined">{{ formatFacilityInventorySummary(facilityAvailabilityDetails) }}</small>
                             </div>
+                            <!-- Removed standard flow helper text -->
+                        </div>
+                            <div class="facility-slot-grid" v-if="reservationRequiresQuantity">
+                            <label>
+                                <span>Quantity</span>
+                                <input v-model.number="reservationForm.quantity" type="number" min="1" :max="selectedReservationItem.max" placeholder="0">
+                            </label>
+                            <!-- Inventory availability note removed -->
                         </div>
                         <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting || !reservationForm.startTime || !reservationForm.endTime">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting || !reservationForm.startTime || !reservationForm.endTime || (reservationRequiresQuantity && !reservationForm.quantity)">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
-                    <div class="facility-slot-note" v-if="facilityAvailability">{{ facilityAvailability }}</div>
+                    <div class="facility-slot-note" v-if="reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
 
                 <div v-if="activeModal === 'report'">
@@ -406,7 +437,7 @@
                     </form>
                 </div>
                 <div v-if="activeModal === 'document'">
-                    <h2>Request Document</h2>
+                    <h2>{{ texts.modals.documentRequest }}</h2>
                     <p class="fine-print">Choose document type and fill required fields.</p>
                     <form class="stack" @submit.prevent="handleSubmitDocument">
                         <label>
@@ -515,7 +546,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
-import { buildFacilityTimeOptions, formatFacilityRange } from '@/shared/facilityTimeSlots';
+import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
@@ -628,13 +659,30 @@ const selectSlot = (slot) => {
 };
 
 const portalFacilityTimeOptions = computed(() => buildFacilityTimeOptions(facilityAvailabilityDetails.value, reservationForm.startTime));
+const selectedReservationItem = computed(() => getFacilityItemOption(reservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
+const reservationRequiresQuantity = computed(() => selectedReservationItem.value?.isInventory === true);
 
 const handleReservationAvailabilityChange = async () => {
     reservationForm.startTime = '';
     reservationForm.endTime = '';
+    reservationForm.quantity = reservationRequiresQuantity.value ? Math.max(Number(reservationForm.quantity) || 1, 1) : 0;
     isFetchingFacilityAvailability.value = true;
     try {
         await loadFacilityAvailability(reservationForm.facilityName, reservationForm.reservationDate);
+    } finally {
+        isFetchingFacilityAvailability.value = false;
+    }
+};
+
+const handleReservationTimeChange = async () => {
+    isFetchingFacilityAvailability.value = true;
+    try {
+        await loadFacilityAvailability(
+            reservationForm.facilityName,
+            reservationForm.reservationDate,
+            reservationForm.startTime,
+            reservationForm.endTime
+        );
     } finally {
         isFetchingFacilityAvailability.value = false;
     }
@@ -677,6 +725,56 @@ const normalizeLabel = (value) => {
     if (!value) return 'Unspecified';
     return String(value).replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
+
+const getInitials = (profile) => {
+    const first = String(profile.firstName || '').trim().split(' ')[0] || '';
+    const last = String(profile.lastName || '').trim().split(' ')[0] || '';
+    const initials = ((first[0] || '') + (last[0] || '')).toUpperCase();
+    return initials || 'RP';
+};
+
+const translations = {
+    en: {
+        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', reports: 'Reports', disaster: 'Disaster Advisories' },
+        profile: {
+            eyebrow: 'My Profile',
+            heading: 'My Profile',
+            lead: 'View and update your personal details. Ensure your name, contact, and address are correct for faster service.',
+            labels: {
+                firstName: 'First name', lastName: 'Last name', middleName: 'Middle name', suffix: 'Suffix',
+                sex: 'Sex', birthDate: 'Birth date', civilStatus: 'Civil status', contactNumber: 'Contact number',
+                email: 'Email', address: 'Address', purok: 'Purok', zone: 'Zone', citizenship: 'Citizenship',
+                occupation: 'Occupation', profileImage: 'Profile Image URL', save: 'Save Profile', saving: 'Saving...', zoneHelper: 'Select the Zone for the chosen Purok.'
+            }
+        },
+        appointments: { eyebrow: 'Appointments', heading: 'My appointments', requestButton: 'Request Appointment', searchPlaceholder: 'Search appointments', empty: 'No appointments found.' },
+        documents: { eyebrow: 'Document Requests', heading: 'Request official barangay documents', requestButton: 'Request Document', searchPlaceholder: 'Search requests', empty: 'No document requests yet.' },
+        reservations: { eyebrow: 'Facility Reservations', heading: 'My reservations', requestButton: 'Reserve Facility', searchPlaceholder: 'Search reservations', empty: 'No reservations found.' },
+        reports: { eyebrow: 'Reports', heading: 'Submit and monitor your reports' },
+        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', documentRequest: 'Request Document' }
+    },
+    tl: {
+        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', reports: 'Reports', disaster: 'Disaster Advisories' },
+        profile: {
+            eyebrow: 'My Profile',
+            heading: 'Aking Profile',
+            lead: 'Tingnan at i-update ang iyong personal na detalye. Siguraduhing tama ang pangalan, contact, at tirahan para mabilis ang serbisyo.',
+            labels: {
+                firstName: 'Pangalan', lastName: 'Apelyido', middleName: 'Gitnang Pangalan', suffix: 'Suffix',
+                sex: 'Kasarian', birthDate: 'Petsa ng Kapanganakan', civilStatus: 'Katayuan', contactNumber: 'Numero ng Telepono',
+                email: 'Email', address: 'Tirahan', purok: 'Purok', zone: 'Zone', citizenship: 'Pagkamamamayan',
+                occupation: 'Trabaho', profileImage: 'Profile Image URL', save: 'I-save ang Profile', saving: 'Isinusumite...', zoneHelper: 'Piliin ang Zone para sa napiling Purok.'
+            }
+        },
+        appointments: { eyebrow: 'Appointments', heading: 'My appointments', requestButton: 'Request Appointment', searchPlaceholder: 'Search appointments', empty: 'No appointments found.' },
+        documents: { eyebrow: 'Document Requests', heading: 'Request official barangay documents', requestButton: 'Request Document', searchPlaceholder: 'Search requests', empty: 'No document requests yet.' },
+        reservations: { eyebrow: 'Facility Reservations', heading: 'My reservations', requestButton: 'Reserve Facility', searchPlaceholder: 'Search reservations', empty: 'No reservations found.' },
+        reports: { eyebrow: 'Reports', heading: 'Submit and monitor your reports' },
+        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', documentRequest: 'Request Document' }
+    }
+};
+
+const texts = computed(() => translations.en);
 
 const matchesSearch = (item, term, fields) => {
     const needle = term.trim().toLowerCase();
@@ -801,6 +899,7 @@ const recordDetailFields = computed(() => {
         reservation: [
             ['Facility', normalizeLabel(item.facilityName)],
             ['Schedule', `${formatDate(item.reservationDate)} | ${item.startTime}-${item.endTime}`],
+            ['Quantity', getFacilityReservationQuantity(item)],
             ['Purpose', item.purpose],
             ['Details', item.reservationDetails],
             ['Status', normalizeLabel(item.status)],

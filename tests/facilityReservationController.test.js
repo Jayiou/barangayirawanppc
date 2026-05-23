@@ -28,11 +28,12 @@ test('createFacilityReservation rejects overlapping approved reservations', asyn
     const req = {
         user: { id: 'user-1', role: 'resident' },
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01',
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
             startTime: '10:00',
             endTime: '11:00',
-            purpose: 'Youth event'
+            purpose: 'Youth event',
+            quantity: 250
         }
     };
     const res = createMockResponse();
@@ -42,7 +43,9 @@ test('createFacilityReservation rejects overlapping approved reservations', asyn
             _id: 'reservation-existing',
             startTime: '09:30',
             endTime: '10:30',
-            status: 'approved'
+            status: 'approved',
+            quantity: 100,
+            facilityName: 'chair'
         }
     ]);
 
@@ -51,7 +54,7 @@ test('createFacilityReservation rejects overlapping approved reservations', asyn
     assert.equal(res.statusCode, 409);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'This facility is already reserved for the selected date and time.'
+        message: 'Only 200 chairs are available for the selected time.'
     });
 });
 
@@ -59,8 +62,8 @@ test('createFacilityReservation rejects missing required fields', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' },
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01'
+            facilityName: 'chair',
+            reservationDate: '2099-05-01'
         }
     };
     const res = createMockResponse();
@@ -78,11 +81,12 @@ test('createFacilityReservation requires a resident profile', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' },
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01',
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
             startTime: '09:00',
             endTime: '11:00',
-            purpose: 'Youth event'
+            purpose: 'Youth event',
+            quantity: 120
         }
     };
     const res = createMockResponse();
@@ -99,14 +103,61 @@ test('createFacilityReservation requires a resident profile', async () => {
     });
 });
 
+test('createFacilityReservation rejects reservations that are too soon', async () => {
+    const req = {
+        user: { id: 'user-1', role: 'resident' },
+        body: {
+            facilityName: 'chair',
+            reservationDate: '2026-05-23',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Youth event',
+            quantity: 50
+        }
+    };
+    const res = createMockResponse();
+
+    await facilityReservationController.createFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Reservations must be scheduled at least 1 day in advance'
+    });
+});
+
+test('createFacilityReservation rejects zero inventory requests', async () => {
+    const req = {
+        user: { id: 'user-1', role: 'resident' },
+        body: {
+            facilityName: 'chair',
+            reservationDate: '2099-05-25',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Youth event',
+            quantity: 0
+        }
+    };
+    const res = createMockResponse();
+
+    await facilityReservationController.createFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Please reserve at least 1 item'
+    });
+});
+
 test('createPublicFacilityReservation rejects missing guest details', async () => {
     const req = {
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01',
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
             startTime: '09:00',
             endTime: '11:00',
-            purpose: 'Family event'
+            purpose: 'Family event',
+            quantity: 80
         }
     };
     const res = createMockResponse();
@@ -127,18 +178,20 @@ test('createPublicFacilityReservation creates and returns a populated guest rese
         firstName: 'Juan',
         lastName: 'Dela Cruz',
         email: 'juan@example.com',
-        facilityName: 'covered_court',
-        reservationDate: '2026-05-01T00:00:00.000Z',
+        facilityName: 'chair',
+        quantity: 80,
+        reservationDate: '2099-05-01T00:00:00.000Z',
         status: 'pending'
     };
 
     const req = {
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01',
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
             startTime: '09:00',
             endTime: '11:00',
             purpose: 'Family event',
+            quantity: 80,
             reservationDetails: 'Birthday party',
             firstName: 'Juan',
             middleName: '',
@@ -153,7 +206,10 @@ test('createPublicFacilityReservation creates and returns a populated guest rese
 
     FacilityReservation.find = async () => [];
     FacilityReservation.findOne = async () => null;
-    FacilityReservation.create = async (payload) => ({ _id: 'reservation-public-1', ...payload });
+    FacilityReservation.create = async (payload) => {
+        assert.equal(payload.quantity, 80);
+        return { _id: 'reservation-public-1', ...payload };
+    };
     FacilityReservation.findById = () => ({
         populate() {
             return Promise.resolve(populatedReservation);
@@ -174,19 +230,21 @@ test('createFacilityReservation creates and returns a populated reservation', as
             firstName: 'Juan',
             lastName: 'Dela Cruz'
         },
-        facilityName: 'covered_court',
-        reservationDate: '2026-05-01T00:00:00.000Z',
+        facilityName: 'chair',
+        quantity: 120,
+        reservationDate: '2099-05-01T00:00:00.000Z',
         status: 'pending'
     };
 
     const req = {
         user: { id: 'user-1', role: 'resident' },
         body: {
-            facilityName: 'covered_court',
-            reservationDate: '2026-05-01',
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
             startTime: '09:00',
             endTime: '11:00',
             purpose: 'Youth event',
+            quantity: 120,
             reservationDetails: 'Basketball clinic'
         }
     };
@@ -194,7 +252,58 @@ test('createFacilityReservation creates and returns a populated reservation', as
 
     Resident.findOne = async () => ({ _id: 'resident-1', userId: 'user-1' });
     FacilityReservation.find = async () => [];
-    FacilityReservation.create = async (payload) => ({ _id: 'reservation-1', ...payload });
+    FacilityReservation.create = async (payload) => {
+        assert.equal(payload.quantity, 120);
+        return { _id: 'reservation-1', ...payload };
+    };
+    FacilityReservation.findById = () => ({
+        populate() {
+            return Promise.resolve(populatedReservation);
+        }
+    });
+
+    await facilityReservationController.createFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(res.body, populatedReservation);
+});
+
+test('createFacilityReservation supports table inventory reservations', async () => {
+    const populatedReservation = {
+        _id: 'reservation-table-1',
+        residentId: {
+            _id: 'resident-1',
+            firstName: 'Juan',
+            lastName: 'Dela Cruz'
+        },
+        facilityName: 'table',
+        tableQuantity: 12,
+        quantity: 12,
+        reservationDate: '2099-05-02T00:00:00.000Z',
+        status: 'pending'
+    };
+
+    const req = {
+        user: { id: 'user-1', role: 'resident' },
+        body: {
+            facilityName: 'table',
+            reservationDate: '2099-05-02',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Town event',
+            tableQuantity: 12,
+            reservationDetails: 'Extra tables for registration'
+        }
+    };
+    const res = createMockResponse();
+
+    Resident.findOne = async () => ({ _id: 'resident-1', userId: 'user-1' });
+    FacilityReservation.find = async () => [];
+    FacilityReservation.create = async (payload) => {
+        assert.equal(payload.tableQuantity, 12);
+        assert.equal(payload.quantity, 12);
+        return { _id: 'reservation-table-1', ...payload };
+    };
     FacilityReservation.findById = () => ({
         populate() {
             return Promise.resolve(populatedReservation);
@@ -227,8 +336,10 @@ test('getMyFacilityReservations returns 404 when resident profile does not exist
 test('getFacilityAvailability returns reserved and available slots for the selected date', async () => {
     const req = {
         query: {
-            facilityName: 'covered_court',
-            date: '2026-05-01'
+            facilityName: 'chair',
+            date: '2099-05-01',
+            startTime: '09:00',
+            endTime: '11:00'
         }
     };
     const res = createMockResponse();
@@ -240,13 +351,17 @@ test('getFacilityAvailability returns reserved and available slots for the selec
                     _id: 'reservation-1',
                     startTime: '09:00',
                     endTime: '11:00',
-                    status: 'approved'
+                    status: 'approved',
+                    facilityName: 'chair',
+                    quantity: 100
                 },
                 {
                     _id: 'reservation-2',
                     startTime: '13:00',
                     endTime: '14:00',
-                    status: 'approved'
+                    status: 'pending',
+                    facilityName: 'chair',
+                    quantity: 50
                 }
             ]);
         }
@@ -255,36 +370,54 @@ test('getFacilityAvailability returns reserved and available slots for the selec
     await facilityReservationController.getFacilityAvailability(req, res);
 
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res.body, {
-        facilityName: 'covered_court',
-        date: '2026-05-01',
-        operatingHours: {
-            start: '08:00',
-            end: '17:00'
-        },
-        reservedSlots: [
-            {
-                id: 'reservation-1',
-                startTime: '09:00',
-                endTime: '11:00',
-                status: 'approved'
-            },
-            {
-                id: 'reservation-2',
-                startTime: '13:00',
-                endTime: '14:00',
-                status: 'approved'
-            }
-        ],
-        availableSlots: [
-            { startTime: '08:00', endTime: '09:00' },
-            { startTime: '11:00', endTime: '12:00' },
-            { startTime: '12:00', endTime: '13:00' },
-            { startTime: '14:00', endTime: '15:00' },
-            { startTime: '15:00', endTime: '16:00' },
-            { startTime: '16:00', endTime: '17:00' }
-        ]
+    assert.deepEqual(res.body.facilityName, 'chair');
+    assert.deepEqual(res.body.date, '2099-05-01');
+    assert.deepEqual(res.body.operatingHours, {
+        start: '08:00',
+        end: '24:00'
     });
+    assert.deepEqual(res.body.inventory, {
+        chair: 300,
+        tent: 30,
+        table: 20
+    });
+    assert.equal(res.body.inventoryQuantity, 300);
+    assert.equal(res.body.reservedQuantity, 100);
+    assert.equal(res.body.availableQuantity, 200);
+    assert.deepEqual(res.body.selectedAvailability, {
+        facilityName: 'chair',
+        inventoryQuantity: 300,
+        reservedQuantity: 100,
+        availableQuantity: 200
+    });
+    assert.equal(res.body.reservedSlots.length, 2);
+    assert.deepEqual(res.body.reservedSlots[0], {
+        id: 'reservation-1',
+        facilityName: 'chair',
+        startTime: '09:00',
+        endTime: '11:00',
+        status: 'approved',
+        quantity: 100
+    });
+    assert.deepEqual(res.body.reservedSlots[1], {
+        id: 'reservation-2',
+        facilityName: 'chair',
+        startTime: '13:00',
+        endTime: '14:00',
+        status: 'pending',
+        quantity: 50
+    });
+    assert.equal(res.body.availableSlots.length, 32);
+    assert.deepEqual(res.body.availableSlots.slice(0, 4), [
+        { startTime: '08:00', endTime: '08:30' },
+        { startTime: '08:30', endTime: '09:00' },
+        { startTime: '09:00', endTime: '09:30' },
+        { startTime: '09:30', endTime: '10:00' }
+    ]);
+    assert.deepEqual(res.body.availableSlots.slice(-2), [
+        { startTime: '23:00', endTime: '23:30' },
+        { startTime: '23:30', endTime: '24:00' }
+    ]);
 });
 
 test('getFacilityReservationById blocks residents from viewing other residents reservations', async () => {
@@ -349,7 +482,7 @@ test('updateFacilityReservationStatus rejects conflicting approvals', async () =
 
     FacilityReservation.findById = async () => ({
         _id: 'reservation-1',
-        facilityName: 'covered_court',
+        facilityName: 'chair',
         reservationDate: '2026-05-01',
         startTime: '10:00',
         endTime: '11:00',
