@@ -16,6 +16,7 @@ COPY . .
 
 ENV NODE_ENV=production
 ENV PUBLIC_UPLOAD_DIR=/app/uploads/public
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN mkdir -p /app/uploads/public
 
