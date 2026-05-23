@@ -18,7 +18,6 @@ const defaultLaunchOptions = {
     '--disable-breakpad',
     '--no-first-run',
     '--no-zygote',
-    '--single-process',
     '--mute-audio'
   ],
   headless: process.env.PUPPETEER_HEADLESS !== '0'

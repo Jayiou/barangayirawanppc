@@ -11,12 +11,13 @@ RUN apt-get update && apt-get install -y chromium --no-install-recommends \
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev --ignore-scripts
 COPY . .
 
 ENV NODE_ENV=production
 ENV PUBLIC_UPLOAD_DIR=/app/uploads/public
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=1
 
 RUN mkdir -p /app/uploads/public
 

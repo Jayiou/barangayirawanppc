@@ -2204,19 +2204,48 @@ const getReportMapEmbedUrl = (item) => {
     return `https://maps.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`;
 };
 
-const resolveProofImageUrl = (value) => {
+const normalizeProofImagePath = (value) => {
     const rawValue = typeof value === 'string' ? value : value?.url || value?.path || value?.imagePath || '';
 
     if (!rawValue) {
         return '';
     }
 
-    if (/^(https?:)?\/\//i.test(rawValue) || rawValue.startsWith('data:') || rawValue.startsWith('blob:')) {
-        return rawValue;
+    const normalized = String(rawValue).replaceAll('\\', '/').trim();
+
+    if (/^(https?:)?\/\//i.test(normalized) || normalized.startsWith('data:') || normalized.startsWith('blob:')) {
+        return normalized;
     }
 
-    return rawValue.startsWith('/') ? rawValue : `/${rawValue}`;
+    if (normalized.startsWith('/uploads/')) {
+        return normalized;
+    }
+
+    if (normalized.startsWith('uploads/')) {
+        return `/${normalized}`;
+    }
+
+    if (normalized.startsWith('/public/uploads/')) {
+        return normalized.replace(/^\/public\//, '/');
+    }
+
+    if (normalized.startsWith('public/uploads/')) {
+        return `/${normalized.replace(/^public\//, '')}`;
+    }
+
+    const filename = normalized.split('/').pop();
+    if (!normalized.includes('/')) {
+        return `/uploads/${normalized}`;
+    }
+
+    if (filename && filename !== normalized) {
+        return `/uploads/${filename}`;
+    }
+
+    return normalized.startsWith('/') ? normalized : `/${normalized}`;
 };
+
+const resolveProofImageUrl = (value) => normalizeProofImagePath(value);
 
 const getProofImageLabel = (value) => {
     const rawValue = typeof value === 'string' ? value : value?.url || value?.path || value?.imagePath || '';
@@ -2225,7 +2254,7 @@ const getProofImageLabel = (value) => {
         return 'Proof image';
     }
 
-    const fileName = rawValue.split('/').pop();
+    const fileName = String(rawValue).replaceAll('\\', '/').split('/').pop();
     return fileName || 'Proof image';
 };
 

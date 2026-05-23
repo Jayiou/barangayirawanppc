@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs').promises;
 const { pathToFileURL } = require('node:url');
-const { launchBrowser } = require('../utils/documentGenerator');
+const { getBrowser } = require('../utils/documentGenerator');
 const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
 const { sendGeneratedDocumentEmail } = require('../utils/mailer');
 const DocumentRequest = require('../models/DocumentRequest');
@@ -404,7 +404,7 @@ exports.generateDocument = async (req, res, next) => {
     // Generate PDF via shared Puppeteer browser instance
     await ensureDirectory(publicUploadDirectory);
 
-    const browser = await launchBrowser();
+    const browser = await getBrowser();
     let page;
     try {
       page = await browser.newPage();
@@ -415,21 +415,18 @@ exports.generateDocument = async (req, res, next) => {
 
       const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0', left: '0', right: '0' } });
 
-        const fileUrl = await savePdfBuffer(pdfBuffer, docReq);
+      const fileUrl = await savePdfBuffer(pdfBuffer, docReq);
 
-        docReq.generatedAt = new Date();
-        docReq.generatedFileUrl = fileUrl;
-        await docReq.save();
+      docReq.generatedAt = new Date();
+      docReq.generatedFileUrl = fileUrl;
+      await docReq.save();
 
-        await sendDocumentEmail(docReq, fileUrl);
+      await sendDocumentEmail(docReq, fileUrl);
 
-        return res.json({ success: true, fileUrl, data: docReq });
+      return res.json({ success: true, fileUrl, data: docReq });
     } finally {
       if (page) {
         try { await page.close(); } catch (e) { /* ignore */ }
-      }
-      if (browser) {
-        try { await browser.close(); } catch (e) { /* ignore */ }
       }
     }
   } catch (err) {
