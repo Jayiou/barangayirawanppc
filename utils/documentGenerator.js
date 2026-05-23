@@ -4,7 +4,23 @@ const fs = require('node:fs');
 let browserInstance = null;
 
 const defaultLaunchOptions = {
-  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--disable-software-rasterizer',
+    '--disable-background-networking',
+    '--disable-extensions',
+    '--disable-sync',
+    '--disable-default-apps',
+    '--disable-component-update',
+    '--disable-breakpad',
+    '--no-first-run',
+    '--no-zygote',
+    '--single-process',
+    '--mute-audio'
+  ],
   headless: process.env.PUPPETEER_HEADLESS !== '0'
 };
 

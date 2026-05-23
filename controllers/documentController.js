@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs').promises;
 const { pathToFileURL } = require('node:url');
-const { getBrowser } = require('../utils/documentGenerator');
+const { launchBrowser } = require('../utils/documentGenerator');
 const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
 const { sendGeneratedDocumentEmail } = require('../utils/mailer');
 const DocumentRequest = require('../models/DocumentRequest');
@@ -378,7 +378,8 @@ exports.generateDocument = async (req, res, next) => {
 
     // Common placeholders
     // IMPORTANT: Use form-submitted FULL_NAME, not resident's name if form was filled
-    const data = { ...merged, ...{
+    const data = {
+      ...merged,
       FULL_NAME: merged.FULL_NAME || residentName,
       AGE: merged.AGE || calculateAge(resident.birthDate),
       BARANGAY: merged.BARANGAY || 'Irawan',
@@ -389,7 +390,7 @@ exports.generateDocument = async (req, res, next) => {
       PURPOSE: merged.PURPOSE || docReq.purpose || '',
       SECRETARY_NAME: secretary?.name || 'Barangay Secretary',
       CAPTAIN_NAME: captain?.name || 'Punong Barangay'
-    } };
+    };
 
     let templateName = resolveTemplateForType(docReq.type);
 
@@ -403,7 +404,7 @@ exports.generateDocument = async (req, res, next) => {
     // Generate PDF via shared Puppeteer browser instance
     await ensureDirectory(publicUploadDirectory);
 
-    const browser = await getBrowser();
+    const browser = await launchBrowser();
     let page;
     try {
       page = await browser.newPage();
@@ -426,6 +427,9 @@ exports.generateDocument = async (req, res, next) => {
     } finally {
       if (page) {
         try { await page.close(); } catch (e) { /* ignore */ }
+      }
+      if (browser) {
+        try { await browser.close(); } catch (e) { /* ignore */ }
       }
     }
   } catch (err) {
