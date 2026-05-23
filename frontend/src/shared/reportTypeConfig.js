@@ -13,8 +13,8 @@ export const REPORT_TYPE_CONFIG = {
         titlePlaceholder: 'Ex: Public altercation at night',
         descriptionPlaceholder: 'Describe the disturbance and who is affected.',
         locationHint: 'Exact spot where disturbance happened',
-        requireIncidentDate: false,
-        requireProof: false,
+        requireIncidentDate: true,
+        requireProof: true,
         proofLabel: 'Supporting photos'
     },
     sanitation: {
@@ -22,8 +22,8 @@ export const REPORT_TYPE_CONFIG = {
         titlePlaceholder: 'Ex: Uncollected garbage pile',
         descriptionPlaceholder: 'Describe the sanitation issue and urgency.',
         locationHint: 'Pinpoint where cleanup is needed',
-        requireIncidentDate: false,
-        requireProof: false,
+        requireIncidentDate: true,
+        requireProof: true,
         proofLabel: 'Supporting photos'
     },
     infrastructure: {
@@ -31,8 +31,8 @@ export const REPORT_TYPE_CONFIG = {
         titlePlaceholder: 'Ex: Broken drainage cover',
         descriptionPlaceholder: 'Describe damage, hazard level, and traffic impact.',
         locationHint: 'Street corner or nearest structure',
-        requireIncidentDate: false,
-        requireProof: false,
+        requireIncidentDate: true,
+        requireProof: true,
         proofLabel: 'Supporting photos'
     },
     public_safety: {
@@ -40,8 +40,8 @@ export const REPORT_TYPE_CONFIG = {
         titlePlaceholder: 'Ex: No streetlight in dark alley',
         descriptionPlaceholder: 'Describe the safety risk and people affected.',
         locationHint: 'Specific public area or route',
-        requireIncidentDate: false,
-        requireProof: false,
+        requireIncidentDate: true,
+        requireProof: true,
         proofLabel: 'Supporting photos'
     },
     animal_related: {
@@ -49,8 +49,8 @@ export const REPORT_TYPE_CONFIG = {
         titlePlaceholder: 'Ex: Stray dog causing accidents',
         descriptionPlaceholder: 'Describe the animal issue and observed behavior.',
         locationHint: 'Where the animal issue usually occurs',
-        requireIncidentDate: false,
-        requireProof: false,
+        requireIncidentDate: true,
+        requireProof: true,
         proofLabel: 'Supporting photos'
     },
     disaster: {

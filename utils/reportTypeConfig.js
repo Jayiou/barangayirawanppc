@@ -6,28 +6,28 @@ const REPORT_TYPE_RULES = {
     },
     disturbance: {
         label: 'Disturbance',
-        requireIncidentDate: false,
-        requireProofForResident: false
+        requireIncidentDate: true,
+        requireProofForResident: true
     },
     sanitation: {
         label: 'Sanitation',
-        requireIncidentDate: false,
-        requireProofForResident: false
+        requireIncidentDate: true,
+        requireProofForResident: true
     },
     infrastructure: {
         label: 'Infrastructure',
-        requireIncidentDate: false,
-        requireProofForResident: false
+        requireIncidentDate: true,
+        requireProofForResident: true
     },
     public_safety: {
         label: 'Public Safety',
-        requireIncidentDate: false,
-        requireProofForResident: false
+        requireIncidentDate: true,
+        requireProofForResident: true
     },
     animal_related: {
         label: 'Animal Related',
-        requireIncidentDate: false,
-        requireProofForResident: false
+        requireIncidentDate: true,
+        requireProofForResident: true
     },
     disaster: {
         label: 'Disaster',
