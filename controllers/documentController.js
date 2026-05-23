@@ -179,6 +179,21 @@ const resolveTemplateForType = (type) => {
   return 'barangay_certificate.html';
 };
 
+// Simple in-memory concurrency limiter for PDF generation to avoid OOM
+let _pdfGenerationTokens = 0;
+const MAX_PDF_CONCURRENCY = Number(process.env.MAX_PDF_CONCURRENCY) || 2;
+const acquirePdfToken = async () => {
+  while (_pdfGenerationTokens >= MAX_PDF_CONCURRENCY) {
+    // backoff briefly while other jobs complete
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  _pdfGenerationTokens += 1;
+};
+const releasePdfToken = () => {
+  _pdfGenerationTokens = Math.max(0, _pdfGenerationTokens - 1);
+};
+
 const savePdfBuffer = async (pdfBuffer, docReq) => {
   const filename = `document-${docReq._id}-${Date.now()}.pdf`;
   let fileUrl = `/uploads/${filename}`;
@@ -404,6 +419,8 @@ exports.generateDocument = async (req, res, next) => {
     // Generate PDF via shared Puppeteer browser instance
     await ensureDirectory(publicUploadDirectory);
 
+    // limit concurrent PDF jobs to avoid memory spikes in constrained environments
+    await acquirePdfToken();
     const browser = await getBrowser();
     let page;
     try {
@@ -428,6 +445,7 @@ exports.generateDocument = async (req, res, next) => {
       if (page) {
         try { await page.close(); } catch (e) { /* ignore */ }
       }
+      releasePdfToken();
     }
   } catch (err) {
     next(err);
