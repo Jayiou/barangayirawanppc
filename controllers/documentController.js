@@ -181,7 +181,7 @@ const resolveTemplateForType = (type) => {
 
 // Simple in-memory concurrency limiter for PDF generation to avoid OOM
 let _pdfGenerationTokens = 0;
-const MAX_PDF_CONCURRENCY = Number(process.env.MAX_PDF_CONCURRENCY) || 2;
+const MAX_PDF_CONCURRENCY = Number(process.env.MAX_PDF_CONCURRENCY) || 1;
 const acquirePdfToken = async () => {
   while (_pdfGenerationTokens >= MAX_PDF_CONCURRENCY) {
     // backoff briefly while other jobs complete
