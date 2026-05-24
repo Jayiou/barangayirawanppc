@@ -21,6 +21,54 @@ const resolveResidentForUser = async (userId) => {
 
 const isObjectLike = (value) => value && typeof value === 'object';
 
+const getRequestBaseUrl = (req) => {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const protocol = forwardedProto || req.protocol || 'http';
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const host = forwardedHost || req.get('host');
+
+  if (!host) {
+    return '';
+  }
+
+  return `${protocol}://${host}`;
+};
+
+const resolveAbsoluteFileUrl = (req, fileUrl) => {
+  if (!fileUrl) {
+    return '';
+  }
+
+  const value = String(fileUrl);
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith('data:') || value.startsWith('blob:')) {
+    return value;
+  }
+
+  const baseUrl = getRequestBaseUrl(req);
+  if (!baseUrl) {
+    return value;
+  }
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return value;
+  }
+};
+
+const resolveDocumentGeneratedFileUrl = (req, docReq) => {
+  if (!docReq) {
+    return '';
+  }
+
+  if (process.env.S3_BUCKET && docReq.generatedFileName) {
+    return resolveAbsoluteFileUrl(req, docReq.generatedFileUrl || '');
+  }
+
+  const rawFileUrl = docReq.generatedFileUrl || (docReq.generatedFileName ? `/uploads/${docReq.generatedFileName}` : '');
+  return resolveAbsoluteFileUrl(req, rawFileUrl);
+};
+
 const serializeDocumentRequest = (doc) => {
   if (!doc) return doc;
   const plain = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
@@ -33,6 +81,16 @@ const serializeDocumentRequest = (doc) => {
     plain.residentId = plain.resident;
     plain.resident = null;
   }
+  return plain;
+};
+
+const serializeDocumentRequestForResponse = (req, doc) => {
+  const plain = serializeDocumentRequest(doc);
+  if (!plain) {
+    return plain;
+  }
+
+  plain.generatedFileUrl = resolveDocumentGeneratedFileUrl(req, plain);
   return plain;
 };
 
@@ -304,7 +362,7 @@ exports.getAllRequests = async (req, res, next) => {
       .populate('resident', residentPopulateFields)
       .sort({ createdAt: -1 });
     await attachLegacyResidentFallbacks(list);
-    res.json({ success: true, data: list.map(serializeDocumentRequest) });
+    res.json({ success: true, data: list.map((doc) => serializeDocumentRequestForResponse(req, doc)) });
   } catch (err) {
     next(err);
   }
@@ -316,7 +374,7 @@ exports.getRequestById = async (req, res, next) => {
     const doc = await DocumentRequest.findById(reqId).populate('resident');
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     await attachLegacyResidentFallbacks(doc);
-    res.json({ success: true, data: serializeDocumentRequest(doc) });
+    res.json({ success: true, data: serializeDocumentRequestForResponse(req, doc) });
   } catch (err) {
     next(err);
   }
@@ -404,6 +462,8 @@ exports.generateDocument = async (req, res, next) => {
           } catch (e) {
             console.error('Failed to generate presigned URL for existing file:', e.message || e);
           }
+        } else {
+          fileUrl = resolveDocumentGeneratedFileUrl(req, docReq);
         }
         return res.json({ success: true, fileUrl, data: docReq });
       }
@@ -465,7 +525,7 @@ exports.generateDocument = async (req, res, next) => {
 
       await sendDocumentEmail(docReq, fileUrl);
 
-      return res.json({ success: true, fileUrl, data: docReq });
+      return res.json({ success: true, fileUrl: resolveDocumentGeneratedFileUrl(req, docReq), data: docReq });
     } finally {
       releasePdfToken();
     }
