@@ -9,6 +9,11 @@ const PAGE_HEIGHT = 841.89;
 const LEFT_MARGIN = 48;
 const RIGHT_MARGIN = 48;
 const CONTENT_WIDTH = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN;
+const HEADER_FONT_SIZE = 22;
+const TITLE_FONT_SIZE = 15;
+const BODY_TITLE_FONT_SIZE = 13;
+const BODY_FONT_SIZE = 13;
+const FIELD_FONT_SIZE = 13;
 
 const TYPE_CONFIG = {
   certificate: {
@@ -159,7 +164,7 @@ const createPdfBuffer = (drawPage) => new Promise((resolve, reject) => {
 
 const ensureImagePath = (fileName) => path.join(LOGO_DIR, fileName);
 
-const fitTextSize = (doc, text, maxWidth, startingSize, minimumSize = 8) => {
+const fitTextSize = (doc, text, maxWidth, startingSize, minimumSize = 7) => {
   const value = String(text ?? '');
   let size = startingSize;
 
@@ -171,19 +176,21 @@ const fitTextSize = (doc, text, maxWidth, startingSize, minimumSize = 8) => {
 };
 
 const drawField = (doc, text, x, y, width, options = {}) => {
-  const padding = options.padding ?? 4;
-  const baseFontSize = options.fontSize ?? 16;
+  const padding = options.padding ?? 6;
+  const baseFontSize = options.fontSize ?? FIELD_FONT_SIZE;
   const maxWidth = options.maxWidth ?? width;
-  const fieldWidth = Math.max(width, Math.min(maxWidth, doc.fontSize(baseFontSize).widthOfString(String(text ?? '')) + padding * 2));
+  const measured = doc.font('Helvetica-Bold').fontSize(baseFontSize).widthOfString(String(text ?? '')) + padding * 2;
+  const fieldWidth = Math.max(width, Math.min(maxWidth, measured));
   const fontSize = fitTextSize(doc, text, fieldWidth - padding * 2, baseFontSize);
   const fieldText = String(text ?? '');
   const textY = y - 1;
+  const textX = x + padding;
 
   doc.save();
   doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#111827');
-  doc.text(fieldText, x, textY, {
-    width: fieldWidth,
-    align: 'center',
+  doc.text(fieldText, textX, textY, {
+    width: Math.max(0, fieldWidth - padding * 2),
+    align: 'left',
     lineBreak: false
   });
   doc.moveTo(x, y + fontSize + 2).lineTo(x + fieldWidth, y + fontSize + 2).strokeColor('#111827').stroke();
@@ -206,7 +213,7 @@ const drawTextSegment = (doc, text, x, y, fontSize = 16) => {
 
 const computeFieldWidth = (doc, text, width, options = {}) => {
   const padding = options.padding ?? 4;
-  const baseFontSize = options.fontSize ?? 16;
+  const baseFontSize = options.fontSize ?? FIELD_FONT_SIZE;
   const maxWidth = options.maxWidth ?? width;
   const fieldWidth = Math.max(width, Math.min(maxWidth, doc.fontSize(baseFontSize).widthOfString(String(text ?? '')) + padding * 2));
   return fieldWidth;
@@ -217,9 +224,19 @@ const measureSegmentWidth = (doc, segment) => {
     return computeFieldWidth(doc, segment.value, segment.width, segment);
   }
 
-  const fontSize = segment.fontSize || 16;
+  const fontSize = segment.fontSize || BODY_FONT_SIZE;
   doc.font('Helvetica').fontSize(fontSize);
   return doc.widthOfString(String(segment.value ?? ''));
+};
+
+const splitTextSegment = (segment) => {
+  const value = String(segment.value ?? '');
+  const parts = value.split(/(\s+)/).filter(Boolean);
+
+  return parts.map((part) => ({
+    ...segment,
+    value: part
+  }));
 };
 
 const drawSegmentLine = (doc, segments, x, y, options = {}) => {
@@ -229,32 +246,37 @@ const drawSegmentLine = (doc, segments, x, y, options = {}) => {
   const lineHeight = options.lineHeight ?? 26;
 
   segments.forEach((segment) => {
-    const segWidth = measureSegmentWidth(doc, segment);
+    const runSegments = segment.type === 'text' ? splitTextSegment(segment) : [segment];
 
-    if (cursorX + segWidth > maxX) {
-      // wrap to next line
-      cursorX = startX;
-      y += lineHeight;
-    }
+    runSegments.forEach((runSegment) => {
+      const segWidth = measureSegmentWidth(doc, runSegment);
 
-    if (segment.type === 'field') {
-      cursorX += drawField(doc, segment.value, cursorX, y, segment.width, segment);
-      return;
-    }
+      if (cursorX + segWidth > maxX) {
+        // Wrap to next line while keeping all content visible.
+        cursorX = startX;
+        y += lineHeight;
+      }
 
-    cursorX += drawTextSegment(doc, segment.value, cursorX, y, segment.fontSize || 16);
+      if (runSegment.type === 'field') {
+        cursorX += drawField(doc, runSegment.value, cursorX, y, runSegment.width, runSegment);
+        return;
+      }
+
+      cursorX += drawTextSegment(doc, runSegment.value, cursorX, y, runSegment.fontSize || BODY_FONT_SIZE);
+    });
   });
 
   return y;
 };
 
+const LINE_HEIGHT = 22;
+
 const drawParagraph = (doc, lines, x, y) => {
-  const lineHeight = 26;
   let cursorY = y;
 
   lines.forEach((line) => {
-    cursorY = drawSegmentLine(doc, line, x, cursorY, { maxWidth: CONTENT_WIDTH, lineHeight });
-    cursorY += lineHeight;
+    cursorY = drawSegmentLine(doc, line, x, cursorY, { maxWidth: CONTENT_WIDTH, lineHeight: LINE_HEIGHT });
+    cursorY += LINE_HEIGHT;
   });
 
   return cursorY;
@@ -284,11 +306,11 @@ const drawCertificatePdf = (doc, type, data = {}) => {
   doc.font('Helvetica').fillColor('#6b7280').fontSize(12).text('Republic of the Philippines', 140, 52, { width: CONTENT_WIDTH - 220, align: 'center' });
   doc.text('Province of Palawan', 140, 68, { width: CONTENT_WIDTH - 220, align: 'center' });
   doc.text('City of Puerto Princesa', 140, 84, { width: CONTENT_WIDTH - 220, align: 'center' });
-  doc.font('Helvetica-Bold').fillColor('#111827').fontSize(26).text('BARANGAY IRAWAN', 140, 104, { width: CONTENT_WIDTH - 220, align: 'center' });
-  doc.font('Helvetica-Bold').fontSize(18).text(config.title, 140, 128, { width: CONTENT_WIDTH - 220, align: 'center' });
+  doc.font('Helvetica-Bold').fillColor('#111827').fontSize(HEADER_FONT_SIZE).text('BARANGAY IRAWAN', 140, 104, { width: CONTENT_WIDTH - 220, align: 'center' });
+  doc.font('Helvetica-Bold').fontSize(TITLE_FONT_SIZE).text(config.title, 140, 128, { width: CONTENT_WIDTH - 220, align: 'center' });
   doc.restore();
 
-  doc.font('Helvetica-Bold').fontSize(14).fillColor('#111827').text(config.bodyTitle, LEFT_MARGIN, 188, { width: CONTENT_WIDTH });
+  doc.font('Helvetica-Bold').fontSize(BODY_TITLE_FONT_SIZE).fillColor('#111827').text(config.bodyTitle, LEFT_MARGIN, 188, { width: CONTENT_WIDTH });
 
   const values = {
     FULL_NAME: data.FULL_NAME || '',
