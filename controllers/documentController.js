@@ -72,6 +72,10 @@ const resolveDocumentGeneratedFileUrl = (req, docReq) => {
 const serializeDocumentRequest = (doc) => {
   if (!doc) return doc;
   const plain = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+
+  plain.fields = normalizeFieldMap(plain.fields);
+  plain.adminEdits = normalizeFieldMap(plain.adminEdits);
+
   if (!plain.resident && doc.$locals?.legacyResident) {
     plain.resident = typeof doc.$locals.legacyResident.toObject === 'function'
       ? doc.$locals.legacyResident.toObject()
@@ -329,7 +333,7 @@ exports.createRequest = async (req, res, next) => {
     const newReq = await DocumentRequest.create({
       resident: resident._id,
       type,
-      fields: fields || {},
+      fields: normalizeFieldMap(fields),
       purpose: purpose || ''
     });
 

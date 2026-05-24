@@ -2162,6 +2162,9 @@ const getRequestorName = (item) => {
 };
 
 const getDocumentRequesterName = (item) => {
+    const fieldName = item?.adminEdits?.FULL_NAME || item?.fields?.FULL_NAME || item?.fields?.full_name || '';
+    if (String(fieldName).trim()) return String(fieldName).trim();
+
     if (item?.resident && typeof item.resident === 'object') {
         const fullName = [item.resident.firstName, item.resident.middleName, item.resident.lastName, item.resident.suffix].filter(Boolean).join(' ').trim();
         if (fullName) return fullName;
@@ -2171,9 +2174,6 @@ const getDocumentRequesterName = (item) => {
         const fullName = [item.residentId.firstName, item.residentId.middleName, item.residentId.lastName, item.residentId.suffix].filter(Boolean).join(' ').trim();
         if (fullName) return fullName;
     }
-
-    const fieldName = item?.adminEdits?.FULL_NAME || item?.fields?.FULL_NAME || item?.fields?.full_name || '';
-    if (String(fieldName).trim()) return String(fieldName).trim();
 
     return getRequestorName(item);
 };
