@@ -204,10 +204,39 @@ const drawTextSegment = (doc, text, x, y, fontSize = 16) => {
   return width;
 };
 
-const drawSegmentLine = (doc, segments, x, y) => {
+const computeFieldWidth = (doc, text, width, options = {}) => {
+  const padding = options.padding ?? 4;
+  const baseFontSize = options.fontSize ?? 16;
+  const maxWidth = options.maxWidth ?? width;
+  const fieldWidth = Math.max(width, Math.min(maxWidth, doc.fontSize(baseFontSize).widthOfString(String(text ?? '')) + padding * 2));
+  return fieldWidth;
+};
+
+const measureSegmentWidth = (doc, segment) => {
+  if (segment.type === 'field') {
+    return computeFieldWidth(doc, segment.value, segment.width, segment);
+  }
+
+  const fontSize = segment.fontSize || 16;
+  doc.font('Helvetica').fontSize(fontSize);
+  return doc.widthOfString(String(segment.value ?? ''));
+};
+
+const drawSegmentLine = (doc, segments, x, y, options = {}) => {
+  const startX = x;
   let cursorX = x;
+  const maxX = startX + (options.maxWidth ?? CONTENT_WIDTH);
+  const lineHeight = options.lineHeight ?? 26;
 
   segments.forEach((segment) => {
+    const segWidth = measureSegmentWidth(doc, segment);
+
+    if (cursorX + segWidth > maxX) {
+      // wrap to next line
+      cursorX = startX;
+      y += lineHeight;
+    }
+
     if (segment.type === 'field') {
       cursorX += drawField(doc, segment.value, cursorX, y, segment.width, segment);
       return;
@@ -215,12 +244,20 @@ const drawSegmentLine = (doc, segments, x, y) => {
 
     cursorX += drawTextSegment(doc, segment.value, cursorX, y, segment.fontSize || 16);
   });
+
+  return y;
 };
 
 const drawParagraph = (doc, lines, x, y) => {
   const lineHeight = 26;
-  lines.forEach((line, index) => drawSegmentLine(doc, line, x, y + (index * lineHeight)));
-  return y + (lines.length * lineHeight);
+  let cursorY = y;
+
+  lines.forEach((line) => {
+    cursorY = drawSegmentLine(doc, line, x, cursorY, { maxWidth: CONTENT_WIDTH, lineHeight });
+    cursorY += lineHeight;
+  });
+
+  return cursorY;
 };
 
 const drawCertificatePdf = (doc, type, data = {}) => {
