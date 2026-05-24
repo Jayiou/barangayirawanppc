@@ -1,9 +1,10 @@
 const path = require('node:path');
 const fs = require('node:fs').promises;
+const fsSync = require('node:fs');
 const { pathToFileURL } = require('node:url');
-const { getBrowser } = require('../utils/documentGenerator');
 const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
 const { sendGeneratedDocumentEmail } = require('../utils/mailer');
+const { createDocumentPdfBuffer } = require('../utils/documentPdfGenerator');
 const DocumentRequest = require('../models/DocumentRequest');
 const Resident = require('../models/Resident');
 const Official = require('../models/Official');
@@ -179,16 +180,40 @@ const resolveTemplateForType = (type) => {
   return 'barangay_certificate.html';
 };
 
+const resolveGeneratedDocumentFilePath = (docReq) => {
+  const generatedName = docReq?.generatedFileName;
+  const generatedUrl = docReq?.generatedFileUrl;
+
+  if (generatedName) {
+    const { resolvePublicUploadFilePath } = require('../utils/uploadPaths');
+    return resolvePublicUploadFilePath(generatedName);
+  }
+
+  if (generatedUrl) {
+    const fileName = path.basename(String(generatedUrl).split('?')[0].split('#')[0]);
+    if (fileName) {
+      const { resolvePublicUploadFilePath } = require('../utils/uploadPaths');
+      return resolvePublicUploadFilePath(fileName);
+    }
+  }
+
+  return '';
+};
+
 // Simple in-memory concurrency limiter for PDF generation to avoid OOM
 let _pdfGenerationTokens = 0;
 const MAX_PDF_CONCURRENCY = Number(process.env.MAX_PDF_CONCURRENCY) || 1;
 const acquirePdfToken = async () => {
-  while (_pdfGenerationTokens >= MAX_PDF_CONCURRENCY) {
+  while (true) {
+    if (_pdfGenerationTokens < MAX_PDF_CONCURRENCY) {
+      _pdfGenerationTokens += 1;
+      return;
+    }
+
     // backoff briefly while other jobs complete
     // eslint-disable-next-line no-await-in-loop
     await new Promise((r) => setTimeout(r, 200));
   }
-  _pdfGenerationTokens += 1;
 };
 const releasePdfToken = () => {
   _pdfGenerationTokens = Math.max(0, _pdfGenerationTokens - 1);
@@ -363,17 +388,25 @@ exports.generateDocument = async (req, res, next) => {
     // If we've already generated this document and have a stored file/key, return a usable URL
     // instead of regenerating. For S3-stored keys, generate a fresh presigned URL on demand.
     if (wantPdf && docReq.generatedAt && (docReq.generatedFileUrl || docReq.generatedFileName)) {
-      let fileUrl = docReq.generatedFileUrl || (docReq.generatedFileName ? `/uploads/${docReq.generatedFileName}` : undefined);
-      if (process.env.S3_BUCKET && docReq.generatedFileName) {
-        try {
-          const { getPresignedUrl } = require('../utils/s3');
-          // If generatedFileName is an S3 key, produce a fresh presigned URL
-          fileUrl = await getPresignedUrl(docReq.generatedFileName);
-        } catch (e) {
-          console.error('Failed to generate presigned URL for existing file:', e.message || e);
+      const storedFilePath = process.env.S3_BUCKET ? '' : resolveGeneratedDocumentFilePath(docReq);
+      if (!process.env.S3_BUCKET && (!storedFilePath || !fsSync.existsSync(storedFilePath))) {
+        docReq.generatedAt = undefined;
+        docReq.generatedFileName = '';
+        docReq.generatedFileUrl = '';
+        await docReq.save();
+      } else {
+        let fileUrl = docReq.generatedFileUrl || (docReq.generatedFileName ? `/uploads/${docReq.generatedFileName}` : undefined);
+        if (process.env.S3_BUCKET && docReq.generatedFileName) {
+          try {
+            const { getPresignedUrl } = require('../utils/s3');
+            // If generatedFileName is an S3 key, produce a fresh presigned URL
+            fileUrl = await getPresignedUrl(docReq.generatedFileName);
+          } catch (e) {
+            console.error('Failed to generate presigned URL for existing file:', e.message || e);
+          }
         }
+        return res.json({ success: true, fileUrl, data: docReq });
       }
-      return res.json({ success: true, fileUrl, data: docReq });
     }
 
     // Merge resident info, fields, and adminEdits
@@ -416,21 +449,13 @@ exports.generateDocument = async (req, res, next) => {
       return res.send(html);
     }
 
-    // Generate PDF via shared Puppeteer browser instance
-    await ensureDirectory(publicUploadDirectory);
+    // Generate PDF directly to avoid Chromium memory spikes in constrained hosts.
+    ensureDirectory(publicUploadDirectory);
 
     // limit concurrent PDF jobs to avoid memory spikes in constrained environments
     await acquirePdfToken();
-    const browser = await getBrowser();
-    let page;
     try {
-      page = await browser.newPage();
-      page.setDefaultNavigationTimeout(60000);
-      page.setDefaultTimeout(60000);
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.emulateMediaType('print');
-
-      const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0', left: '0', right: '0' } });
+      const pdfBuffer = await createDocumentPdfBuffer({ type: docReq.type, data });
 
       const fileUrl = await savePdfBuffer(pdfBuffer, docReq);
 
@@ -442,9 +467,6 @@ exports.generateDocument = async (req, res, next) => {
 
       return res.json({ success: true, fileUrl, data: docReq });
     } finally {
-      if (page) {
-        try { await page.close(); } catch (e) { /* ignore */ }
-      }
       releasePdfToken();
     }
   } catch (err) {
