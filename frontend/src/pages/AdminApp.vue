@@ -946,7 +946,6 @@
                                         <label><span>Age</span><input v-model="editableFields.AGE" type="text" style="width: 100%;"></label>
                                         <label><span>Barangay</span><input v-model="editableFields.BARANGAY" type="text" style="width: 100%;"></label>
                                         <label><span>City</span><input v-model="editableFields.CITY" type="text" style="width: 100%;"></label>
-                                        <label><span>Province</span><input v-model="editableFields.PROVINCE" type="text" style="width: 100%;"></label>
                                         <label><span>Purpose</span><input v-model="editableFields.PURPOSE" type="text" style="width: 100%;"></label>
                                     </div>
 
@@ -1259,7 +1258,7 @@ const selectedItem = ref({});
 const editForm = reactive({});
 const formalPurposeInput = ref('');
 const documentSearch = ref('');
-const editableFields = reactive({ FULL_NAME: '', AGE: '', BARANGAY: '', CITY: '', PROVINCE: '', PURPOSE: '', DAY: '', MONTH: '' });
+const editableFields = reactive({ FULL_NAME: '', AGE: '', BARANGAY: '', CITY: '', PURPOSE: '', DAY: '', MONTH: '' });
 
 
 // SMS Logs State
@@ -2410,20 +2409,20 @@ const openModal = async (type, item) => {
     if (['document', 'reservation', 'report', 'appointment'].includes(type)) {
         await setupRecordStatusModal(type, item);
         if (type === 'document') {
-            formalPurposeInput.value = item.formalPurpose || item.purpose || '';
+            const activeDocument = selectedItem.value || item || {};
+            formalPurposeInput.value = activeDocument.formalPurpose || activeDocument.purpose || '';
             // populate editable fields from request fields and adminEdits
-            const fields = item.fields || {};
-            const adminEdits = item.adminEdits || {};
-            editableFields.FULL_NAME = adminEdits.FULL_NAME || fields.FULL_NAME || getDocumentRequesterName(item);
+            const fields = activeDocument.fields || {};
+            const adminEdits = activeDocument.adminEdits || {};
+            editableFields.FULL_NAME = adminEdits.FULL_NAME || fields.FULL_NAME || fields.full_name || getDocumentRequesterName(activeDocument);
             editableFields.AGE = adminEdits.AGE || fields.AGE || (
-                (item?.resident?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(item.resident.birthDate)) : (
-                    (item?.residentId?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(item.residentId.birthDate)) : ''
+                (activeDocument?.resident?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(activeDocument.resident.birthDate)) : (
+                    (activeDocument?.residentId?.birthDate && typeof calculateAge === 'function') ? String(calculateAge(activeDocument.residentId.birthDate)) : ''
                 )
             );
             editableFields.BARANGAY = adminEdits.BARANGAY || fields.BARANGAY || 'Irawan';
             editableFields.CITY = adminEdits.CITY || fields.CITY || 'Puerto Princesa City';
-            editableFields.PROVINCE = adminEdits.PROVINCE || fields.PROVINCE || 'Palawan';
-            editableFields.PURPOSE = adminEdits.PURPOSE || fields.PURPOSE || item.purpose || '';
+            editableFields.PURPOSE = adminEdits.PURPOSE || fields.PURPOSE || activeDocument.purpose || '';
             editableFields.DAY = adminEdits.DAY || fields.DAY || '';
             editableFields.MONTH = adminEdits.MONTH || fields.MONTH || '';
         }

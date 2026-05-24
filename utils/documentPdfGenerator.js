@@ -33,9 +33,7 @@ const TYPE_CONFIG = {
           { type: 'field', key: 'BARANGAY', width: 108 },
           { type: 'text', value: ', Municipality/City of ' },
           { type: 'field', key: 'CITY', width: 138 },
-          { type: 'text', value: ', Province of ' },
-          { type: 'field', key: 'PROVINCE', width: 118 },
-          { type: 'text', value: '.' }
+          { type: 'text', value: ', Province of Palawan.' }
         ]
       ],
       [
@@ -184,13 +182,13 @@ const drawField = (doc, text, x, y, width, options = {}) => {
   const fontSize = fitTextSize(doc, text, fieldWidth - padding * 2, baseFontSize);
   const fieldText = String(text ?? '');
   const textY = y - 1;
-  const textX = x + padding;
+  const textX = x;
 
   doc.save();
   doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#111827');
   doc.text(fieldText, textX, textY, {
-    width: Math.max(0, fieldWidth - padding * 2),
-    align: 'left',
+    width: Math.max(0, fieldWidth),
+    align: 'center',
     lineBreak: false
   });
   doc.moveTo(x, y + fontSize + 2).lineTo(x + fieldWidth, y + fontSize + 2).strokeColor('#111827').stroke();
