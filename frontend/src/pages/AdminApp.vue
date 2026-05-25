@@ -4767,8 +4767,9 @@ onMounted(() => {
 
 .app-sidebar {
     position: relative;
-    align-self: start;
-    height: auto;
+    align-self: stretch;
+    height: 100%;
+    min-height: 100%;
     overflow: visible;
     display: flex;
     flex-direction: column;
