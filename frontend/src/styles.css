@@ -995,8 +995,8 @@ textarea { resize: vertical; }
 .app-sidebar {
     padding: 26px; 
     background: linear-gradient(90deg, rgba(82, 12, 12, 0.8), rgba(16, 82, 36, 0.95)), #ffffff;
-    color: #ecf2ef; display: flex; flex-direction: column; position: sticky;
-    z-index: 100; height: 100vh; top: 0; box-sizing: border-box; overflow: hidden;
+    color: #ecf2ef; display: flex; flex-direction: column; position: relative;
+    z-index: 100; min-height: 100vh; box-sizing: border-box; overflow: visible;
 }
 .sidebar-open-btn { display: none; background: transparent; font-size: 1.6rem; color: var(--ink); padding: 0; }
 .sidebar-close-btn { display: none; background: transparent; font-size: 1.6rem; color: #ecf2ef; position: absolute; right: 20px; top: 20px; z-index: 10; }
@@ -2079,4 +2079,80 @@ textarea { resize: vertical; }
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+/* Resident portal sidebar drawer mode */
+.resident-shell {
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.resident-shell .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 86vw);
+    height: 100dvh;
+    left: calc(-1 * min(320px, 86vw));
+    z-index: 1200;
+    padding: 18px 16px;
+}
+
+.resident-shell .app-sidebar.open {
+    left: 0;
+}
+
+.resident-shell .app-main {
+    grid-column: 1;
+    width: 100%;
+    max-width: 100%;
+    transform: none;
+    padding: 24px;
+}
+
+.resident-shell .app-sidebar.open + .app-main {
+    transform: none;
+}
+
+.resident-shell .mobile-app-header {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 1101;
+}
+
+.resident-shell .sidebar-open-btn {
+    display: grid;
+    place-items: center;
+}
+
+.resident-shell .sidebar-nav {
+    align-items: stretch;
+}
+
+.resident-shell .sidebar-nav button,
+.resident-shell .logout-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.resident-shell .sidebar-nav button::after,
+.resident-shell .logout-btn::after {
+    display: none !important;
+    content: none;
+}
+
+.resident-shell .sidebar-footer {
+    align-items: stretch;
+}
+
+.resident-shell .sidebar-header {
+    max-height: none;
+    padding-bottom: 18px;
+}
+
+.resident-shell .sidebar-header .brand-row > div:last-child {
+    max-width: 150px;
+    opacity: 1;
+    visibility: visible;
 }
