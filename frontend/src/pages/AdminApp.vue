@@ -837,6 +837,12 @@
                     </h2>
                     <p class="fine-print">{{ activeModal === 'report' ? 'Review complete report details, then apply a status action.' : activeModal === 'reservation' ? 'Review reservation details and manage the booking.' : 'Review appointment details and manage scheduling.' }}</p>
 
+                    <div v-if="['reservation', 'appointment'].includes(activeModal)" class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0 0 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
+                        <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
+                            <strong>{{ detail.label }}:</strong> {{ detail.value }}
+                        </p>
+                    </div>
+
                     <div v-if="activeModal === 'report'" class="report-modal-grid">
                         <div class="report-modal-left">
                             <div class="stack report-details-card">
@@ -2339,11 +2345,22 @@ const getRequestDetails = (item) => {
     }
     
     if (activeModal.value === 'appointment') {
+        const officialName = item.officialId?.name || item.officialName || 'Unassigned official';
+        const officialPosition = item.officialId?.position || item.officialPosition || '';
+        const officialLabel = officialPosition ? `${officialName} (${officialPosition})` : officialName;
+
         return [
-            { label: 'Official', value: `${item.officialId?.name} (${item.officialId?.position})` },
+            { label: 'Requester', value: getRequestorName(item) },
+            { label: 'Contact Number', value: item.contactNumber || item.residentId?.contactNumber },
+            { label: 'Email', value: item.email || item.residentId?.email },
+            { label: 'Address', value: item.address || item.residentId?.address },
+            { label: 'Official', value: officialLabel },
             { label: 'Date', value: formatDate(item.appointmentDate) },
             { label: 'Time', value: `${item.timeSlot?.startTime || 'N/A'} - ${item.timeSlot?.endTime || 'N/A'}` },
             { label: 'Purpose', value: item.purpose },
+            { label: 'Remarks', value: item.remarks },
+            { label: 'Rejection Reason', value: item.rejectionReason },
+            { label: 'Cancellation Reason', value: item.cancellationReason },
             { label: 'Requested On', value: formatDate(item.createdAt) }
         ];
     }
