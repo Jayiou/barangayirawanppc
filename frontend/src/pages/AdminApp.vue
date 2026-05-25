@@ -3172,6 +3172,7 @@ onMounted(() => {
     radial-gradient(circle at top right, rgba(31, 90, 138, 0.06), transparent 30%),
     radial-gradient(circle at bottom right, rgba(181, 136, 56, 0.05), transparent 24%),
     linear-gradient(180deg, #f4f8f7 0%, #ebf2f0 100%);
+    align-items: start;
 }
 
 .app-shell::before {
@@ -4760,6 +4761,29 @@ onMounted(() => {
 .app-main {
     position: relative;
     z-index: 1;
+    min-width: 0;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header,
+.sidebar-footer {
+    flex-shrink: 0;
+}
+
+.sidebar-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .hero-banner {
