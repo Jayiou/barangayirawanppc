@@ -222,7 +222,7 @@
 
                     <nav class="landing-footer-nav" aria-label="Footer navigation">
                         <a href="#home">Home</a>
-                        <a href="#announcements">Announcement/Advisories</a>
+                        <a href="#announcements">Announcement</a>
                         <a href="#vmg">VMG</a>
                         <a href="#services">Services</a>
                         <a href="#officials">Officials</a>
@@ -993,9 +993,9 @@ const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecapt
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
 
 const landingText = {
-    nav: { home: 'Home', vmg: 'VMG', services: 'Services', officials: 'Officials', announcements: 'Announcement/Advisories', location: 'Location', appointments: 'Appointments', facilities: 'Facilities', login: 'Login', register: 'Register', continueOtp: 'Continue OTP' },
+    nav: { home: 'Home', vmg: 'VMG', services: 'Services', officials: 'Officials', announcements: 'Announcement', location: 'Location', appointments: 'Appointments', facilities: 'Facilities', login: 'Login', register: 'Register', continueOtp: 'Continue OTP' },
     hero: { eyebrow: 'Barangay Digital Services', title: 'Welcome to Barangay Irawan', subtitle: 'Puerto Princesa City', copy: 'Your gateway to efficient, modern barangay services. Access documents, schedule appointments, report incidents, and stay connected with your community, all in one place.' },
-    sections: { servicesTitle: 'Barangay Services', servicesCopy: 'Everything you need to connect with Barangay Irawan and access essential community services.', officialsTitle: 'Barangay Officials', officialsCopy: 'Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.', announcementsTitle: 'Announcement/Advisories', announcementsCopy: 'Stay informed with the latest barangay updates, reminders, and emergency advisories.' },
+    sections: { servicesTitle: 'Barangay Services', servicesCopy: 'Everything you need to connect with Barangay Irawan and access essential community services.', officialsTitle: 'Barangay Officials', officialsCopy: 'Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.', announcementsTitle: 'Announcement', announcementsCopy: 'Stay informed with the latest barangay updates, reminders, and emergency advisories.' },
     actions: { requestOnline: 'Request online', loadingOfficials: 'Loading officials...' },
     footer: { rights: '© 2026 Barangay Irawan. All rights reserved.' },
     auth: {
@@ -1662,7 +1662,7 @@ const handleGuestReservationRequest = async () => {
 const services = computed(() => [
     { icon: '📄', title: 'Document Requests', copy: 'Request barangay certificates, clearances, and indigency documents through your resident portal.' },
     { icon: '🗓', title: texts.value.landing.nav.appointments + ' & ' + texts.value.landing.nav.facilities, copy: 'Schedule barangay appointments and reserve community facilities for approved events.', action: 'guest-facility-request' },
-    { icon: '🔔', title: texts.value.landing.nav.announcements, copy: texts.value.landing.sections.announcementsCopy },
+    { icon: '🔔', title: texts.value.landing.sections.announcementsTitle, copy: texts.value.landing.sections.announcementsCopy },
     { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.sections.officialsCopy },
     { icon: '📍', title: texts.value.landing.nav.location, copy: 'Find Barangay Irawan Hall and open the map for quick directions.' },
     { icon: '🏢', title: 'Community Hub', copy: texts.value.landing.sections.servicesCopy }
@@ -2688,6 +2688,9 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
 .landing-officials-section {
     padding: 60px 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .officials-sections {
@@ -2695,6 +2698,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     flex-direction: column;
     gap: 48px;
     margin-top: 32px;
+    width: 100%;
+    min-width: 0;
 }
 
 .officials-row {
@@ -2703,6 +2708,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     flex-wrap: wrap;
     gap: 40px;
     padding: 0 20px;
+    width: 100%;
+    min-width: 0;
 }
 
 .captain-row {
@@ -2726,10 +2733,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
 .kagawad-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 40px;
     max-width: 1000px;
     margin: 0 auto;
+    width: 100%;
 }
 
 .other-row {
@@ -2745,6 +2753,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     align-items: center;
     text-align: center;
     padding: 22px 18px;
+    min-width: 0;
+    max-width: 100%;
     background: #ffffff;
     border: 1px solid rgba(221, 229, 239, 0.9);
     border-radius: 18px;
@@ -2798,24 +2808,34 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
 @media (max-width: 1024px) {
     .kagawad-row {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 32px;
         max-width: 100%;
     }
 }
 
 @media (max-width: 768px) {
+    .landing-officials-section {
+        padding: 48px 14px;
+    }
+
     .officials-row {
         gap: 32px;
-        padding: 0 16px;
+        padding: 0;
     }
 
     .dual-row .official-card {
-        width: 240px;
+        width: min(240px, 100%);
     }
 
     .captain-row .official-card {
-        width: 240px;
+        width: min(240px, 100%);
+    }
+
+    .kagawad-row {
+        grid-template-columns: repeat(2, minmax(0, 180px));
+        justify-content: center;
+        gap: 20px;
     }
 
     .official-avatar {
@@ -2837,7 +2857,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     .officials-row {
         gap: 20px;
-        padding: 0 12px;
+        padding: 0;
     }
 
     .dual-row {
@@ -2845,15 +2865,21 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     .dual-row .official-card {
-        width: 160px;
+        width: min(160px, calc(50vw - 18px));
     }
 
     .captain-row .official-card {
-        width: 180px;
+        width: min(180px, 100%);
     }
 
     .kagawad-row {
-        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .kagawad-row .official-card,
+    .other-row .official-card {
+        width: 100%;
     }
 
     .official-avatar {
@@ -2875,14 +2901,20 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 <style scoped>
 /* VMG Cards */
 .landing-vmg-section {
-    padding: 48px 0 72px;
+    width: 100%;
+    max-width: 1520px;
+    margin: 0 auto;
+    padding: 48px 28px 72px;
+    overflow-x: hidden;
 }
 .vmg-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 28px;
     align-items: stretch;
     margin-top: 20px;
+    width: 100%;
+    min-width: 0;
 }
 .vmg-card {
     position: relative;
@@ -2894,6 +2926,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     text-align: center;
     border-radius: 14px;
     background: transparent;
+    min-width: 0;
+    max-width: 100%;
     box-shadow: 0 18px 44px rgba(22, 36, 26, 0.14), 0 6px 16px rgba(22, 36, 26, 0.07);
     transition: transform 180ms ease, box-shadow 180ms ease;
 }
@@ -2959,6 +2993,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 }
 @media (max-width: 640px) {
+    .landing-vmg-section {
+        padding: 40px 14px 56px;
+    }
+
     .vmg-grid { grid-template-columns: 1fr; gap: 20px; }
     .vmg-card { min-height: 260px; }
 
