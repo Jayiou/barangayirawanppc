@@ -4766,11 +4766,10 @@ onMounted(() => {
 }
 
 .app-sidebar {
-    position: sticky;
-    top: 0;
+    position: relative;
     align-self: start;
-    height: 100vh;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
     display: flex;
     flex-direction: column;
 }
