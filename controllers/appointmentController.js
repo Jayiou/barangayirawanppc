@@ -7,7 +7,6 @@ const { createHttpError } = require('../utils/httpError');
 const { sendRequestStatusEmail } = require('../utils/mailer');
 const {
     getAvailableTimeSlots,
-    hasActiveAppointment,
     isTimeSlotAvailable,
     isValidAppointmentDate,
     formatAppointmentResponse,
@@ -352,15 +351,6 @@ const requestAppointment = asyncHandler(async (req, res) => {
     const resident = await Resident.findOne({ userId });
     if (!resident) {
         throw createHttpError(404, 'Resident profile not found');
-    }
-
-    // Check if resident already has active appointment
-    const hasActive = await hasActiveAppointment(resident._id);
-    if (hasActive) {
-        throw createHttpError(
-            400,
-            'You already have an active appointment request. Please wait for approval, completion, cancellation, or rejection before creating another appointment.'
-        );
     }
 
     // Verify official exists and is active

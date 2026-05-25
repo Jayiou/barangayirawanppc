@@ -434,21 +434,16 @@
                             <span>Available Time Slots</span>
                             <div v-if="isFetchingSlots" style="margin-top: 5px; font-size: 0.9em; color: #666;">Loading slots...</div>
                             <div v-else-if="availableSlots.length === 0" style="margin-top: 5px; font-size: 0.9em; color: #d32f2f;">No available slots for this date.</div>
-                            <div v-else style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                                <button type="button" 
+                            <div v-else class="appointment-slot-grid" :style="{ '--appointment-slot-min-width': appointmentSlotMinWidth }">
+                                <button type="button"
+                                    class="appointment-slot-button"
                                     v-for="(slot, idx) in availableSlots" :key="idx"
                                     @click="slot.isAvailable ? selectSlot(slot) : null"
                                     :disabled="!slot.isAvailable"
                                     :style="{
-                                        padding: '8px 12px',
-                                        border: '1px solid #2c3e50',
-                                        borderRadius: '6px',
                                         background: !slot.isAvailable ? '#f5f5f5' : (appointmentForm.startTime === slot.startTime ? '#2c3e50' : 'transparent'),
                                         color: !slot.isAvailable ? '#aaa' : (appointmentForm.startTime === slot.startTime ? '#fff' : '#2c3e50'),
                                         cursor: !slot.isAvailable ? 'not-allowed' : 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center'
                                     }"
                                 >
                                     <span>{{ slot.label }}</span>
@@ -1071,6 +1066,15 @@ const isFetchingSlots = ref(false);
 const isFetchingFacilityAvailability = ref(false);
 const viewingAppointment = ref(null);
 const locatingPosition = ref(false);
+const appointmentSlotMinWidth = computed(() => {
+    const longestLabelLength = availableSlots.value.reduce((longest, slot) => {
+        const label = String(slot?.label || `${slot?.startTime || ''} - ${slot?.endTime || ''}`).trim();
+        return Math.max(longest, label.length);
+    }, 0);
+
+    const estimatedWidth = Math.ceil(longestLabelLength * 10.5 + 28);
+    return `${Math.min(Math.max(estimatedWidth, 160), 260)}px`;
+});
 
 const loadAvailableSlots = async () => {
     if (!appointmentForm.value.officialId || !appointmentForm.value.appointmentDate) {
