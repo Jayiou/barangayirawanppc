@@ -24,5 +24,25 @@ export function useDocuments() {
         }
     };
 
-    return { documentRequests, loadMyDocuments, createDocumentRequest };
+    const editDocumentRequest = async (id, payload) => {
+        try {
+            await apiFetch(`/documents/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+            await loadMyDocuments();
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    };
+
+    const deleteDocumentRequest = async (id) => {
+        try {
+            await apiFetch(`/documents/${id}`, { method: 'DELETE' });
+            await loadMyDocuments();
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    };
+
+    return { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest };
 }

@@ -360,6 +360,67 @@ exports.getResidentRequests = async (req, res, next) => {
   }
 };
 
+exports.updateRequest = async (req, res, next) => {
+  try {
+    const reqId = req.params.id;
+    const doc = await DocumentRequest.findById(reqId);
+
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+
+    const resident = req.user?._id ? await resolveResidentForUser(req.user._id) : null;
+    if (!resident || doc.resident?.toString() !== resident._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (doc.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be edited' });
+    }
+
+    const { type, fields, purpose } = req.body;
+    if (type) {
+      doc.type = type;
+    }
+    if (fields) {
+      doc.fields = normalizeFieldMap(fields);
+    }
+    if (purpose !== undefined) {
+      doc.purpose = purpose || '';
+    }
+
+    await doc.save();
+    res.json({ success: true, data: doc });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteRequest = async (req, res, next) => {
+  try {
+    const reqId = req.params.id;
+    const doc = await DocumentRequest.findById(reqId);
+
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+
+    const resident = req.user?._id ? await resolveResidentForUser(req.user._id) : null;
+    if (!resident || doc.resident?.toString() !== resident._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (doc.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be deleted' });
+    }
+
+    await DocumentRequest.findByIdAndDelete(reqId);
+    res.json({ success: true, message: 'Document request deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getAllRequests = async (req, res, next) => {
   try {
     const list = await DocumentRequest.find()

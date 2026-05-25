@@ -283,7 +283,7 @@
                                 <span class="eyebrow">{{ texts.documents.eyebrow }}</span>
                                 <h3>{{ texts.documents.heading }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'document'">{{ texts.documents.requestButton }}</button>
+                            <button class="primary-button" @click="openDocumentRequestModal()">{{ texts.documents.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="texts.documents.searchPlaceholder">
                         <div class="portal-table-wrap">
@@ -300,6 +300,8 @@
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
                                             <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
+                                            <button v-if="canEditRecord('document', item)" class="ghost-button table-action" @click="openDocumentRequestEditor(item)">Edit</button>
+                                            <button v-if="canDeleteRecord('document', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('document', item)">Delete</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -569,7 +571,7 @@
                     </form>
                 </div>
                 <div v-if="activeModal === 'document'">
-                    <h2>{{ texts.modals.documentRequest }}</h2>
+                    <h2>{{ editingDocumentRequestId ? 'Edit Document Request' : texts.modals.documentRequest }}</h2>
                     <p class="fine-print">Choose document type and fill required fields.</p>
                     <form class="stack" @submit.prevent="handleSubmitDocument">
                         <label>
@@ -588,7 +590,7 @@
 
                         <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" placeholder="Reason for request"></label>
 
-                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : (editingDocumentRequestId ? 'Save Changes' : 'Submit Request') }}</button>
                     </form>
                 </div>
             </dialog>
@@ -613,6 +615,7 @@
                     </div>
                 </div>
                 <div class="portal-modal-actions">
+                    <button v-if="canEditRecord(recordDetail.type, recordDetail.item)" class="ghost-button" @click="openDocumentRequestEditor(recordDetail.item)">Edit</button>
                     <button v-if="canDeleteRecord(recordDetail.type, recordDetail.item)" class="ghost-button danger" @click="deleteResidentRecord(recordDetail.type, recordDetail.item)">Delete</button>
                     <button class="primary-button" @click="recordDetail = null">Close</button>
                 </div>
@@ -696,7 +699,7 @@ const confirmLogout = () => {
 const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadProfile, loadFacilityAvailability } = usePortalData();
 const { reservationForm, reportForm, reportProofFiles, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
-const { documentRequests, loadMyDocuments, createDocumentRequest } = useDocuments();
+const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest } = useDocuments();
 // Local state
 const sidebarOpen = ref(false);
 const currentView = ref(localStorage.getItem('portal_current_view') || 'profile');
@@ -712,7 +715,9 @@ const reportSearch = ref('');
 const documentSearch = ref('');
 const recordDetail = ref(null);
 
-const documentForm = ref({ type: 'certificate', fields: {}, purpose: '' });
+const defaultDocumentForm = () => ({ type: 'certificate', fields: {}, purpose: '' });
+const documentForm = ref(defaultDocumentForm());
+const editingDocumentRequestId = ref(null);
 const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
 const passwordVisibility = reactive({ current: false, new: false, confirm: false });
 const profileImageFile = ref(null);
@@ -1003,11 +1008,14 @@ const handleSubmitDocument = async () => {
             purpose: documentForm.value.purpose || ''
         };
 
-        const result = await createDocumentRequest(payload);
+        const result = editingDocumentRequestId.value
+            ? await editDocumentRequest(editingDocumentRequestId.value, payload)
+            : await createDocumentRequest(payload);
         if (result.success) {
-            setStatus('Document request submitted.');
+            setStatus(editingDocumentRequestId.value ? 'Document request updated.' : 'Document request submitted.');
             closeModal();
-            documentForm.value = { type: 'certificate', fields: {}, purpose: '' };
+            documentForm.value = defaultDocumentForm();
+            editingDocumentRequestId.value = null;
         } else {
             setStatus(result.message || 'Failed to submit document request.', true);
         }
@@ -1255,10 +1263,12 @@ const formatTimeRange = (startTime, endTime) => {
 const deleteConfig = {
     appointment: { path: (id) => `/appointments/${id}`, terminal: ['rejected', 'cancelled', 'completed', 'expired'], label: 'appointment' },
     reservation: { path: (id) => `/facility-reservations/${id}`, terminal: ['rejected', 'completed', 'cancelled'], label: 'reservation' },
-    report: { path: (id) => `/reports/${id}`, terminal: ['resolved', 'rejected', 'closed'], label: 'report' }
+    report: { path: (id) => `/reports/${id}`, terminal: ['resolved', 'rejected', 'closed'], label: 'report' },
+    document: { path: (id) => `/documents/${id}`, terminal: ['pending'], label: 'document request' }
 };
 
 const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(item?.status);
+const canEditRecord = (type, item) => type === 'document' && item?.status === 'pending';
 const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
 
 const openRecordDetail = (type, item) => {
@@ -1285,7 +1295,15 @@ const deleteResidentRecord = async (type, item) => {
     if (!confirm(`Delete this ${config.label} from your history?`)) return;
 
     try {
-        await apiFetch(config.path(item._id), { method: 'DELETE' });
+        let deleteResult = { success: true };
+        if (type === 'document') {
+            deleteResult = await deleteDocumentRequest(item._id);
+        } else {
+            await apiFetch(config.path(item._id), { method: 'DELETE' });
+        }
+        if (!deleteResult.success) {
+            throw new Error(deleteResult.message || 'Failed to delete request');
+        }
         setStatus(`${normalizeLabel(config.label)} deleted.`);
         if (recordDetail.value?.item?._id === item._id) {
             recordDetail.value = null;
@@ -1300,6 +1318,7 @@ const recordDetailTitle = computed(() => {
     if (!recordDetail.value) return '';
     return {
         appointment: 'Appointment Details',
+        document: 'Document Request Details',
         reservation: 'Reservation Details',
         report: 'Report Details'
     }[recordDetail.value.type];
@@ -1316,6 +1335,12 @@ const recordDetailFields = computed(() => {
             ['Purpose', item.purpose],
             ['Status', normalizeLabel(item.status)],
             ['Reason/Notes', item.rejectionReason || item.cancellationReason || item.remarks]
+        ],
+        document: [
+            ['Document Type', normalizeLabel(item.type)],
+            ['Purpose', item.purpose || item.fields?.PURPOSE],
+            ['Status', normalizeLabel(item.status)],
+            ['Submitted', formatDate(item.createdAt)]
         ],
         reservation: [
             ['Facility', normalizeLabel(item.facilityName)],
@@ -1360,8 +1385,35 @@ const openModal = (type) => {
     activeModal.value = type;
 };
 
+const openDocumentRequestModal = () => {
+    editingDocumentRequestId.value = null;
+    documentForm.value = defaultDocumentForm();
+    activeModal.value = 'document';
+};
+
+const openDocumentRequestEditor = (item) => {
+    recordDetail.value = null;
+    editingDocumentRequestId.value = item?._id || null;
+    documentForm.value = {
+        type: item?.type || 'certificate',
+        fields: {
+            FULL_NAME: item?.fields?.FULL_NAME || '',
+            AGE: item?.fields?.AGE || '',
+            BARANGAY: item?.fields?.BARANGAY || 'Irawan',
+            CITY: item?.fields?.CITY || 'Puerto Princesa City'
+        },
+        purpose: item?.purpose || ''
+    };
+    activeModal.value = 'document';
+};
+
 const closeModal = () => {
+    const wasDocumentModal = activeModal.value === 'document';
     activeModal.value = null;
+    editingDocumentRequestId.value = null;
+    if (wasDocumentModal) {
+        documentForm.value = defaultDocumentForm();
+    }
 };
 
 const hasCapturedCoordinates = computed(() => {
