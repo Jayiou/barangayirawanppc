@@ -2186,3 +2186,12 @@ textarea { resize: vertical; }
 .resident-shell .app-sidebar.open .resident-sidebar-toggle {
     display: grid;
 }
+
+/* Backdrop shown when sidebar drawer is open */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1140;
+    transition: opacity 180ms ease;
+}

@@ -45,6 +45,8 @@
             </div>
         </aside>
 
+        <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+
         <main class="app-main">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = !sidebarOpen"><i class="fa-solid fa-bars"></i></button>
