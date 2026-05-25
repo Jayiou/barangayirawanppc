@@ -148,6 +148,24 @@
                                             <small class="profile-password-note">Drag the photo until the circle covers the part you want to keep.</small>
                                         </div>
                                     </div>
+                                    <div class="form-grid two-column profile-name-grid">
+                                        <label>
+                                            <span>{{ texts.profile.labels.firstName }}</span>
+                                            <input v-model="profile.firstName" type="text" required>
+                                        </label>
+                                        <label>
+                                            <span>{{ texts.profile.labels.middleName }}</span>
+                                            <input v-model="profile.middleName" type="text" placeholder="Middle name">
+                                        </label>
+                                        <label>
+                                            <span>{{ texts.profile.labels.lastName }}</span>
+                                            <input v-model="profile.lastName" type="text" required>
+                                        </label>
+                                        <label>
+                                            <span>{{ texts.profile.labels.suffix }}</span>
+                                            <input v-model="profile.suffix" type="text" placeholder="Jr., Sr., III">
+                                        </label>
+                                    </div>
                                     <div class="form-grid two-column">
                                         <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
                                         <label><span>Contact Number</span><input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+63XXXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$"></label>

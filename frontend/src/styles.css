@@ -503,10 +503,15 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
 .profile-image-field {
     display: grid;
     gap: 12px;
+    justify-items: center;
+    text-align: center;
     padding: 16px;
     background: rgba(232, 245, 241, 0.52);
     border: 1px solid rgba(27, 115, 71, 0.1);
     border-radius: 18px;
+}
+.profile-image-field .profile-avatar-preview--edit {
+    margin-inline: auto;
 }
 .profile-image-input-hidden {
     position: absolute;
@@ -626,6 +631,9 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     line-height: 1.45;
 }
 .profile-edit-form { gap: 16px; }
+.profile-name-grid {
+    width: 100%;
+}
 .form-span-2 { grid-column: 1 / -1; }
 .profile-form-actions {
     display: flex;
@@ -2203,7 +2211,7 @@ textarea { resize: vertical; }
     color: #fff;
     position: absolute;
     top: 12px;
-    right: 12px;
+    right: 20px;
     display: grid;
     place-items: center;
     z-index: 1210;
