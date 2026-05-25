@@ -1660,10 +1660,11 @@ const handleGuestReservationRequest = async () => {
 };
 
 const services = computed(() => [
-    { icon: '🗓', title: texts.value.landing.nav.appointments + ' & ' + texts.value.landing.nav.facilities, copy: texts.value.landing.hero.copy, action: 'guest-facility-request' },
+    { icon: '📄', title: 'Document Requests', copy: 'Request barangay certificates, clearances, and indigency documents through your resident portal.' },
+    { icon: '🗓', title: texts.value.landing.nav.appointments + ' & ' + texts.value.landing.nav.facilities, copy: 'Schedule barangay appointments and reserve community facilities for approved events.', action: 'guest-facility-request' },
     { icon: '🔔', title: texts.value.landing.nav.announcements, copy: texts.value.landing.sections.announcementsCopy },
-    { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.auth.guestReport.visualCopy, action: 'guest-report-request' },
-    { icon: '📍', title: texts.value.landing.nav.location, copy: texts.value.landing.sections.officialsCopy },
+    { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.sections.officialsCopy },
+    { icon: '📍', title: texts.value.landing.nav.location, copy: 'Find Barangay Irawan Hall and open the map for quick directions.' },
     { icon: '🏢', title: 'Community Hub', copy: texts.value.landing.sections.servicesCopy }
 ]);
 
