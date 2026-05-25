@@ -462,6 +462,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr v-if="currentView === 'residents'">
+                                    <th scope="col">Photo</th>
                                     <th scope="col">Name</th>
                                     <th scope="col">Address</th>
                                     <th scope="col">Account Status</th>
@@ -512,6 +513,11 @@
                                     </tr>
                                 </template>
                                 <tr v-for="item in currentList" :key="item._id" class="table-row hoverable">
+                                    <td v-if="currentView === 'residents'">
+                                        <div class="table-avatar resident-table-avatar" :style="item.profileImage ? { backgroundImage: `url(${item.profileImage})` } : {}">
+                                            <span v-if="!item.profileImage">{{ getResidentInitials(item) }}</span>
+                                        </div>
+                                    </td>
                                     <td v-if="currentView === 'residents'"><strong>{{ item.firstName }} {{ item.lastName }}</strong></td>
                                     <td v-if="currentView === 'residents'">{{ item.address }}</td>
                                     <td v-if="currentView === 'residents'"><StatusBadge :status="item.userId?.accountStatus || 'pending'" /></td>
@@ -796,6 +802,37 @@
                                     <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
                                     <p><strong>Purok/Zone:</strong> {{ formatPurokZone(selectedItem) }}</p>
                                 </div>
+                                <section class="resident-proof-panel">
+                                    <div class="resident-proof-head">
+                                        <div>
+                                            <strong>Proof of Residency</strong>
+                                            <p class="fine-print">{{ residentProofLabel(selectedItem) }}</p>
+                                        </div>
+                                        <button
+                                            v-if="residentProofPreview.url"
+                                            type="button"
+                                            class="ghost-button table-action"
+                                            @click="openResidentProofPreview"
+                                        >
+                                            <i class="fa-solid fa-up-right-from-square"></i> Open
+                                        </button>
+                                    </div>
+                                    <div v-if="residentProofPreview.loading" class="resident-proof-state">Loading proof of residency...</div>
+                                    <div v-else-if="residentProofPreview.error" class="resident-proof-state is-error">{{ residentProofPreview.error }}</div>
+                                    <button
+                                        v-else-if="residentProofPreview.url && residentProofPreview.isImage"
+                                        type="button"
+                                        class="resident-proof-image-button"
+                                        @click="openResidentProofPreview"
+                                    >
+                                        <img :src="residentProofPreview.url" :alt="residentProofLabel(selectedItem)">
+                                    </button>
+                                    <div v-else-if="residentProofPreview.url" class="resident-proof-file">
+                                        <i class="fa-solid fa-file"></i>
+                                        <span>Proof file is ready to open.</span>
+                                    </div>
+                                    <div v-else class="resident-proof-state">No proof of residency uploaded.</div>
+                                </section>
                             </div>
                             <div class="resident-tab-content" v-else-if="residentTab === 'activity'">
                                 <div class="resident-timeline">
@@ -1228,6 +1265,12 @@ const recordPreview = reactive({
     title: '',
     src: '',
     alt: ''
+});
+const residentProofPreview = reactive({
+    url: '',
+    isImage: false,
+    loading: false,
+    error: ''
 });
 const hoveredTrendIndex = ref(null);
 const setHoveredTrendIndex = (index) => {
@@ -2274,6 +2317,62 @@ const openProofPreview = (proofPath) => {
     recordPreview.open = true;
 };
 
+const clearResidentProofPreview = () => {
+    if (residentProofPreview.url.startsWith('blob:')) {
+        URL.revokeObjectURL(residentProofPreview.url);
+    }
+
+    residentProofPreview.url = '';
+    residentProofPreview.isImage = false;
+    residentProofPreview.loading = false;
+    residentProofPreview.error = '';
+};
+
+const residentProofLabel = (resident) => getProofImageLabel(resident?.proofOfResidency || 'Proof of residency');
+
+const loadResidentProofPreview = async (resident) => {
+    clearResidentProofPreview();
+
+    if (!resident?._id || !resident.proofOfResidency) {
+        return;
+    }
+
+    residentProofPreview.loading = true;
+
+    try {
+        const auth = getAuth();
+        const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+        const response = await fetch(`/api/residents/${resident._id}/proof`, { headers });
+
+        if (!response.ok) {
+            throw new Error('Unable to load proof of residency.');
+        }
+
+        const blob = await response.blob();
+        residentProofPreview.url = URL.createObjectURL(blob);
+        residentProofPreview.isImage = blob.type.startsWith('image/');
+    } catch (error) {
+        residentProofPreview.error = error.message || 'Unable to load proof of residency.';
+    } finally {
+        residentProofPreview.loading = false;
+    }
+};
+
+const openResidentProofPreview = () => {
+    if (!residentProofPreview.url) return;
+
+    if (residentProofPreview.isImage) {
+        recordPreview.type = 'image';
+        recordPreview.title = 'Proof of Residency';
+        recordPreview.src = residentProofPreview.url;
+        recordPreview.alt = residentProofLabel(selectedItem.value);
+        recordPreview.open = true;
+        return;
+    }
+
+    globalThis.open(residentProofPreview.url, '_blank', 'noopener,noreferrer');
+};
+
 const openLocationPreview = (item) => {
     const src = getReportMapEmbedUrl(item);
     if (!src) return;
@@ -2292,6 +2391,12 @@ const closeRecordPreview = () => {
     recordPreview.src = '';
     recordPreview.alt = '';
 };
+
+watch(activeModal, (modal) => {
+    if (modal !== 'resident') {
+        clearResidentProofPreview();
+    }
+});
 
 const getRequestDetails = (item) => {
     if (activeModal.value === 'document') {
@@ -2415,6 +2520,7 @@ const openModal = async (type, item) => {
             selectedItem.value = { ...fullResident };
             setupResidentModal(selectedItem.value);
             activeModal.value = type;
+            await loadResidentProofPreview(selectedItem.value);
         } catch (error) {
             showToast(error.message || 'Failed to load resident details.', true);
         } finally {
@@ -3006,6 +3112,7 @@ watch(unreadReports, (newReports) => {
 
 onBeforeUnmount(() => {
     clearToast();
+    clearResidentProofPreview();
     stopNotificationPolling();
     try {
         globalThis.removeEventListener('hashchange', syncViewFromHash);
@@ -4943,6 +5050,74 @@ onMounted(() => {
     font-size: 0.88rem;
     color: #41584d;
     word-break: break-word;
+}
+
+.resident-table-avatar {
+    width: 46px;
+    height: 46px;
+    border: 2px solid rgba(13, 74, 42, 0.12);
+}
+
+.resident-proof-panel {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid #dce6e1;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff, #f8fcfa);
+    display: grid;
+    gap: 12px;
+}
+
+.resident-proof-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.resident-proof-head p {
+    margin: 4px 0 0;
+}
+
+.resident-proof-image-button {
+    padding: 0;
+    border: 1px solid rgba(13, 74, 42, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eef4f1;
+    display: block;
+    width: 100%;
+}
+
+.resident-proof-image-button img {
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    display: block;
+    background: #eef4f1;
+}
+
+.resident-proof-file,
+.resident-proof-state {
+    min-height: 120px;
+    border-radius: 10px;
+    background: rgba(232, 240, 237, 0.72);
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    text-align: center;
+    color: #41584d;
+    font-weight: 700;
+}
+
+.resident-proof-file i {
+    font-size: 1.8rem;
+    color: #0d4a2a;
+}
+
+.resident-proof-state.is-error {
+    color: #9f1d1d;
+    background: #fff4f4;
 }
 
 .report-modal-grid {
