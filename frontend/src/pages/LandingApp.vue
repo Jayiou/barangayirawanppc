@@ -334,7 +334,14 @@
                                     </div>
                                     <div class="input-group">
                                         <label for="guest-report-incident-date">Incident Date</label>
-                                        <input id="guest-report-incident-date" v-model="guestReportForm.incidentDate" type="date" :max="todayDate">
+                                        <input
+                                            id="guest-report-incident-date"
+                                            v-model="guestReportForm.incidentDate"
+                                            type="date"
+                                            :max="todayDate"
+                                            @input="limitGuestIncidentDateToToday"
+                                            @change="limitGuestIncidentDateToToday"
+                                        >
                                     </div>
                                 </div>
 
@@ -1013,6 +1020,13 @@ const formatLocalDateInputValue = (date = new Date()) => {
 };
 
 const todayDate = formatLocalDateInputValue();
+
+const limitGuestIncidentDateToToday = () => {
+    if (guestReportForm.incidentDate && guestReportForm.incidentDate > todayDate) {
+        guestReportForm.incidentDate = todayDate;
+        setStatus('Incident date cannot be in the future.', true);
+    }
+};
 
 // Local state
 const activeModal = ref('');

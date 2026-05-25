@@ -24,13 +24,13 @@
 
             <!-- Sidebar Navigation -->
             <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
                 <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">{{ texts.nav.appointments }}</span></button>
 
                 <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">{{ texts.nav.documents }}</span></button>
                 <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">{{ texts.nav.reservations }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ texts.nav.reports }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ texts.nav.disaster }}</span></button>
+                <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -64,7 +64,7 @@
                     <article class="content-card profile-card">
                         <div class="profile-hero">
                             <button type="button" class="profile-avatar-preview profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Upload profile picture">
-                                <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar" />
+                                <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar" :style="profileAvatarImageStyle" />
                                 <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
                                 <span class="profile-avatar-edit-badge" aria-hidden="true">
                                     <i class="fa-solid fa-pen"></i>
@@ -81,7 +81,6 @@
                             <section class="profile-panel">
                                 <div class="section-head profile-panel-head">
                                     <div>
-                                        <span class="eyebrow">Account Information</span>
                                         <h4>Account Information</h4>
                                     </div>
                                     <button type="button" class="ghost-button" @click="toggleProfileEdit">{{ isEditingProfile ? 'Cancel Edit' : 'Edit Profile' }}</button>
@@ -106,8 +105,8 @@
                                             <dd>{{ profile.address || 'N/A' }}</dd>
                                         </div>
                                         <div class="profile-info-item">
-                                            <dt>Purok / Zone</dt>
-                                            <dd>{{ profile.purok ? profile.purok + (profile.zone ? ' / ' + profile.zone : '') : 'N/A' }}</dd>
+                                            <dt>{{ selectedPurokZones.length ? 'Purok / Zone' : 'Purok' }}</dt>
+                                            <dd>{{ profilePurokZoneLabel }}</dd>
                                         </div>
                                         <div class="profile-info-item">
                                             <dt>Occupation</dt>
@@ -119,7 +118,7 @@
                                 <form v-else class="stack profile-edit-form" @submit.prevent="handleSaveProfile">
                                     <div class="form-span-2 profile-image-field">
                                         <button type="button" class="profile-avatar-preview profile-avatar-preview--edit profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Change profile picture">
-                                            <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar preview" />
+                                            <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar preview" :style="profileAvatarImageStyle" />
                                             <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
                                             <span class="profile-avatar-edit-badge" aria-hidden="true">
                                                 <i class="fa-solid fa-pen"></i>
@@ -127,7 +126,26 @@
                                         </button>
                                         <input ref="profileImageInput" class="profile-image-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" @change="handleProfileImageChange">
                                         <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">Choose Photo</button>
-                                        <small class="profile-password-note">Upload a JPG or PNG so the resident and admin views show the same photo.</small>
+                                        <div v-if="profileCropSourceUrl" class="profile-crop-tool">
+                                            <div class="profile-crop-frame">
+                                                <img :src="profileCropSourceUrl" alt="Profile crop preview" :style="profileCropImageStyle">
+                                            </div>
+                                            <div class="profile-crop-controls">
+                                                <label>
+                                                    <span>Zoom</span>
+                                                    <input v-model.number="profileCrop.zoom" type="range" min="1" max="2.5" step="0.05">
+                                                </label>
+                                                <label>
+                                                    <span>Horizontal position</span>
+                                                    <input v-model.number="profileCrop.x" type="range" min="0" max="100" step="1">
+                                                </label>
+                                                <label>
+                                                    <span>Vertical position</span>
+                                                    <input v-model.number="profileCrop.y" type="range" min="0" max="100" step="1">
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <small class="profile-password-note">Use the round guide to choose which part of the photo will appear in your profile.</small>
                                     </div>
                                     <div class="form-grid two-column">
                                         <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
@@ -142,8 +160,20 @@
                                             </select>
                                         </label>
                                         <label><span>Barangay</span><input v-model="profile.address" type="text" required></label>
-                                        <label><span>Purok</span><input v-model="profile.purok" type="text"></label>
-                                        <label><span>Zone</span><input v-model="profile.zone" type="text" placeholder="Zone 1"></label>
+                                        <label>
+                                            <span>Purok</span>
+                                            <select v-model="profile.purok" required>
+                                                <option value="">Select Purok</option>
+                                                <option v-for="purok in purokOptions" :key="purok" :value="purok">{{ purok }}</option>
+                                            </select>
+                                        </label>
+                                        <label v-if="selectedPurokZones.length">
+                                            <span>Zone</span>
+                                            <select v-model="profile.zone" required>
+                                                <option value="">Select Zone</option>
+                                                <option v-for="zone in selectedPurokZones" :key="zone" :value="zone">{{ zone }}</option>
+                                            </select>
+                                        </label>
                                         <label class="form-span-2"><span>Occupation</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
                                     </div>
                                     <div class="profile-form-actions">
@@ -164,17 +194,40 @@
                                 <form class="stack profile-password-form" @submit.prevent="handleChangePassword">
                                     <label>
                                         <span>Current Password</span>
-                                        <input v-model="changePasswordForm.currentPassword" type="password" autocomplete="current-password" required>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.currentPassword" :type="passwordVisibility.current ? 'text' : 'password'" autocomplete="current-password" required>
+                                            <button type="button" :aria-label="passwordVisibility.current ? 'Hide current password' : 'Show current password'" @click="togglePasswordVisibility('current')">
+                                                <i :class="passwordVisibility.current ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+                                            </button>
+                                        </div>
                                     </label>
                                     <label>
                                         <span>New Password</span>
-                                        <input v-model="changePasswordForm.newPassword" type="password" autocomplete="new-password" minlength="8" required>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.newPassword" :type="passwordVisibility.new ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
+                                            <button type="button" :aria-label="passwordVisibility.new ? 'Hide new password' : 'Show new password'" @click="togglePasswordVisibility('new')">
+                                                <i :class="passwordVisibility.new ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+                                            </button>
+                                        </div>
                                     </label>
                                     <label>
                                         <span>Confirm New Password</span>
-                                        <input v-model="changePasswordForm.confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.confirmPassword" :type="passwordVisibility.confirm ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
+                                            <button type="button" :aria-label="passwordVisibility.confirm ? 'Hide confirmed password' : 'Show confirmed password'" @click="togglePasswordVisibility('confirm')">
+                                                <i :class="passwordVisibility.confirm ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+                                            </button>
+                                        </div>
                                     </label>
-                                    <small class="profile-password-note">Use at least 8 characters. Mix letters, numbers, and symbols for better security.</small>
+                                    <div class="password-rules profile-password-rules" aria-live="polite">
+                                        <p class="password-rules-title">Password must include:</p>
+                                        <ul class="password-rules-list">
+                                            <li v-for="rule in changePasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
+                                                <i :class="rule.passed ? 'fa-solid fa-check' : 'fa-solid fa-xmark'"></i>
+                                                <span>{{ rule.label }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
                                     <button type="submit" class="primary-button" :disabled="isChangingPassword">{{ isChangingPassword ? 'Updating Password...' : 'Update Password' }}</button>
                                 </form>
                             </section>
@@ -472,7 +525,17 @@
                         </label>
                         <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
                         <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
-                        <label v-if="currentReportTypeConfig.requireIncidentDate"><span>Incident date</span><input v-model="reportForm.incidentDate" type="date" :max="todayDate" required></label>
+                        <label v-if="currentReportTypeConfig.requireIncidentDate">
+                            <span>Incident date</span>
+                            <input
+                                v-model="reportForm.incidentDate"
+                                type="date"
+                                :max="todayDate"
+                                required
+                                @input="limitIncidentDateToToday"
+                                @change="limitIncidentDateToToday"
+                            >
+                        </label>
                         <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
                             <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
                             <button type="button" class="ghost-button" @click="captureCurrentLocation" :disabled="locatingPosition">
@@ -608,7 +671,7 @@
     </div>
 </template>
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
@@ -650,19 +713,66 @@ const recordDetail = ref(null);
 
 const documentForm = ref({ type: 'certificate', fields: {}, purpose: '' });
 const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
+const passwordVisibility = reactive({ current: false, new: false, confirm: false });
 const profileImageFile = ref(null);
 const profileImageInput = ref(null);
 const profileImagePreview = ref('');
+const profileCropSourceFile = ref(null);
+const profileCropSourceUrl = ref('');
+const profileCrop = reactive({ x: 50, y: 50, zoom: 1 });
 
-const profileAvatarSrc = computed(() => profileImagePreview.value || profile.profileImage || '');
+const purokOptions = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
+const zoneOptionsByPurok = {
+    Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
+    Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
+};
+const PASSWORD_SPECIAL_CHAR_REGEX = /[^A-Za-z0-9]/;
+
+const selectedPurokZones = computed(() => zoneOptionsByPurok[profile.purok] || []);
+const profilePurokZoneLabel = computed(() => {
+    if (!profile.purok) return 'N/A';
+    if (!selectedPurokZones.value.length) return profile.purok;
+    return `${profile.purok}${profile.zone ? ' / ' + profile.zone : ''}`;
+});
+
+const profileAvatarSrc = computed(() => profileCropSourceUrl.value || profileImagePreview.value || profile.profileImage || '');
+const profileCropImageStyle = computed(() => ({
+    objectPosition: `${profileCrop.x}% ${profileCrop.y}%`,
+    transform: `scale(${profileCrop.zoom})`
+}));
+const profileAvatarImageStyle = computed(() => (profileCropSourceUrl.value ? profileCropImageStyle.value : {}));
+
+const changePasswordRules = computed(() => {
+    const password = changePasswordForm.value.newPassword || '';
+    return [
+        { key: 'min-length', label: 'At least 8 characters', passed: password.length >= 8 },
+        { key: 'uppercase', label: 'At least 1 uppercase letter', passed: /[A-Z]/.test(password) },
+        { key: 'number', label: 'At least 1 number', passed: /\d/.test(password) },
+        { key: 'special', label: 'At least 1 special character', passed: PASSWORD_SPECIAL_CHAR_REGEX.test(password) },
+        { key: 'match', label: 'Confirm password matches', passed: Boolean(password) && password === changePasswordForm.value.confirmPassword }
+    ];
+});
+
+const togglePasswordVisibility = (field) => {
+    passwordVisibility[field] = !passwordVisibility[field];
+};
 
 const clearProfileImageSelection = () => {
     if (profileImagePreview.value.startsWith('blob:')) {
         URL.revokeObjectURL(profileImagePreview.value);
     }
 
+    if (profileCropSourceUrl.value.startsWith('blob:')) {
+        URL.revokeObjectURL(profileCropSourceUrl.value);
+    }
+
     profileImagePreview.value = '';
     profileImageFile.value = null;
+    profileCropSourceFile.value = null;
+    profileCropSourceUrl.value = '';
+    profileCrop.x = 50;
+    profileCrop.y = 50;
+    profileCrop.zoom = 1;
 
     if (profileImageInput.value) {
         profileImageInput.value.value = '';
@@ -676,8 +786,55 @@ const handleProfileImageChange = (event) => {
         URL.revokeObjectURL(profileImagePreview.value);
     }
 
-    profileImageFile.value = file;
-    profileImagePreview.value = file ? URL.createObjectURL(file) : '';
+    if (profileCropSourceUrl.value.startsWith('blob:')) {
+        URL.revokeObjectURL(profileCropSourceUrl.value);
+    }
+
+    profileImageFile.value = null;
+    profileImagePreview.value = '';
+    profileCropSourceFile.value = file;
+    profileCropSourceUrl.value = file ? URL.createObjectURL(file) : '';
+    profileCrop.x = 50;
+    profileCrop.y = 50;
+    profileCrop.zoom = 1;
+};
+
+const loadImage = (src) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+});
+
+const createCroppedProfileImageFile = async () => {
+    if (!profileCropSourceFile.value || !profileCropSourceUrl.value) {
+        return profileImageFile.value;
+    }
+
+    const image = await loadImage(profileCropSourceUrl.value);
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+    const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight) * profileCrop.zoom;
+    const width = image.naturalWidth * scale;
+    const height = image.naturalHeight * scale;
+    const x = (size - width) * (profileCrop.x / 100);
+    const y = (size - height) * (profileCrop.y / 100);
+
+    context.drawImage(image, x, y, width, height);
+
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                resolve(profileCropSourceFile.value);
+                return;
+            }
+
+            resolve(new File([blob], profileCropSourceFile.value.name.replace(/\.[^.]+$/, '') + '-profile.jpg', { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.9);
+    });
 };
 
 const openProfileImagePicker = async () => {
@@ -692,6 +849,14 @@ const openProfileImagePicker = async () => {
 const displayName = computed(() => {
     const parts = [profile.firstName, profile.middleName, profile.lastName, profile.suffix].filter(Boolean);
     return parts.length ? parts.join(' ') : user.value?.username || 'Resident Profile';
+});
+
+watch(() => profile.purok, () => {
+    const zones = selectedPurokZones.value;
+
+    if (!zones.length || !zones.includes(profile.zone)) {
+        profile.zone = '';
+    }
 });
 
 const filteredDocumentRequests = computed(() => {
@@ -932,6 +1097,13 @@ const formatLocalDateInputValue = (date = new Date()) => {
 };
 
 const todayDate = formatLocalDateInputValue();
+
+const limitIncidentDateToToday = () => {
+    if (reportForm.incidentDate && reportForm.incidentDate > todayDate) {
+        reportForm.incidentDate = todayDate;
+        setStatus('Incident date cannot be in the future.', true);
+    }
+};
 
 const currentReportTypeConfig = computed(() => {
     return REPORT_TYPE_CONFIG[reportForm.reportType] || REPORT_TYPE_CONFIG.other;
@@ -1191,6 +1363,12 @@ const captureCurrentLocation = async () => {
 
 const handleSaveProfile = async () => {
     if (isSubmitting.value) return;
+
+    if (selectedPurokZones.value.length && !selectedPurokZones.value.includes(profile.zone)) {
+        setStatus(`Please select a zone for Purok ${profile.purok}.`, true);
+        return;
+    }
+
     isSubmitting.value = true;
     try {
         const formData = new FormData();
@@ -1201,8 +1379,9 @@ const handleSaveProfile = async () => {
             }
         });
 
-        if (profileImageFile.value) {
-            formData.append('profileImage', profileImageFile.value);
+        const croppedProfileImage = await createCroppedProfileImageFile();
+        if (croppedProfileImage) {
+            formData.append('profileImage', croppedProfileImage);
         }
 
         await saveProfile(formData);
@@ -1240,6 +1419,11 @@ const handleChangePassword = async () => {
 
     if (changePasswordForm.value.newPassword !== changePasswordForm.value.confirmPassword) {
         setStatus('New passwords do not match.', true);
+        return;
+    }
+
+    if (changePasswordRules.value.some((rule) => !rule.passed)) {
+        setStatus('Please complete all password requirements.', true);
         return;
     }
 
