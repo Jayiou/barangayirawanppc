@@ -127,25 +127,20 @@
                                         <input ref="profileImageInput" class="profile-image-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" @change="handleProfileImageChange">
                                         <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">Choose Photo</button>
                                         <div v-if="profileCropSourceUrl" class="profile-crop-tool">
-                                            <div class="profile-crop-frame">
-                                                <img :src="profileCropSourceUrl" alt="Profile crop preview" :style="profileCropImageStyle">
+                                            <div
+                                                class="profile-crop-frame"
+                                                :class="{ 'is-dragging': profileCropDragging }"
+                                                @pointerdown.prevent="startProfileCropDrag"
+                                                @pointermove.prevent="handleProfileCropDrag"
+                                                @pointerup.prevent="endProfileCropDrag"
+                                                @pointercancel.prevent="endProfileCropDrag"
+                                                @lostpointercapture="endProfileCropDrag"
+                                            >
+                                                <img :src="profileCropSourceUrl" alt="Profile crop preview" :style="profileCropImageStyle" draggable="false">
+                                                <div class="profile-crop-overlay" aria-hidden="true"></div>
                                             </div>
-                                            <div class="profile-crop-controls">
-                                                <label>
-                                                    <span>Zoom</span>
-                                                    <input v-model.number="profileCrop.zoom" type="range" min="1" max="2.5" step="0.05">
-                                                </label>
-                                                <label>
-                                                    <span>Horizontal position</span>
-                                                    <input v-model.number="profileCrop.x" type="range" min="0" max="100" step="1">
-                                                </label>
-                                                <label>
-                                                    <span>Vertical position</span>
-                                                    <input v-model.number="profileCrop.y" type="range" min="0" max="100" step="1">
-                                                </label>
-                                            </div>
+                                            <small class="profile-password-note">Drag the photo until the circle covers the part you want to keep.</small>
                                         </div>
-                                        <small class="profile-password-note">Use the round guide to choose which part of the photo will appear in your profile.</small>
                                     </div>
                                     <div class="form-grid two-column">
                                         <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
@@ -719,7 +714,8 @@ const profileImageInput = ref(null);
 const profileImagePreview = ref('');
 const profileCropSourceFile = ref(null);
 const profileCropSourceUrl = ref('');
-const profileCrop = reactive({ x: 50, y: 50, zoom: 1 });
+const profileCropDragging = ref(false);
+const profileCrop = reactive({ x: 50, y: 50 });
 
 const purokOptions = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
 const zoneOptionsByPurok = {
@@ -737,10 +733,67 @@ const profilePurokZoneLabel = computed(() => {
 
 const profileAvatarSrc = computed(() => profileCropSourceUrl.value || profileImagePreview.value || profile.profileImage || '');
 const profileCropImageStyle = computed(() => ({
-    objectPosition: `${profileCrop.x}% ${profileCrop.y}%`,
-    transform: `scale(${profileCrop.zoom})`
+    objectPosition: `${profileCrop.x}% ${profileCrop.y}%`
 }));
 const profileAvatarImageStyle = computed(() => (profileCropSourceUrl.value ? profileCropImageStyle.value : {}));
+
+const clampProfileCropValue = (value) => Math.min(100, Math.max(0, value));
+
+const setProfileCropFromPointer = (event) => {
+    if (!profileCropSourceUrl.value || !profileCropDragging.value || !event.currentTarget) {
+        return;
+    }
+
+    const frame = event.currentTarget;
+    const rect = frame.getBoundingClientRect();
+    const width = Math.max(rect.width, 1);
+    const height = Math.max(rect.height, 1);
+    const deltaX = event.clientX - profileCropDragState.startClientX;
+    const deltaY = event.clientY - profileCropDragState.startClientY;
+
+    profileCrop.x = clampProfileCropValue(profileCropDragState.startX - (deltaX / width) * 100);
+    profileCrop.y = clampProfileCropValue(profileCropDragState.startY - (deltaY / height) * 100);
+};
+
+const profileCropDragState = reactive({
+    pointerId: null,
+    startClientX: 0,
+    startClientY: 0,
+    startX: 50,
+    startY: 50
+});
+
+const startProfileCropDrag = (event) => {
+    if (!profileCropSourceUrl.value || event.button !== 0) {
+        return;
+    }
+
+    profileCropDragging.value = true;
+    profileCropDragState.pointerId = event.pointerId;
+    profileCropDragState.startClientX = event.clientX;
+    profileCropDragState.startClientY = event.clientY;
+    profileCropDragState.startX = profileCrop.x;
+    profileCropDragState.startY = profileCrop.y;
+
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
+};
+
+const handleProfileCropDrag = (event) => {
+    if (!profileCropDragging.value || event.pointerId !== profileCropDragState.pointerId) {
+        return;
+    }
+
+    setProfileCropFromPointer(event);
+};
+
+const endProfileCropDrag = (event) => {
+    if (event?.pointerId !== undefined && profileCropDragState.pointerId !== null && event.pointerId !== profileCropDragState.pointerId) {
+        return;
+    }
+
+    profileCropDragging.value = false;
+    profileCropDragState.pointerId = null;
+};
 
 const changePasswordRules = computed(() => {
     const password = changePasswordForm.value.newPassword || '';
@@ -772,7 +825,8 @@ const clearProfileImageSelection = () => {
     profileCropSourceUrl.value = '';
     profileCrop.x = 50;
     profileCrop.y = 50;
-    profileCrop.zoom = 1;
+    profileCropDragging.value = false;
+    profileCropDragState.pointerId = null;
 
     if (profileImageInput.value) {
         profileImageInput.value.value = '';
@@ -796,7 +850,8 @@ const handleProfileImageChange = (event) => {
     profileCropSourceUrl.value = file ? URL.createObjectURL(file) : '';
     profileCrop.x = 50;
     profileCrop.y = 50;
-    profileCrop.zoom = 1;
+    profileCropDragging.value = false;
+    profileCropDragState.pointerId = null;
 };
 
 const loadImage = (src) => new Promise((resolve, reject) => {
@@ -817,7 +872,7 @@ const createCroppedProfileImageFile = async () => {
     canvas.width = size;
     canvas.height = size;
     const context = canvas.getContext('2d');
-    const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight) * profileCrop.zoom;
+    const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight);
     const width = image.naturalWidth * scale;
     const height = image.naturalHeight * scale;
     const x = (size - width) * (profileCrop.x / 100);

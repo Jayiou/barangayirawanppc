@@ -493,49 +493,54 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
 }
 .profile-crop-tool {
     display: grid;
-    grid-template-columns: 140px minmax(0, 1fr);
-    gap: 16px;
-    align-items: center;
+    gap: 12px;
+    justify-items: center;
     padding: 14px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
     border: 1px solid rgba(27, 115, 71, 0.12);
 }
 .profile-crop-frame {
     position: relative;
-    width: 132px;
+    width: min(240px, 100%);
     aspect-ratio: 1;
     border-radius: 50%;
     overflow: hidden;
     background: #e8f0ed;
     border: 3px solid rgba(27, 115, 71, 0.32);
     box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.02), 0 10px 24px rgba(22, 36, 26, 0.12);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
 }
 .profile-crop-frame::after {
     content: "";
     position: absolute;
-    inset: 10%;
-    border: 1px dashed rgba(255, 255, 255, 0.76);
+    inset: 12%;
+    border: 2px dashed rgba(255, 255, 255, 0.84);
     border-radius: 50%;
     pointer-events: none;
 }
 .profile-crop-frame img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transform-origin: center;
     display: block;
+    pointer-events: none;
+    user-select: none;
 }
-.profile-crop-controls {
-    display: grid;
-    gap: 10px;
+.profile-crop-frame.is-dragging {
+    cursor: grabbing;
 }
-.profile-crop-controls label {
-    gap: 4px;
-}
-.profile-crop-controls input[type="range"] {
-    padding: 0;
-    accent-color: var(--accent);
+.profile-crop-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, transparent 58%, rgba(15, 31, 27, 0.08) 100%);
+    pointer-events: none;
 }
 .profile-avatar-preview--action:hover,
 .profile-avatar-preview--action:focus-visible {
@@ -1658,8 +1663,6 @@ textarea { resize: vertical; }
         align-items: flex-start;
     }
     .profile-info-list { grid-template-columns: 1fr; }
-    .profile-crop-tool { grid-template-columns: 1fr; justify-items: center; }
-    .profile-crop-controls { width: 100%; }
     .profile-form-actions { flex-direction: column; }
     .profile-form-actions .primary-button,
     .profile-form-actions .ghost-button { width: 100%; justify-content: center; }
