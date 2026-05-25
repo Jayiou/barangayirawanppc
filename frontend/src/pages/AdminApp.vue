@@ -1044,7 +1044,7 @@
                                 <option value="Barangay Secretary">Barangay Secretary</option>
                                 <option value="Barangay Treasurer">Barangay Treasurer</option>
                                 <option value="Barangay Kagawad">Barangay Kagawad</option>
-                                <option value="Other">Other</option>
+                                <option value="other">Other</option>
                             </select>
                         </label>
                         <label><span>Email</span><input v-model="editForm.email" type="email"></label>
