@@ -8,6 +8,15 @@
     </div>
     <div class="page-shell app-shell resident-shell" v-else>
         <aside class="app-sidebar" :class="{ open: sidebarOpen }">
+            <button
+                class="resident-sidebar-toggle"
+                type="button"
+                :aria-label="sidebarOpen ? 'Close sidebar' : 'Open sidebar'"
+                @click="sidebarOpen = !sidebarOpen"
+            >
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
             <!-- Sidebar Header -->
             <div class="sidebar-header">
                 <BrandMark initials="BC" eyebrow="Resident Portal" title="Barangay Connect" />

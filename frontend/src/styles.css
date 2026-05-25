@@ -2156,3 +2156,33 @@ textarea { resize: vertical; }
     opacity: 1;
     visibility: visible;
 }
+
+/* When the drawer is open, reveal all collapsed labels and show the in-drawer toggle */
+.resident-shell .app-sidebar.open .sidebar-nav .nav-label,
+.resident-shell .app-sidebar.open .sidebar-footer .footer-eyebrow,
+.resident-shell .app-sidebar.open .sidebar-footer .user-info,
+.resident-shell .app-sidebar.open .logout-btn .nav-label {
+    opacity: 1;
+    visibility: visible;
+    max-width: 190px;
+}
+
+.resident-shell .app-sidebar .resident-sidebar-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    place-items: center;
+    z-index: 1210;
+}
+
+.resident-shell .app-sidebar.open .resident-sidebar-toggle {
+    display: grid;
+}
