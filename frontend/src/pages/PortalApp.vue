@@ -135,6 +135,10 @@
                                                 @pointerup.prevent="endProfileCropDrag"
                                                 @pointercancel.prevent="endProfileCropDrag"
                                                 @lostpointercapture="endProfileCropDrag"
+                                                @touchstart.prevent="startProfileCropTouch"
+                                                @touchmove.prevent="handleProfileCropTouchMove"
+                                                @touchend.prevent="endProfileCropTouch"
+                                                @wheel.passive.prevent="handleProfileCropWheel"
                                             >
                                                 <img :src="profileCropSourceUrl" alt="Profile crop preview" :style="profileCropImageStyle" draggable="false">
                                                 <div class="profile-crop-overlay" aria-hidden="true"></div>
@@ -715,7 +719,7 @@ const profileImagePreview = ref('');
 const profileCropSourceFile = ref(null);
 const profileCropSourceUrl = ref('');
 const profileCropDragging = ref(false);
-const profileCrop = reactive({ x: 50, y: 50 });
+const profileCrop = reactive({ x: 50, y: 50, zoom: 1 });
 
 const purokOptions = ['Magsasaka', 'Sampalok', 'Masagana', 'Acacia', 'Freedom', 'Visapa'];
 const zoneOptionsByPurok = {
@@ -733,7 +737,8 @@ const profilePurokZoneLabel = computed(() => {
 
 const profileAvatarSrc = computed(() => profileCropSourceUrl.value || profileImagePreview.value || profile.profileImage || '');
 const profileCropImageStyle = computed(() => ({
-    objectPosition: `${profileCrop.x}% ${profileCrop.y}%`
+    objectPosition: `${profileCrop.x}% ${profileCrop.y}%`,
+    transform: `scale(${profileCrop.zoom || 1})`
 }));
 const profileAvatarImageStyle = computed(() => (profileCropSourceUrl.value ? profileCropImageStyle.value : {}));
 
@@ -776,6 +781,69 @@ const startProfileCropDrag = (event) => {
     profileCropDragState.startY = profileCrop.y;
 
     event.currentTarget?.setPointerCapture?.(event.pointerId);
+};
+
+// Pinch / touch & wheel zoom support for crop frame
+const profileCropPinchState = reactive({ active: false, startDist: 0, startZoom: 1 });
+
+const getTouchDistance = (t0, t1) => Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+
+const startProfileCropTouch = (event) => {
+    if (!profileCropSourceUrl.value) return;
+
+    const touches = event.touches || [];
+    if (touches.length === 2) {
+        profileCropPinchState.active = true;
+        profileCropPinchState.startDist = getTouchDistance(touches[0], touches[1]);
+        profileCropPinchState.startZoom = profileCrop.zoom || 1;
+    } else if (touches.length === 1) {
+        // start single-finger drag
+        profileCropDragging.value = true;
+        profileCropDragState.startClientX = touches[0].clientX;
+        profileCropDragState.startClientY = touches[0].clientY;
+        profileCropDragState.startX = profileCrop.x;
+        profileCropDragState.startY = profileCrop.y;
+    }
+};
+
+const handleProfileCropTouchMove = (event) => {
+    if (!profileCropSourceUrl.value) return;
+    const touches = event.touches || [];
+    if (profileCropPinchState.active && touches.length >= 2) {
+        const dist = getTouchDistance(touches[0], touches[1]);
+        let newZoom = profileCropPinchState.startZoom * (dist / profileCropPinchState.startDist);
+        newZoom = Math.min(3, Math.max(1, newZoom));
+        profileCrop.zoom = newZoom;
+        return;
+    }
+
+    if (profileCropDragging.value && touches.length === 1) {
+        const touch = touches[0];
+        // create a fake pointer-like event shape for reusing setProfileCropFromPointer
+        setProfileCropFromPointer({ currentTarget: event.currentTarget, clientX: touch.clientX, clientY: touch.clientY });
+    }
+};
+
+const endProfileCropTouch = (event) => {
+    const touches = event.touches || [];
+    if (profileCropPinchState.active && touches.length < 2) {
+        profileCropPinchState.active = false;
+    }
+
+    if (profileCropDragging.value && touches.length === 0) {
+        profileCropDragging.value = false;
+        profileCropDragState.pointerId = null;
+    }
+};
+
+const handleProfileCropWheel = (event) => {
+    if (!profileCropSourceUrl.value) return;
+    // Normalize wheel delta for zooming
+    const delta = -event.deltaY;
+    const factor = delta > 0 ? 1.08 : 0.92;
+    let newZoom = (profileCrop.zoom || 1) * factor;
+    newZoom = Math.min(3, Math.max(1, newZoom));
+    profileCrop.zoom = newZoom;
 };
 
 const handleProfileCropDrag = (event) => {
@@ -872,7 +940,8 @@ const createCroppedProfileImageFile = async () => {
     canvas.width = size;
     canvas.height = size;
     const context = canvas.getContext('2d');
-    const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight);
+    const zoom = profileCrop.zoom || 1;
+    const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight) * zoom;
     const width = image.naturalWidth * scale;
     const height = image.naturalHeight * scale;
     const x = (size - width) * (profileCrop.x / 100);

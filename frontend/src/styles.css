@@ -354,6 +354,7 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     line-height: 0.94;
     max-width: 8.4ch;
     margin-bottom: 14px;
+    text-shadow: 0 12px 30px rgba(0,0,0,0.55);
 }
 .landing-hero-content h3 {
     font-family: "Manrope", sans-serif;
@@ -366,6 +367,10 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     font-size: clamp(1.08rem, 1.35vw, 1.3rem);
     line-height: 1.62;
     color: white;
+    text-shadow: 0 8px 20px rgba(0,0,0,0.48);
+}
+.landing-hero-content .eyebrow {
+    text-shadow: 0 6px 14px rgba(0,0,0,0.45);
 }
 .landing-hero-actions {
     display: flex;
