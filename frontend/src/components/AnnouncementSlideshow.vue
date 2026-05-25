@@ -2,7 +2,7 @@
     <section class="announcement-section">
         <div class="section-title" v-if="announcements.length > 0" style="text-align: center; margin-bottom: 3rem;">
             <span class="eyebrow">Latest Updates</span>
-            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcement/Advisories</h2>
+            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcement</h2>
         </div>
 
         <!-- Horizontal Rotating Carousel -->
