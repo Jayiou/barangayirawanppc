@@ -5,7 +5,7 @@ import { formatFacilityInventorySummary } from '@/shared/facilityTimeSlots';
 const isObjectId = (value) => /^[a-fA-F\d]{24}$/.test(String(value || '').trim());
 
 export function usePortalData() {
-    const statusMessage = ref('Checking your session.');
+    const statusMessage = ref('');
     const statusError = ref(false);
     
     const reservations = ref([]);
@@ -115,7 +115,6 @@ export function usePortalData() {
                 loadOfficials(),
                 loadDisasterAdvisories()
             ]);
-            setStatus('Dashboard loaded.');
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
             setStatus('Some data failed to load.', true);

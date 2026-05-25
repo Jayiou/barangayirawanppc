@@ -2371,7 +2371,7 @@ const setupRecordStatusModal = async (type, item) => {
 
         const full = await apiFetch(path);
         if (full) {
-            selectedItem.value = { ...full };
+            selectedItem.value = { ...(full.data || full) };
         }
     } catch (err) {
         showToast(err.message || 'Failed to load details.', true);
