@@ -4,6 +4,7 @@ const BlockedSchedule = require('../models/BlockedSchedule');
 const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
+const { sendRequestStatusEmail } = require('../utils/mailer');
 const {
     getAvailableTimeSlots,
     hasActiveAppointment,
@@ -14,6 +15,37 @@ const {
     expireOldPendingAppointments,
     DEFAULT_TIME_SLOTS
 } = require('../utils/appointmentHelpers');
+
+const getPersonName = (person, fallback = 'Resident') => {
+    const fullName = [
+        person?.firstName,
+        person?.middleName,
+        person?.lastName,
+        person?.suffix
+    ].filter(Boolean).join(' ').trim();
+
+    return fullName || person?.username || fallback;
+};
+
+const getAppointmentRecipientEmail = (appointment) => (
+    appointment?.residentId?.email
+    || appointment?.residentId?.userId?.email
+    || appointment?.userId?.email
+    || ''
+);
+
+const notifyAppointmentStatus = async (appointment, status, notes = '') => {
+    const recipientEmail = getAppointmentRecipientEmail(appointment);
+    if (!recipientEmail) return;
+
+    await sendRequestStatusEmail(
+        recipientEmail,
+        getPersonName(appointment.residentId, 'Resident'),
+        'appointment',
+        status,
+        notes
+    );
+};
 
 // ============================================
 // ADMIN - OFFICIAL MANAGEMENT
@@ -524,7 +556,13 @@ const getAllAppointments = asyncHandler(async (req, res) => {
 const approveAppointment = asyncHandler(async (req, res) => {
     const { remarks } = req.body;
 
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findById(req.params.id)
+        .populate({
+            path: 'residentId',
+            select: 'firstName middleName lastName suffix email userId',
+            populate: { path: 'userId', select: 'email username' }
+        })
+        .populate('userId', 'email username');
 
     if (!appointment) {
         throw createHttpError(404, 'Appointment not found');
@@ -540,6 +578,7 @@ const approveAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await notifyAppointmentStatus(appointment, 'approved', remarks || '');
 
     res.status(200).json({
         success: true,
@@ -554,7 +593,13 @@ const approveAppointment = asyncHandler(async (req, res) => {
 const rejectAppointment = asyncHandler(async (req, res) => {
     const { rejectionReason, remarks } = req.body;
 
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findById(req.params.id)
+        .populate({
+            path: 'residentId',
+            select: 'firstName middleName lastName suffix email userId',
+            populate: { path: 'userId', select: 'email username' }
+        })
+        .populate('userId', 'email username');
 
     if (!appointment) {
         throw createHttpError(404, 'Appointment not found');
@@ -571,6 +616,7 @@ const rejectAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await notifyAppointmentStatus(appointment, 'rejected', rejectionReason || remarks || '');
 
     res.status(200).json({
         success: true,
@@ -585,7 +631,13 @@ const rejectAppointment = asyncHandler(async (req, res) => {
 const completeAppointment = asyncHandler(async (req, res) => {
     const { remarks } = req.body;
 
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findById(req.params.id)
+        .populate({
+            path: 'residentId',
+            select: 'firstName middleName lastName suffix email userId',
+            populate: { path: 'userId', select: 'email username' }
+        })
+        .populate('userId', 'email username');
 
     if (!appointment) {
         throw createHttpError(404, 'Appointment not found');
@@ -601,6 +653,7 @@ const completeAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await notifyAppointmentStatus(appointment, 'completed', remarks || '');
 
     res.status(200).json({
         success: true,
@@ -615,7 +668,13 @@ const completeAppointment = asyncHandler(async (req, res) => {
 const adminCancelAppointment = asyncHandler(async (req, res) => {
     const { cancellationReason, remarks } = req.body;
 
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findById(req.params.id)
+        .populate({
+            path: 'residentId',
+            select: 'firstName middleName lastName suffix email userId',
+            populate: { path: 'userId', select: 'email username' }
+        })
+        .populate('userId', 'email username');
 
     if (!appointment) {
         throw createHttpError(404, 'Appointment not found');
@@ -635,6 +694,7 @@ const adminCancelAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await notifyAppointmentStatus(appointment, 'cancelled', cancellationReason || remarks || '');
 
     res.status(200).json({
         success: true,

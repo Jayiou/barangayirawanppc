@@ -6,6 +6,7 @@ const DocumentRequestSchema = new mongoose.Schema({
   fields: { type: Map, of: String, default: {} },
   purpose: { type: String },
   status: { type: String, enum: ['pending', 'approved', 'processing', 'rejected', 'ready_for_pickup', 'completed'], default: 'pending' },
+  adminNotes: { type: String, trim: true, default: '' },
   adminEdits: { type: Map, of: String, default: {} },
   generatedFileName: { type: String, trim: true, default: '' },
   generatedFileUrl: { type: String, trim: true, default: '' },

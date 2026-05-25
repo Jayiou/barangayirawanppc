@@ -3,7 +3,7 @@ const fs = require('node:fs').promises;
 const fsSync = require('node:fs');
 const { pathToFileURL } = require('node:url');
 const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
-const { sendGeneratedDocumentEmail } = require('../utils/mailer');
+const { sendDocumentStatusEmail, sendGeneratedDocumentEmail } = require('../utils/mailer');
 const { createDocumentPdfBuffer } = require('../utils/documentPdfGenerator');
 const DocumentRequest = require('../models/DocumentRequest');
 const Resident = require('../models/Resident');
@@ -17,6 +17,27 @@ const residentPopulateFields = 'firstName lastName middleName suffix birthDate c
 const resolveResidentForUser = async (userId) => {
   if (!userId) return null;
   return Resident.findOne({ userId }).select(residentPopulateFields);
+};
+
+const getResidentName = (resident) => (
+  [resident?.firstName, resident?.middleName, resident?.lastName, resident?.suffix]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || 'Resident'
+);
+
+const notifyDocumentStatus = async (doc, status, notes = '') => {
+  const resident = doc?.resident;
+  const recipientEmail = resident?.email || resident?.userId?.email || '';
+  if (!recipientEmail) return;
+
+  await sendDocumentStatusEmail(
+    recipientEmail,
+    getResidentName(resident),
+    doc.type,
+    status,
+    notes
+  );
 };
 
 const isObjectLike = (value) => value && typeof value === 'object';
@@ -472,10 +493,15 @@ exports.adminEdit = async (req, res, next) => {
 exports.approveRequest = async (req, res, next) => {
   try {
     const reqId = req.params.id;
-    const doc = await DocumentRequest.findById(reqId);
+    const doc = await DocumentRequest.findById(reqId).populate({
+      path: 'resident',
+      select: residentPopulateFields,
+      populate: { path: 'userId', select: 'email username' }
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     doc.status = 'approved';
     await doc.save();
+    await notifyDocumentStatus(doc, 'approved');
     res.json({ success: true, data: doc });
   } catch (err) {
     next(err);
@@ -485,10 +511,17 @@ exports.approveRequest = async (req, res, next) => {
 exports.rejectRequest = async (req, res, next) => {
   try {
     const reqId = req.params.id;
-    const doc = await DocumentRequest.findById(reqId);
+    const reason = String(req.body?.reason || req.body?.adminNotes || '').trim();
+    const doc = await DocumentRequest.findById(reqId).populate({
+      path: 'resident',
+      select: residentPopulateFields,
+      populate: { path: 'userId', select: 'email username' }
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     doc.status = 'rejected';
+    doc.adminNotes = reason;
     await doc.save();
+    await notifyDocumentStatus(doc, 'rejected', reason);
     res.json({ success: true, data: doc });
   } catch (err) {
     next(err);

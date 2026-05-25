@@ -6,7 +6,9 @@
           <i :class="`fa-solid fa-${action.icon}`" style="margin-right: 8px;"></i>
           {{ action.label }}?
         </h3>
-        <button class="close-btn" @click="close">✕</button>
+        <button class="close-btn" @click="close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <div class="modal-body">
