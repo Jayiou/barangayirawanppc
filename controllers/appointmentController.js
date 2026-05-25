@@ -34,6 +34,28 @@ const getAppointmentRecipientEmail = (appointment) => (
     || ''
 );
 
+const formatEmailDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const buildAppointmentEmailDetails = (appointment, status) => [
+    { label: 'Request Type', value: 'Appointment' },
+    { label: 'Purpose', value: appointment?.purpose },
+    { label: 'Appointment Date', value: formatEmailDate(appointment?.appointmentDate) },
+    { label: 'Time Slot', value: appointment?.timeSlot?.startTime && appointment?.timeSlot?.endTime ? `${appointment.timeSlot.startTime}-${appointment.timeSlot.endTime}` : '' },
+    { label: 'Official', value: appointment?.officialId?.name },
+    { label: 'Official Position', value: appointment?.officialId?.position },
+    { label: 'Status', value: status }
+];
+
 const notifyAppointmentStatus = async (appointment, status, notes = '') => {
     const recipientEmail = getAppointmentRecipientEmail(appointment);
     if (!recipientEmail) return;
@@ -43,7 +65,8 @@ const notifyAppointmentStatus = async (appointment, status, notes = '') => {
         getPersonName(appointment.residentId, 'Resident'),
         'appointment',
         status,
-        notes
+        notes,
+        buildAppointmentEmailDetails(appointment, status)
     );
 };
 
@@ -562,6 +585,7 @@ const approveAppointment = asyncHandler(async (req, res) => {
             select: 'firstName middleName lastName suffix email userId',
             populate: { path: 'userId', select: 'email username' }
         })
+        .populate('officialId', 'name position')
         .populate('userId', 'email username');
 
     if (!appointment) {
@@ -599,6 +623,7 @@ const rejectAppointment = asyncHandler(async (req, res) => {
             select: 'firstName middleName lastName suffix email userId',
             populate: { path: 'userId', select: 'email username' }
         })
+        .populate('officialId', 'name position')
         .populate('userId', 'email username');
 
     if (!appointment) {
@@ -637,6 +662,7 @@ const completeAppointment = asyncHandler(async (req, res) => {
             select: 'firstName middleName lastName suffix email userId',
             populate: { path: 'userId', select: 'email username' }
         })
+        .populate('officialId', 'name position')
         .populate('userId', 'email username');
 
     if (!appointment) {
@@ -674,6 +700,7 @@ const adminCancelAppointment = asyncHandler(async (req, res) => {
             select: 'firstName middleName lastName suffix email userId',
             populate: { path: 'userId', select: 'email username' }
         })
+        .populate('officialId', 'name position')
         .populate('userId', 'email username');
 
     if (!appointment) {

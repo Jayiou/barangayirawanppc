@@ -11,6 +11,58 @@ const formatLabel = (text) => {
         .join(' ');
 };
 
+const escapeHtml = (value) => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const normalizeDetailItems = (details = []) => {
+    const entries = Array.isArray(details)
+        ? details
+        : Object.entries(details).map(([label, value]) => ({ label, value }));
+
+    return entries
+        .map((detail) => {
+            const label = Array.isArray(detail) ? detail[0] : detail.label;
+            const value = Array.isArray(detail) ? detail[1] : detail.value;
+            return {
+                label: String(label || '').trim(),
+                value: String(value ?? '').trim()
+            };
+        })
+        .filter((detail) => detail.label && detail.value);
+};
+
+const buildDetailsText = (details) => {
+    const items = normalizeDetailItems(details);
+    if (!items.length) return '';
+
+    return `Request Details:\n${items.map((item) => `- ${item.label}: ${item.value}`).join('\n')}\n`;
+};
+
+const buildDetailsHtml = (details) => {
+    const items = normalizeDetailItems(details);
+    if (!items.length) return '';
+
+    return `
+        <div style="margin-top: 16px; padding: 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px;">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: #235b82;">Request Details</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tbody>
+                    ${items.map((item) => `
+                        <tr>
+                            <td style="padding: 6px 8px 6px 0; color: #555; font-weight: bold; vertical-align: top; width: 38%;">${escapeHtml(item.label)}</td>
+                            <td style="padding: 6px 0; color: #222; vertical-align: top;">${escapeHtml(item.value)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+};
+
 const FROM_EMAIL = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SENDGRID_FROM || 'no-reply@barangay.local';
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || FROM_EMAIL;
 
@@ -225,7 +277,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
 };
 
 
-const sendDocumentStatusEmail = async (toEmail, name, documentType, status, adminNotes) => {
+const sendDocumentStatusEmail = async (toEmail, name, documentType, status, adminNotes, details = []) => {
     try {
         const docTypeFormatted = formatLabel(documentType);
         let statusMessage = '';
@@ -250,8 +302,10 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             return; // Don't send email for pending or cancelled states unless specified
         }
 
-        const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
+        const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${escapeHtml(adminNotes)}</div>` : '';
         const adminNoteText = adminNotes ? `Admin Note: ${adminNotes}\n` : '';
+        const detailsText = buildDetailsText(details);
+        const detailsSection = buildDetailsHtml(details);
 
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
@@ -259,13 +313,14 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNoteText}\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${detailsText}${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
-                    <p>Hello <strong>${name}</strong>,</p>
+                    <p>Hello <strong>${escapeHtml(name)}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
+                        ${detailsSection}
                         ${notesSection}
                     </div>
                     <p>Thank you,</p>
@@ -286,7 +341,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
     }
 };
 
-const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, adminNotes) => {
+const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, adminNotes, details = []) => {
     try {
         const normalizedStatus = String(status || '').toLowerCase();
         const formattedLabel = formatLabel(requestLabel);
@@ -309,8 +364,10 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             statusMessage = `Your ${formattedLabel} request status has been updated to <strong>${formatLabel(normalizedStatus)}</strong>.`;
         }
 
-        const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${adminNotes}</div>` : '';
+        const notesSection = adminNotes ? `<div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px dashed #ccc; font-style: italic;"><strong>Admin Note:</strong> ${escapeHtml(adminNotes)}</div>` : '';
         const adminNoteText = adminNotes ? `Admin Note: ${adminNotes}\n` : '';
+        const detailsText = buildDetailsText(details);
+        const detailsSection = buildDetailsHtml(details);
 
         const mailOptions = {
             from: `"Barangay Connect" <${FROM_EMAIL}>`,
@@ -318,13 +375,14 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${adminNoteText}\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${detailsText}${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
-                    <p>Hello <strong>${name}</strong>,</p>
+                    <p>Hello <strong>${escapeHtml(name)}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
+                        ${detailsSection}
                         ${notesSection}
                     </div>
                     <p>Thank you,</p>

@@ -2620,7 +2620,10 @@ const saveDocumentEdits = async () => {
         selectedItem.value = mergeDocumentResponse({
             ...selectedItem.value,
             purpose: payload.purpose,
-            adminEdits: { ...editableFields }
+            adminEdits: { ...editableFields },
+            generatedAt: undefined,
+            generatedFileName: '',
+            generatedFileUrl: ''
         }, response?.data || {});
         showToast('Document edits saved.');
         await loadAll();

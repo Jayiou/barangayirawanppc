@@ -72,6 +72,31 @@ const getRequesterName = (request) => {
     return 'Guest Requester';
 };
 
+const formatEmailDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const formatLabel = (value) => normalizeText(value).replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+const buildRequestEmailDetails = (request, status) => [
+    { label: 'Request Type', value: 'Manpower Assistance' },
+    { label: 'Title', value: request.title },
+    { label: 'Assistance Type', value: formatLabel(request.assistanceType) },
+    { label: 'Location', value: request.requestLocation },
+    { label: 'Request Date', value: formatEmailDate(request.requestDate) },
+    { label: 'Request Time', value: request.requestTime },
+    { label: 'Priority', value: formatLabel(request.priority) },
+    { label: 'Status', value: formatLabel(status) }
+];
+
 const validateRequestData = (payload) => {
     if (payload.assistanceType !== undefined && !hasText(payload.assistanceType)) {
         return 'Please provide a valid assistanceType';
@@ -262,7 +287,8 @@ exports.updateRequestStatus = asyncHandler(async (req, res) => {
             getRequesterName(populatedRequest),
             'manpower',
             statusData.status,
-            statusData.adminNotes || ''
+            statusData.adminNotes || '',
+            buildRequestEmailDetails(populatedRequest, statusData.status)
         );
     }
 

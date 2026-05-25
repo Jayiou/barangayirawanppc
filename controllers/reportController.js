@@ -182,6 +182,30 @@ const getReportRequesterName = (report) => {
     return 'Guest Reporter';
 };
 
+const formatEmailDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const formatLabel = (value) => normalizeText(value).replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+const buildReportEmailDetails = (report, status) => [
+    { label: 'Request Type', value: 'Report / Complaint' },
+    { label: 'Title', value: report.title },
+    { label: 'Report Type', value: formatLabel(report.reportType) },
+    { label: 'Location', value: report.locationText },
+    { label: 'Priority', value: formatLabel(report.priority) },
+    { label: 'Incident Date', value: formatEmailDate(report.incidentDate) },
+    { label: 'Status', value: formatLabel(status) }
+];
+
 const validateReportData = (payload) => {
     if (payload.reportType !== undefined && !hasText(payload.reportType)) {
         return 'Please provide a valid reportType';
@@ -463,7 +487,8 @@ exports.updateReportStatus = asyncHandler(async (req, res) => {
             getReportRequesterName(populatedReport),
             'report',
             statusData.status,
-            statusData.adminNotes || ''
+            statusData.adminNotes || '',
+            buildReportEmailDetails(populatedReport, statusData.status)
         );
     }
 

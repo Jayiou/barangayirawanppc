@@ -28,7 +28,75 @@ const getRecipientEmail = (record) => (
     || ''
 );
 
-const notifyRequestStatus = async (record, requestLabel, status, notes = '') => {
+const formatLabel = (value) => String(value || '')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const formatEmailDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const getReservationQuantity = (reservation) => {
+    const quantity = Number(reservation?.quantity);
+    if (Number.isFinite(quantity) && quantity > 0) return String(quantity);
+
+    const quantities = [
+        ['Chairs', reservation?.chairQuantity],
+        ['Tents', reservation?.tentQuantity],
+        ['Tables', reservation?.tableQuantity]
+    ]
+        .filter(([, value]) => Number(value) > 0)
+        .map(([label, value]) => `${label}: ${value}`);
+
+    return quantities.join(', ');
+};
+
+const buildReservationEmailDetails = (reservation, status) => [
+    { label: 'Request Type', value: 'Facility Reservation' },
+    { label: 'Facility', value: formatLabel(reservation?.facilityName) },
+    { label: 'Reservation Date', value: formatEmailDate(reservation?.reservationDate) },
+    { label: 'Time Slot', value: reservation?.startTime && reservation?.endTime ? `${reservation.startTime}-${reservation.endTime}` : '' },
+    { label: 'Quantity', value: getReservationQuantity(reservation) },
+    { label: 'Purpose', value: reservation?.purpose },
+    { label: 'Status', value: formatLabel(status) }
+];
+
+const buildReportEmailDetails = (report, status) => [
+    { label: 'Request Type', value: 'Report / Complaint' },
+    { label: 'Title', value: report?.title },
+    { label: 'Report Type', value: formatLabel(report?.reportType) },
+    { label: 'Location', value: report?.locationText },
+    { label: 'Priority', value: formatLabel(report?.priority) },
+    { label: 'Incident Date', value: formatEmailDate(report?.incidentDate) },
+    { label: 'Status', value: formatLabel(status) }
+];
+
+const getDocumentField = (documentRequest, key) => {
+    if (!documentRequest?.fields) return '';
+    if (typeof documentRequest.fields.get === 'function') {
+        return documentRequest.fields.get(key) || '';
+    }
+
+    return documentRequest.fields[key] || '';
+};
+
+const buildDocumentEmailDetails = (documentRequest, status) => [
+    { label: 'Request Type', value: 'Document Request' },
+    { label: 'Document Type', value: formatLabel(documentRequest?.type) },
+    { label: 'Purpose', value: documentRequest?.purpose || getDocumentField(documentRequest, 'PURPOSE') },
+    { label: 'Submitted Name', value: getDocumentField(documentRequest, 'FULL_NAME') },
+    { label: 'Status', value: formatLabel(status) }
+];
+
+const notifyRequestStatus = async (record, requestLabel, status, notes = '', details = []) => {
     const recipientEmail = getRecipientEmail(record);
     if (!recipientEmail) return;
 
@@ -38,7 +106,8 @@ const notifyRequestStatus = async (record, requestLabel, status, notes = '') => 
         getPersonName(requester, 'Resident'),
         requestLabel,
         status,
-        notes
+        notes,
+        details
     );
 };
 
@@ -51,7 +120,8 @@ const notifyDocumentStatus = async (documentRequest, status, notes = '') => {
         getPersonName(documentRequest.resident, 'Resident'),
         documentRequest.type,
         status,
-        notes
+        notes,
+        buildDocumentEmailDetails(documentRequest, status)
     );
 };
 
@@ -78,7 +148,7 @@ exports.approveFacilityReservation = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('FacilityReservation', res_obj._id, previousStatus, 'approved', req.user, '', req.ip);
-    await notifyRequestStatus(res_obj, 'facility reservation', 'approved');
+    await notifyRequestStatus(res_obj, 'facility reservation', 'approved', '', buildReservationEmailDetails(res_obj, 'approved'));
 
     res.json({ success: true, message: 'Facility reservation approved', data: res_obj });
 });
@@ -111,7 +181,7 @@ exports.rejectFacilityReservation = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('FacilityReservation', res_obj._id, previousStatus, 'rejected', req.user, reason, req.ip);
-    await notifyRequestStatus(res_obj, 'facility reservation', 'rejected', reason);
+    await notifyRequestStatus(res_obj, 'facility reservation', 'rejected', reason, buildReservationEmailDetails(res_obj, 'rejected'));
 
     res.json({ success: true, message: 'Facility reservation rejected', data: res_obj });
 });
@@ -137,7 +207,7 @@ exports.completeFacilityReservation = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('FacilityReservation', res_obj._id, previousStatus, 'completed', req.user, '', req.ip);
-    await notifyRequestStatus(res_obj, 'facility reservation', 'completed');
+    await notifyRequestStatus(res_obj, 'facility reservation', 'completed', '', buildReservationEmailDetails(res_obj, 'completed'));
 
     res.json({ success: true, message: 'Facility reservation marked as completed', data: res_obj });
 });
@@ -244,7 +314,7 @@ exports.startReviewReport = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('Report', report._id, previousStatus, 'reviewing', req.user, '', req.ip);
-    await notifyRequestStatus(report, 'report', 'reviewing');
+    await notifyRequestStatus(report, 'report', 'reviewing', '', buildReportEmailDetails(report, 'reviewing'));
 
     res.json({ success: true, message: 'Report marked as reviewing', data: report });
 });
@@ -270,7 +340,7 @@ exports.startProgressReport = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('Report', report._id, previousStatus, 'in_progress', req.user, '', req.ip);
-    await notifyRequestStatus(report, 'report', 'in_progress');
+    await notifyRequestStatus(report, 'report', 'in_progress', '', buildReportEmailDetails(report, 'in_progress'));
 
     res.json({ success: true, message: 'Report marked as in progress', data: report });
 });
@@ -296,7 +366,7 @@ exports.resolveReport = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('Report', report._id, previousStatus, 'resolved', req.user, '', req.ip);
-    await notifyRequestStatus(report, 'report', 'resolved');
+    await notifyRequestStatus(report, 'report', 'resolved', '', buildReportEmailDetails(report, 'resolved'));
 
     res.json({ success: true, message: 'Report marked as resolved', data: report });
 });
@@ -329,7 +399,7 @@ exports.rejectReport = asyncHandler(async (req, res) => {
 
     // Log change
     await logStatusChange('Report', report._id, previousStatus, 'rejected', req.user, reason, req.ip);
-    await notifyRequestStatus(report, 'report', 'rejected', reason);
+    await notifyRequestStatus(report, 'report', 'rejected', reason, buildReportEmailDetails(report, 'rejected'));
 
     res.json({ success: true, message: 'Report rejected', data: report });
 });

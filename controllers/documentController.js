@@ -26,6 +26,27 @@ const getResidentName = (resident) => (
     .trim() || 'Resident'
 );
 
+const formatDocumentLabel = (value) => String(value || '')
+  .replaceAll('_', ' ')
+  .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getDocumentFieldValue = (doc, key) => {
+  if (!doc?.fields) return '';
+  if (typeof doc.fields.get === 'function') {
+    return doc.fields.get(key) || '';
+  }
+
+  return doc.fields[key] || '';
+};
+
+const buildDocumentEmailDetails = (doc, status) => [
+  { label: 'Request Type', value: 'Document Request' },
+  { label: 'Document Type', value: formatDocumentLabel(doc?.type) },
+  { label: 'Purpose', value: doc?.purpose || getDocumentFieldValue(doc, 'PURPOSE') },
+  { label: 'Submitted Name', value: getDocumentFieldValue(doc, 'FULL_NAME') },
+  { label: 'Status', value: formatDocumentLabel(status) }
+];
+
 const notifyDocumentStatus = async (doc, status, notes = '') => {
   const resident = doc?.resident;
   const recipientEmail = resident?.email || resident?.userId?.email || '';
@@ -36,7 +57,8 @@ const notifyDocumentStatus = async (doc, status, notes = '') => {
     getResidentName(resident),
     doc.type,
     status,
-    notes
+    notes,
+    buildDocumentEmailDetails(doc, status)
   );
 };
 
@@ -482,6 +504,12 @@ exports.adminEdit = async (req, res, next) => {
 
     if (purpose !== undefined) doc.purpose = purpose;
     if (status) doc.status = status;
+
+    if (fields || purpose !== undefined) {
+      doc.generatedAt = undefined;
+      doc.generatedFileName = '';
+      doc.generatedFileUrl = '';
+    }
 
     await doc.save();
     res.json({ success: true, data: doc });

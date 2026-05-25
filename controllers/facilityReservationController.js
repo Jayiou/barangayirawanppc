@@ -267,6 +267,30 @@ const getReservationRequesterName = (reservation) => {
     return 'Guest Requester';
 };
 
+const formatEmailDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const formatLabel = (value) => normalizeText(value).replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+const buildReservationEmailDetails = (reservation, status) => [
+    { label: 'Request Type', value: 'Facility Reservation' },
+    { label: 'Facility', value: formatLabel(reservation.facilityName) },
+    { label: 'Reservation Date', value: formatEmailDate(reservation.reservationDate) },
+    { label: 'Time Slot', value: reservation.startTime && reservation.endTime ? `${reservation.startTime}-${reservation.endTime}` : '' },
+    { label: 'Quantity', value: getReservationQuantity(reservation) || '' },
+    { label: 'Purpose', value: reservation.purpose },
+    { label: 'Status', value: formatLabel(status) }
+];
+
 const validateReservationData = (payload) => {
     if (payload.reservationDate !== undefined && !isValidDate(payload.reservationDate)) {
         return 'Please provide a valid reservationDate';
@@ -829,7 +853,8 @@ exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
             getReservationRequesterName(populatedReservation),
             'facility reservation',
             statusData.status,
-            statusData.adminNotes || ''
+            statusData.adminNotes || '',
+            buildReservationEmailDetails(populatedReservation, statusData.status)
         );
     }
 
