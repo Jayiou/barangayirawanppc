@@ -447,7 +447,7 @@
                                     }"
                                 >
                                     <span>{{ slot.label }}</span>
-                                    <span v-if="!slot.isAvailable" style="font-size: 0.75em; color: #d32f2f;">({{ slot.reason || 'Unavailable' }})</span>
+                                    <span class="appointment-slot-subtext" :class="{ 'is-placeholder': slot.isAvailable }">({{ slot.reason || 'Unavailable' }})</span>
                                 </button>
                             </div>
                         </div>
