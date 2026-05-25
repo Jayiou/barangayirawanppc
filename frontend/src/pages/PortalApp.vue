@@ -585,8 +585,8 @@
                         <label><span>Full name</span><input type="text" v-model="documentForm.fields.FULL_NAME" required></label>
                         <label><span>Age</span><input type="text" v-model="documentForm.fields.AGE"></label>
 
-                        <label v-if="documentForm.type !== 'indigency'"><span>Barangay</span><input v-model="documentForm.fields.BARANGAY" type="text" placeholder="Irawan"></label>
-                        <label v-if="documentForm.type !== 'indigency'"><span>City/Municipality</span><input v-model="documentForm.fields.CITY" type="text" placeholder="Puerto Princesa City"></label>
+                        <label><span>Barangay</span><input v-model="documentForm.fields.BARANGAY" type="text" placeholder="Irawan"></label>
+                        <label><span>City/Municipality</span><input v-model="documentForm.fields.CITY" type="text" placeholder="Puerto Princesa City"></label>
 
                         <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" placeholder="Reason for request"></label>
 
@@ -715,7 +715,31 @@ const reportSearch = ref('');
 const documentSearch = ref('');
 const recordDetail = ref(null);
 
-const defaultDocumentForm = () => ({ type: 'certificate', fields: {}, purpose: '' });
+const calculateResidentAge = (birthDate) => {
+    if (!birthDate) return '';
+
+    const date = new Date(birthDate);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const monthDiff = today.getMonth() - date.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+        age -= 1;
+    }
+
+    return age > 0 ? String(age) : '';
+};
+
+const getDocumentDefaultFields = () => ({
+    FULL_NAME: [profile.firstName, profile.middleName, profile.lastName, profile.suffix].filter(Boolean).join(' ').trim(),
+    AGE: calculateResidentAge(profile.birthDate),
+    BARANGAY: profile.address?.replace(/^barangay\s+/i, '').trim() || 'Irawan',
+    CITY: 'Puerto Princesa City'
+});
+
+const defaultDocumentForm = () => ({ type: 'certificate', fields: getDocumentDefaultFields(), purpose: '' });
 const documentForm = ref(defaultDocumentForm());
 const editingDocumentRequestId = ref(null);
 const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -1394,13 +1418,14 @@ const openDocumentRequestModal = () => {
 const openDocumentRequestEditor = (item) => {
     recordDetail.value = null;
     editingDocumentRequestId.value = item?._id || null;
+    const defaultFields = getDocumentDefaultFields();
     documentForm.value = {
         type: item?.type || 'certificate',
         fields: {
-            FULL_NAME: item?.fields?.FULL_NAME || '',
-            AGE: item?.fields?.AGE || '',
-            BARANGAY: item?.fields?.BARANGAY || 'Irawan',
-            CITY: item?.fields?.CITY || 'Puerto Princesa City'
+            FULL_NAME: item?.fields?.FULL_NAME || defaultFields.FULL_NAME,
+            AGE: item?.fields?.AGE || defaultFields.AGE,
+            BARANGAY: item?.fields?.BARANGAY || defaultFields.BARANGAY,
+            CITY: item?.fields?.CITY || defaultFields.CITY
         },
         purpose: item?.purpose || ''
     };
