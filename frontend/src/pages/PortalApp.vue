@@ -62,55 +62,123 @@
             <section class="app-view" :class="{ active: currentView === 'profile' }">
                 <div class="portal-grid">
                     <article class="content-card profile-card">
-                        <div class="section-head">
-                            <div>
-                                <span class="eyebrow">{{ texts.profile.eyebrow }}</span>
-                                <h3>{{ texts.profile.heading }}</h3>
-                                <p class="lead">{{ texts.profile.lead }}</p>
-                            </div>
-                            <div class="profile-avatar-preview">
-                                <img v-if="profile.profileImage" :src="profile.profileImage" alt="Profile avatar" />
+                        <div class="profile-hero">
+                            <button type="button" class="profile-avatar-preview profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Upload profile picture">
+                                <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar" />
                                 <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
+                                <span class="profile-avatar-edit-badge" aria-hidden="true">
+                                    <i class="fa-solid fa-pen"></i>
+                                </span>
+                            </button>
+                            <div class="profile-identity">
+                                <span class="eyebrow">{{ texts.profile.eyebrow }}</span>
+                                <h3>{{ displayName }}</h3>
+                                <p class="profile-email">{{ profile.email || user?.email || 'No email on file' }}</p>
                             </div>
                         </div>
 
-                        <form class="stack" @submit.prevent="saveProfile">
-                            <div class="form-grid two-column">
-                                <label><span>{{ texts.profile.labels.firstName }}</span><input v-model="profile.firstName" type="text" placeholder="Juan" required></label>
-                                <label><span>{{ texts.profile.labels.lastName }}</span><input v-model="profile.lastName" type="text" placeholder="Dela Cruz" required></label>
-                                <label><span>{{ texts.profile.labels.middleName }}</span><input v-model="profile.middleName" type="text" placeholder="Santos"></label>
-                                <label><span>{{ texts.profile.labels.suffix }}</span><input v-model="profile.suffix" type="text" placeholder="Jr., Sr."></label>
-                                <label>
-                                    <span>{{ texts.profile.labels.sex }}</span>
-                                    <select v-model="profile.sex" required>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </label>
-                                <label><span>{{ texts.profile.labels.birthDate }}</span><input v-model="profile.birthDate" type="date" required></label>
-                                <label>
-                                    <span>{{ texts.profile.labels.civilStatus }}</span>
-                                    <select v-model="profile.civilStatus">
-                                        <option value="single">Single</option>
-                                        <option value="married">Married</option>
-                                        <option value="widowed">Widowed</option>
-                                        <option value="separated">Separated</option>
-                                    </select>
-                                </label>
-                                <label><span>{{ texts.profile.labels.contactNumber }}</span><input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+63XXXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$"></label>
-                                <label><span>{{ texts.profile.labels.email }}</span><input v-model="profile.email" type="email" placeholder="juan@example.com"></label>
-                                <label><span>{{ texts.profile.labels.address }}</span><input v-model="profile.address" type="text" required></label>
-                                <label><span>{{ texts.profile.labels.purok }}</span><input v-model="profile.purok" type="text"></label>
-                                <label v-if="profile.purok"><span>{{ texts.profile.labels.zone }}</span><input v-model="profile.zone" type="text" placeholder="Select zone if required"></label>
-                                <small v-if="profile.purok" class="fine-print">{{ texts.profile.labels.zoneHelper }}</small>
-                                <label><span>{{ texts.profile.labels.citizenship }}</span><input v-model="profile.citizenship" type="text" placeholder="Filipino"></label>
-                                <label><span>{{ texts.profile.labels.occupation }}</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
+                        <div class="profile-sections">
+                            <section class="profile-panel">
+                                <div class="section-head profile-panel-head">
+                                    <div>
+                                        <span class="eyebrow">Account Information</span>
+                                        <h4>Account Information</h4>
+                                    </div>
+                                    <button type="button" class="ghost-button" @click="toggleProfileEdit">{{ isEditingProfile ? 'Cancel Edit' : 'Edit Profile' }}</button>
+                                </div>
 
-                                <label><span>{{ texts.profile.labels.profileImage }}</span><input v-model="profile.profileImage" type="url" placeholder="https://..."></label>
-                            </div>
-                            <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? texts.profile.labels.saving : texts.profile.labels.save }}</button>
-                        </form>
+                                <template v-if="!isEditingProfile">
+                                    <dl class="profile-info-list">
+                                        <div class="profile-info-item">
+                                            <dt>Birthday</dt>
+                                            <dd>{{ formatDate(profile.birthDate) }}</dd>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <dt>Contact Number</dt>
+                                            <dd>{{ profile.contactNumber || 'N/A' }}</dd>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <dt>Civil Status</dt>
+                                            <dd>{{ normalizeLabel(profile.civilStatus) }}</dd>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <dt>Barangay</dt>
+                                            <dd>{{ profile.address || 'N/A' }}</dd>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <dt>Purok / Zone</dt>
+                                            <dd>{{ profile.purok ? profile.purok + (profile.zone ? ' / ' + profile.zone : '') : 'N/A' }}</dd>
+                                        </div>
+                                        <div class="profile-info-item">
+                                            <dt>Occupation</dt>
+                                            <dd>{{ profile.occupation || 'N/A' }}</dd>
+                                        </div>
+                                    </dl>
+                                </template>
+
+                                <form v-else class="stack profile-edit-form" @submit.prevent="handleSaveProfile">
+                                    <div class="form-span-2 profile-image-field">
+                                        <button type="button" class="profile-avatar-preview profile-avatar-preview--edit profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Change profile picture">
+                                            <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar preview" />
+                                            <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
+                                            <span class="profile-avatar-edit-badge" aria-hidden="true">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </span>
+                                        </button>
+                                        <input ref="profileImageInput" class="profile-image-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" @change="handleProfileImageChange">
+                                        <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">Choose Photo</button>
+                                        <small class="profile-password-note">Upload a JPG or PNG so the resident and admin views show the same photo.</small>
+                                    </div>
+                                    <div class="form-grid two-column">
+                                        <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
+                                        <label><span>Contact Number</span><input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+63XXXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$"></label>
+                                        <label>
+                                            <span>Civil Status</span>
+                                            <select v-model="profile.civilStatus">
+                                                <option value="single">Single</option>
+                                                <option value="married">Married</option>
+                                                <option value="widowed">Widowed</option>
+                                                <option value="separated">Separated</option>
+                                            </select>
+                                        </label>
+                                        <label><span>Barangay</span><input v-model="profile.address" type="text" required></label>
+                                        <label><span>Purok</span><input v-model="profile.purok" type="text"></label>
+                                        <label><span>Zone</span><input v-model="profile.zone" type="text" placeholder="Zone 1"></label>
+                                        <label class="form-span-2"><span>Occupation</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
+                                    </div>
+                                    <div class="profile-form-actions">
+                                        <button type="button" class="ghost-button" @click="cancelProfileEdit">Discard Changes</button>
+                                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Changes' }}</button>
+                                    </div>
+                                </form>
+                            </section>
+
+                            <section class="profile-panel">
+                                <div class="section-head profile-panel-head">
+                                    <div>
+                                        <span class="eyebrow">About Account</span>
+                                        <h4>Change Password</h4>
+                                    </div>
+                                </div>
+
+                                <form class="stack profile-password-form" @submit.prevent="handleChangePassword">
+                                    <label>
+                                        <span>Current Password</span>
+                                        <input v-model="changePasswordForm.currentPassword" type="password" autocomplete="current-password" required>
+                                    </label>
+                                    <label>
+                                        <span>New Password</span>
+                                        <input v-model="changePasswordForm.newPassword" type="password" autocomplete="new-password" minlength="8" required>
+                                    </label>
+                                    <label>
+                                        <span>Confirm New Password</span>
+                                        <input v-model="changePasswordForm.confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+                                    </label>
+                                    <small class="profile-password-note">Use at least 8 characters. Mix letters, numbers, and symbols for better security.</small>
+                                    <button type="submit" class="primary-button" :disabled="isChangingPassword">{{ isChangingPassword ? 'Updating Password...' : 'Update Password' }}</button>
+                                </form>
+                            </section>
+                        </div>
                     </article>
                 </div>
             </section>
@@ -404,7 +472,7 @@
                         </label>
                         <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
                         <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
-                        <label v-if="currentReportTypeConfig.requireIncidentDate"><span>Incident date</span><input v-model="reportForm.incidentDate" type="date" required></label>
+                        <label v-if="currentReportTypeConfig.requireIncidentDate"><span>Incident date</span><input v-model="reportForm.incidentDate" type="date" :max="todayDate" required></label>
                         <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
                             <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
                             <button type="button" class="ghost-button" @click="captureCurrentLocation" :disabled="locatingPosition">
@@ -540,7 +608,7 @@
     </div>
 </template>
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
@@ -561,7 +629,7 @@ const confirmLogout = () => {
         logout();
     }
 };
-const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadFacilityAvailability } = usePortalData();
+const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadProfile, loadFacilityAvailability } = usePortalData();
 const { reservationForm, reportForm, reportProofFiles, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
 const { documentRequests, loadMyDocuments, createDocumentRequest } = useDocuments();
@@ -571,6 +639,8 @@ const currentView = ref(localStorage.getItem('portal_current_view') || 'profile'
 const activeModal = ref(null);
 const itemsPerPage = 5;
 const isSubmitting = ref(false);
+const isChangingPassword = ref(false);
+const isEditingProfile = ref(false);
 const appointmentSearch = ref('');
 
 const reservationSearch = ref('');
@@ -579,6 +649,50 @@ const documentSearch = ref('');
 const recordDetail = ref(null);
 
 const documentForm = ref({ type: 'certificate', fields: {}, purpose: '' });
+const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
+const profileImageFile = ref(null);
+const profileImageInput = ref(null);
+const profileImagePreview = ref('');
+
+const profileAvatarSrc = computed(() => profileImagePreview.value || profile.profileImage || '');
+
+const clearProfileImageSelection = () => {
+    if (profileImagePreview.value.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview.value);
+    }
+
+    profileImagePreview.value = '';
+    profileImageFile.value = null;
+
+    if (profileImageInput.value) {
+        profileImageInput.value.value = '';
+    }
+};
+
+const handleProfileImageChange = (event) => {
+    const file = event.target?.files?.[0] || null;
+
+    if (profileImagePreview.value.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview.value);
+    }
+
+    profileImageFile.value = file;
+    profileImagePreview.value = file ? URL.createObjectURL(file) : '';
+};
+
+const openProfileImagePicker = async () => {
+    if (!isEditingProfile.value) {
+        isEditingProfile.value = true;
+        await nextTick();
+    }
+
+    profileImageInput.value?.click();
+};
+
+const displayName = computed(() => {
+    const parts = [profile.firstName, profile.middleName, profile.lastName, profile.suffix].filter(Boolean);
+    return parts.length ? parts.join(' ') : user.value?.username || 'Resident Profile';
+});
 
 const filteredDocumentRequests = computed(() => {
     const needle = String(documentSearch.value || '').trim().toLowerCase();
@@ -809,6 +923,15 @@ const filteredReports = computed(() => reports.value.filter((item) => matchesSea
 ])));
 
 const reportTypeOptions = REPORT_TYPE_OPTIONS;
+
+const formatLocalDateInputValue = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const todayDate = formatLocalDateInputValue();
 
 const currentReportTypeConfig = computed(() => {
     return REPORT_TYPE_CONFIG[reportForm.reportType] || REPORT_TYPE_CONFIG.other;
@@ -1070,10 +1193,69 @@ const handleSaveProfile = async () => {
     if (isSubmitting.value) return;
     isSubmitting.value = true;
     try {
-        await saveProfile();
-        closeModal();
+        const formData = new FormData();
+
+        Object.entries(profile).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        });
+
+        if (profileImageFile.value) {
+            formData.append('profileImage', profileImageFile.value);
+        }
+
+        await saveProfile(formData);
+        clearProfileImageSelection();
+        isEditingProfile.value = false;
     } finally {
         isSubmitting.value = false;
+    }
+};
+
+const toggleProfileEdit = async () => {
+    if (isEditingProfile.value) {
+        clearProfileImageSelection();
+        await loadProfile();
+        isEditingProfile.value = false;
+        return;
+    }
+
+    isEditingProfile.value = true;
+};
+
+const cancelProfileEdit = async () => {
+    if (isSubmitting.value) return;
+    clearProfileImageSelection();
+    isEditingProfile.value = false;
+    await loadProfile();
+};
+
+onUnmounted(() => {
+    clearProfileImageSelection();
+});
+
+const handleChangePassword = async () => {
+    if (isChangingPassword.value) return;
+
+    if (changePasswordForm.value.newPassword !== changePasswordForm.value.confirmPassword) {
+        setStatus('New passwords do not match.', true);
+        return;
+    }
+
+    isChangingPassword.value = true;
+    try {
+        const response = await apiFetch('/auth/change-password', {
+            method: 'POST',
+            body: JSON.stringify(changePasswordForm.value)
+        });
+
+        setStatus(response.message || 'Password updated successfully.');
+        changePasswordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+    } catch (error) {
+        setStatus(error.message, true);
+    } finally {
+        isChangingPassword.value = false;
     }
 };
 
@@ -1103,6 +1285,11 @@ const handleSubmitReport = async () => {
 
     if (currentReportTypeConfig.value.requireIncidentDate && !reportForm.incidentDate) {
         setStatus('Incident date is required for this report type.', true);
+        return;
+    }
+
+    if (reportForm.incidentDate && reportForm.incidentDate > todayDate) {
+        setStatus('Incident date cannot be in the future.', true);
         return;
     }
 

@@ -121,9 +121,12 @@ export function usePortalData() {
         }
     };
 
-    const saveProfile = async () => {
+    const saveProfile = async (bodyOverride = profile) => {
         try {
-            await apiFetch('/residents/me', { method: 'PUT', body: JSON.stringify(profile) });
+            await apiFetch('/residents/me', {
+                method: 'PUT',
+                body: bodyOverride instanceof FormData ? bodyOverride : JSON.stringify(bodyOverride)
+            });
             setStatus('Resident profile saved.');
             await loadProfile();
         } catch (error) {

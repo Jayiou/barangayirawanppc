@@ -334,7 +334,7 @@
                                     </div>
                                     <div class="input-group">
                                         <label for="guest-report-incident-date">Incident Date</label>
-                                        <input id="guest-report-incident-date" v-model="guestReportForm.incidentDate" type="date">
+                                        <input id="guest-report-incident-date" v-model="guestReportForm.incidentDate" type="date" :max="todayDate">
                                     </div>
                                 </div>
 
@@ -1005,6 +1005,15 @@ const landingText = {
 
 const texts = ref({ landing: landingText });
 
+const formatLocalDateInputValue = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const todayDate = formatLocalDateInputValue();
+
 // Local state
 const activeModal = ref('');
 const toastMessage = ref('');
@@ -1541,6 +1550,11 @@ const handleGuestReportRequest = async () => {
     if (isGuestReportLoading.value) return;
     if (!guestReportForm.agreePrivacy) {
         setStatus('Please accept the Privacy Policy before submitting your report.', true);
+        return;
+    }
+
+    if (guestReportForm.incidentDate && guestReportForm.incidentDate > todayDate) {
+        setStatus('Incident date cannot be in the future.', true);
         return;
     }
 

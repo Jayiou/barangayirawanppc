@@ -283,6 +283,63 @@ test('login returns a standardized auth error for invalid passwords', async () =
     });
 });
 
+test('changePassword updates the resident password when current password matches', async () => {
+    const req = {
+        user: { id: 'user-123' },
+        body: {
+            currentPassword: 'Old_12345',
+            newPassword: 'New_12345',
+            confirmPassword: 'New_12345'
+        }
+    };
+    const res = createMockResponse();
+    let savedUser;
+
+    User.findById = async () => ({
+        _id: 'user-123',
+        password: 'hashed-old',
+        async save() {
+            savedUser = this;
+        }
+    });
+    bcrypt.compare = async (value, hash) => value === 'Old_12345' && hash === 'hashed-old';
+    bcrypt.hash = async (value) => `hashed-${value}`;
+
+    await authController.changePassword(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.message, 'Password updated successfully.');
+    assert.equal(savedUser.password, 'hashed-New_12345');
+    assert.equal(savedUser.failedLoginAttempts, 0);
+});
+
+test('changePassword rejects an incorrect current password', async () => {
+    const req = {
+        user: { id: 'user-123' },
+        body: {
+            currentPassword: 'Wrong_12345',
+            newPassword: 'New_12345',
+            confirmPassword: 'New_12345'
+        }
+    };
+    const res = createMockResponse();
+
+    User.findById = async () => ({
+        _id: 'user-123',
+        password: 'hashed-old',
+        async save() {}
+    });
+    bcrypt.compare = async () => false;
+
+    await authController.changePassword(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Current password is incorrect.'
+    });
+});
+
 test('login returns a standardized auth error when the user does not exist', async () => {
     const req = {
         body: {

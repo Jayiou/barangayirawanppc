@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 const {
     createResident,
@@ -20,7 +21,7 @@ const {
 } = require('../controllers/residentController');
 
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyResidentProfile);
-router.put('/me', authMiddleware, roleMiddleware('resident'), upsertMyResidentProfile);
+router.put('/me', authMiddleware, roleMiddleware('resident'), upload.single('profileImage'), upsertMyResidentProfile);
 
 router.post('/', authMiddleware, roleMiddleware('admin'), createResident);
 router.get('/', authMiddleware, roleMiddleware('admin'), getResidents);

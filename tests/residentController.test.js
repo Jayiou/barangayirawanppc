@@ -184,6 +184,44 @@ test('upsertMyResidentProfile updates an existing profile and saves it', async (
     assert.deepEqual(res.body, updatedResident);
 });
 
+test('upsertMyResidentProfile stores an uploaded profileImage path', async () => {
+    const req = {
+        user: { id: 'user-1' },
+        file: { filename: 'profileImage-123.png' },
+        body: {
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            sex: 'male',
+            birthDate: '2000-01-01',
+            address: 'Purok 1'
+        }
+    };
+    const res = createMockResponse();
+
+    Resident.findOne = async () => null;
+    Resident.create = async (payload) => ({
+        _id: 'resident-1',
+        ...payload
+    });
+    Resident.findById = () => ({
+        populate: async () => ({
+            _id: 'resident-1',
+            userId: 'user-1',
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            sex: 'male',
+            birthDate: '2000-01-01',
+            address: 'Purok 1',
+            profileImage: '/uploads/profileImage-123.png'
+        })
+    });
+
+    await residentController.upsertMyResidentProfile(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.equal(res.body.profileImage, '/uploads/profileImage-123.png');
+});
+
 test('upsertMyResidentProfile rejects invalid birth dates', async () => {
     const req = {
         user: { id: 'user-1' },

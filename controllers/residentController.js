@@ -41,6 +41,35 @@ const residentProfileFields = [
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const normalizePublicUploadUrl = (value) => {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+        return '';
+    }
+
+    if (/^https?:\/\//i.test(rawValue) || rawValue.startsWith('/uploads/')) {
+        return rawValue;
+    }
+
+    const filename = path.basename(rawValue.split('?')[0].split('#')[0]);
+    return filename ? `/uploads/${encodeURI(filename)}` : '';
+};
+
+const serializeResident = (resident) => {
+    if (!resident) {
+        return resident;
+    }
+
+    const output = resident.toObject ? resident.toObject() : { ...resident };
+    const profileImage = normalizePublicUploadUrl(output.profileImage);
+    if (profileImage) {
+        output.profileImage = profileImage;
+    } else {
+        delete output.profileImage;
+    }
+    return output;
+};
+
 const pickResidentFields = (source) => residentProfileFields.reduce((accumulator, field) => {
     if (source[field] !== undefined) {
         accumulator[field] = source[field];
@@ -122,7 +151,7 @@ exports.createResident = asyncHandler(async (req, res) => {
     const populatedResident = await Resident.findById(resident._id)
         .populate('userId', 'username email role isActive createdAt');
 
-    res.status(201).json(populatedResident);
+    res.status(201).json(serializeResident(populatedResident));
 });
 
 // GET ALL
@@ -134,7 +163,7 @@ exports.getResidents = asyncHandler(async (req, res) => {
     // Filter out residents whose user accounts have been deleted
     const activeResidents = residents.filter(resident => resident.userId !== null && resident.userId !== undefined);
 
-    res.json(activeResidents);
+    res.json(activeResidents.map(serializeResident));
 });
 
 exports.getResidentById = asyncHandler(async (req, res) => {
@@ -145,7 +174,7 @@ exports.getResidentById = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
     }
 
-    res.json(resident);
+    res.json(serializeResident(resident));
 });
 
 exports.downloadResidentProof = asyncHandler(async (req, res) => {
@@ -179,13 +208,17 @@ exports.getMyResidentProfile = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
     }
 
-    res.json(resident);
+    res.json(serializeResident(resident));
 });
 
 exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const residentData = pickResidentFields(req.body);
     const existingResident = await Resident.findOne({ userId: req.user.id });
     const validationError = validateResidentData(residentData);
+
+    if (req.file?.filename) {
+        residentData.profileImage = `/uploads/${encodeURI(path.basename(req.file.filename))}`;
+    }
 
     if (validationError) {
         throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
@@ -217,7 +250,7 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
         const populatedResident = await Resident.findById(createdResident._id)
             .populate('userId', 'username email role isActive createdAt');
 
-        return res.status(201).json(populatedResident);
+        return res.status(201).json(serializeResident(populatedResident));
     }
 
     Object.assign(existingResident, residentData);
@@ -226,7 +259,7 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const updatedResident = await Resident.findById(existingResident._id)
         .populate('userId', 'username email role isActive createdAt');
 
-    res.json(updatedResident);
+    res.json(serializeResident(updatedResident));
 });
 
 // UPDATE
@@ -247,7 +280,7 @@ exports.updateResident = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
     }
 
-    res.json(updated);
+    res.json(serializeResident(updated));
 });
 
 // UPDATE ACCOUNT STATUS (ADMIN)
@@ -299,7 +332,7 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
 
     res.json({
         message: `Resident account successfully ${status}`,
-        resident: await Resident.findById(resident._id).populate('userId', 'username email role isActive accountStatus createdAt'),
+        resident: serializeResident(await Resident.findById(resident._id).populate('userId', 'username email role isActive accountStatus createdAt')),
         user: { id: user._id, accountStatus: user.accountStatus, isActive: user.isActive }
     });
 });
@@ -326,7 +359,7 @@ exports.updateResidentVerification = asyncHandler(async (req, res) => {
 
     res.json({
         message: 'Resident verification status updated',
-        resident
+        resident: serializeResident(resident)
     });
 });
 

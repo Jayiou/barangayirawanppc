@@ -65,6 +65,28 @@ test('createReport rejects invalid incident dates', async () => {
     });
 });
 
+test('createReport rejects future incident dates', async () => {
+    const req = {
+        user: { id: 'user-1', role: 'resident' },
+        body: {
+            reportType: 'disturbance',
+            title: 'May gulo sa kanto',
+            description: 'May sigawan at suntukan',
+            locationText: 'Purok 2, tapat ng tindahan',
+            incidentDate: '2999-01-01'
+        }
+    };
+    const res = createMockResponse();
+
+    await reportController.createReport(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'incidentDate cannot be in the future'
+    });
+});
+
 test('createReport requires a resident profile', async () => {
     const req = {
         user: { id: 'user-1', role: 'resident' },
@@ -72,8 +94,10 @@ test('createReport requires a resident profile', async () => {
             reportType: 'disturbance',
             title: 'Maingay na kapitbahay',
             description: 'May malakas na speaker',
-            locationText: 'Purok 1'
-        }
+            locationText: 'Purok 1',
+            incidentDate: '2026-05-25'
+        },
+        files: [{ filename: 'disturbance-proof.jpg' }]
     };
     const res = createMockResponse();
 
@@ -175,8 +199,10 @@ test('createReport creates and returns a populated report', async () => {
             title: 'May patambak na basura',
             description: 'Hindi nakukuha ang basura sa gilid ng kalsada',
             locationText: 'Purok 3',
+            incidentDate: '2026-05-25',
             priority: 'high'
-        }
+        },
+        files: [{ filename: 'sanitation-proof.jpg' }]
     };
     const res = createMockResponse();
 

@@ -66,7 +66,8 @@ test('resident detail by id allows admins', async () => {
         _id: 'resident-1',
         firstName: 'Juan',
         lastName: 'Dela Cruz',
-        address: 'Purok 1'
+        address: 'Purok 1',
+        profileImage: 'profileImage-route-test.png'
     };
 
     Resident.findById = () => ({
@@ -84,7 +85,10 @@ test('resident detail by id allows admins', async () => {
         const body = await response.json();
 
         assert.equal(response.status, 200);
-        assert.deepEqual(body, expectedResident);
+        assert.deepEqual(body, {
+            ...expectedResident,
+            profileImage: '/uploads/profileImage-route-test.png'
+        });
     } finally {
         await server.close();
     }

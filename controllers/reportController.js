@@ -34,6 +34,24 @@ const pickFields = (source, fields) => fields.reduce((accumulator, field) => {
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidDate = (value) => !Number.isNaN(new Date(value).getTime());
+const toLocalDateOnly = (value) => {
+    if (typeof value === 'string') {
+        const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+        if (dateOnlyMatch) {
+            const [, year, month, day] = dateOnlyMatch;
+            return new Date(Number(year), Number(month) - 1, Number(day));
+        }
+    }
+
+    const parsedDate = new Date(value);
+    return new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+};
+const isFutureDate = (value) => {
+    const inputDate = toLocalDateOnly(value);
+    const today = toLocalDateOnly(new Date());
+    return inputDate > today;
+};
 const normalizeText = (value) => String(value || '').trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
 const formatReportTypeLabel = (value) => normalizeText(value).replaceAll('_', ' ');
@@ -180,6 +198,10 @@ const validateReportData = (payload) => {
 
     if (payload.incidentDate !== undefined && payload.incidentDate !== null && !isValidDate(payload.incidentDate)) {
         return 'Please provide a valid incidentDate';
+    }
+
+    if (payload.incidentDate !== undefined && payload.incidentDate !== null && isFutureDate(payload.incidentDate)) {
+        return 'incidentDate cannot be in the future';
     }
 
     if (payload.proofFiles !== undefined && !Array.isArray(payload.proofFiles)) {

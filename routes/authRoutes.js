@@ -4,7 +4,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const { createRateLimiter } = require('../middleware/rateLimitMiddleware');
 
-const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword } = require('../controllers/authController');
+const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword } = require('../controllers/authController');
 
 const registerLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
@@ -39,6 +39,7 @@ router.post('/resend-otp', otpLimiter, resendOtp);
 router.post('/login', loginLimiter, login);
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPassword);
+router.post('/change-password', authMiddleware, passwordResetLimiter, changePassword);
 router.get('/me', authMiddleware, getMe);
 
 module.exports = router;

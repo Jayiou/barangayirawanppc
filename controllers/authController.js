@@ -463,6 +463,51 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
 });
 
+exports.changePassword = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId || !currentPassword || !newPassword || !confirmPassword) {
+        throw createHttpError(400, 'Current password, new password, and confirmation are required.', { code: 'PASSWORD_CHANGE_VALIDATION_ERROR' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        throw createHttpError(400, 'Passwords do not match.', { code: 'PASSWORD_CHANGE_VALIDATION_ERROR' });
+    }
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+        throw createHttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`, { code: 'PASSWORD_CHANGE_VALIDATION_ERROR' });
+    }
+
+    if (!STRONG_PASSWORD_REGEX.test(newPassword)) {
+        throw createHttpError(400, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. underscore _).', { code: 'PASSWORD_CHANGE_VALIDATION_ERROR' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw createHttpError(404, 'User not found', { code: 'AUTH_NOT_FOUND' });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+        throw createHttpError(400, 'Current password is incorrect.', { code: 'PASSWORD_CHANGE_INVALID_CURRENT_PASSWORD' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.failedLoginAttempts = 0;
+    user.lastFailedLoginAt = null;
+    user.lockedUntil = null;
+    await user.save();
+
+    res.json({
+        message: 'Password updated successfully.'
+    });
+});
+
 // LOGIN
 exports.login = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
