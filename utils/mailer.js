@@ -39,7 +39,11 @@ const buildDetailsText = (details) => {
     const items = normalizeDetailItems(details);
     if (!items.length) return '';
 
-    return `Request Details:\n${items.map((item) => `- ${item.label}: ${item.value}`).join('\n')}\n`;
+    let output = 'Request Details:\n';
+    for (const item of items) {
+        output += '- ' + item.label + ': ' + item.value + '\n';
+    }
+    return output;
 };
 
 const buildDetailsHtml = (details) => {
@@ -63,8 +67,9 @@ const buildDetailsHtml = (details) => {
     `;
 };
 
-const FROM_EMAIL = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SENDGRID_FROM || 'no-reply@barangay.local';
-const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || FROM_EMAIL;
+const FROM_NAME = 'Barangay Connect';
+const FROM_EMAIL = 'princejaydelapenaz@gmail.com';
+const EMAIL_REPLY_TO = 'princejaydelapenaz@gmail.com';
 
 const hasValidFromDomain = !FROM_EMAIL.endsWith('.local') && !FROM_EMAIL.endsWith('.localhost');
 if (process.env.SENDGRID_API_KEY && !hasValidFromDomain) {
@@ -152,7 +157,7 @@ const defaultMailHeaders = {
 const sendOtpEmail = async (toEmail, otpCode, name) => {
     try {
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: 'Verify your Barangay Connect Registration',
             replyTo: REPLY_TO,
@@ -190,7 +195,7 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
 const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
     try {
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: 'Reset your Barangay Connect password',
             replyTo: REPLY_TO,
@@ -244,7 +249,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             : '';
 
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: `Barangay Connect - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
             replyTo: REPLY_TO,
@@ -308,7 +313,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
         const detailsSection = buildDetailsHtml(details);
 
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
             replyTo: REPLY_TO,
@@ -370,7 +375,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
         const detailsSection = buildDetailsHtml(details);
 
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
             replyTo: REPLY_TO,
@@ -430,7 +435,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
         const textBody = `Hello ${name},\n\nYour requested ${docTypeFormatted} is now ready!\n\nDocument Details:\n- Document Type: ${docTypeFormatted}\n- Issued by: Barangay Irawan, Puerto Princesa City\n- Date Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\nIf you have any questions or concerns about your document, please don't hesitate to contact the Barangay Hall.\n\nThank you,\nBarangay Administration`;
 
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: `${docTypeFormatted} from Barangay Irawan`,
             replyTo: REPLY_TO,
@@ -464,7 +469,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
 const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
     try {
         const mailOptions = {
-            from: `"Barangay Connect" <${FROM_EMAIL}>`,
+            from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
             subject: subject || 'Barangay Resident Notification',
             replyTo: REPLY_TO,
