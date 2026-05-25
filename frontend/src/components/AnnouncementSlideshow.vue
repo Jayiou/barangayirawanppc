@@ -1,8 +1,8 @@
 <template>
-    <section class="announcement-section" id="announcements">
+    <section class="announcement-section">
         <div class="section-title" v-if="announcements.length > 0" style="text-align: center; margin-bottom: 3rem;">
             <span class="eyebrow">Latest Updates</span>
-            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcements</h2>
+            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcement/Advisories</h2>
         </div>
 
         <!-- Horizontal Rotating Carousel -->
@@ -182,24 +182,24 @@ const getItemStyle = (index) => {
     let translateZ = '0px';
     let zIndex = 10;
     let opacity = 1;
-    let filter = 'blur(0px)';
+    let filter = 'none';
     
     if (dist === 0) {
         // Center - default values already set above
     } else if (dist === 1 || dist === -1) {
         // Left or Right immediate sibling
-        scale = 0.75;
+        scale = 0.82;
         translateZ = '-200px';
         zIndex = 5;
-        opacity = 0.4;
-        filter = 'blur(8px)';
+        opacity = 0.72;
+        filter = 'none';
     } else {
         // Hidden items
         scale = 0.75;
         translateZ = '-200px';
         zIndex = 1;
         opacity = 0;
-        filter = 'blur(8px)';
+        filter = 'none';
     }
     
     // Position entirely via `dist`
@@ -438,16 +438,21 @@ onBeforeUnmount(() => {
     height: 100%;
     border-radius: 20px;
     background: white;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 18px 42px rgba(19, 28, 24, 0.18), 0 6px 16px rgba(19, 28, 24, 0.08);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     cursor: pointer;
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .carousel-item.center .card {
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 30px 80px rgba(19, 28, 24, 0.28), 0 10px 28px rgba(181, 0, 9, 0.12);
+}
+
+.carousel-item.left .card,
+.carousel-item.right .card {
+    box-shadow: 0 18px 48px rgba(19, 28, 24, 0.2), 0 6px 18px rgba(19, 28, 24, 0.1);
 }
 
 .card-image {

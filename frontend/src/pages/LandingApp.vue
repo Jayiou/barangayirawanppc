@@ -7,10 +7,10 @@
                 <BrandMark initials="BI" eyebrow="Management System" title="Barangay Irawan" />
                 <nav class="landing-nav" aria-label="Main navigation">
                     <a href="#home">{{ texts.landing.nav.home }}</a>
+                    <a href="#announcements">{{ texts.landing.nav.announcements }}</a>
                     <a href="#vmg">{{ texts.landing.nav.vmg }}</a>
                     <a href="#services">{{ texts.landing.nav.services }}</a>
                     <a href="#officials">{{ texts.landing.nav.officials }}</a>
-                    <a href="#announcements">{{ texts.landing.nav.announcements }}</a>
                     <a href="#location">{{ texts.landing.nav.location }}</a>
                     <button type="button" class="landing-auth-btn" @click="openModal('login')">
                         <i class="fa-solid fa-right-to-bracket"></i>
@@ -38,6 +38,10 @@
                     {{ texts.landing.hero.copy }}
                 </p>
             </div>
+        </section>
+
+        <section class="landing-lower-grid" id="announcements">
+            <AnnouncementSlideshow />
         </section>
 
         <!-- Vision / Mission / Goals Section -->
@@ -173,10 +177,6 @@
             </div>
         </section>
 
-        <section class="landing-lower-grid" id="announcements">
-            <AnnouncementSlideshow />
-        </section>
-
         <section class="landing-location-band" id="location">
             <div class="landing-location-inner">
                 <div class="landing-location-copy animate-section slide-up">
@@ -222,10 +222,10 @@
 
                     <nav class="landing-footer-nav" aria-label="Footer navigation">
                         <a href="#home">Home</a>
+                        <a href="#announcements">Announcement/Advisories</a>
                         <a href="#vmg">VMG</a>
                         <a href="#services">Services</a>
                         <a href="#officials">Officials</a>
-                        <a href="#announcements">Announcements</a>
                         <a href="#location">Location</a>
                     </nav>
                 </div>
@@ -993,9 +993,9 @@ const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecapt
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
 
 const landingText = {
-    nav: { home: 'Home', vmg: 'VMG', services: 'Services', officials: 'Officials', announcements: 'Announcements', location: 'Location', appointments: 'Appointments', facilities: 'Facilities', login: 'Login', register: 'Register', continueOtp: 'Continue OTP' },
+    nav: { home: 'Home', vmg: 'VMG', services: 'Services', officials: 'Officials', announcements: 'Announcement/Advisories', location: 'Location', appointments: 'Appointments', facilities: 'Facilities', login: 'Login', register: 'Register', continueOtp: 'Continue OTP' },
     hero: { eyebrow: 'Barangay Digital Services', title: 'Welcome to Barangay Irawan', subtitle: 'Puerto Princesa City', copy: 'Your gateway to efficient, modern barangay services. Access documents, schedule appointments, report incidents, and stay connected with your community, all in one place.' },
-    sections: { servicesTitle: 'Barangay Services', servicesCopy: 'Everything you need to connect with Barangay Irawan and access essential community services.', officialsTitle: 'Barangay Officials', officialsCopy: 'Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.', announcementsTitle: 'Announcements', announcementsCopy: 'Stay informed with the latest barangay updates and reminders.' },
+    sections: { servicesTitle: 'Barangay Services', servicesCopy: 'Everything you need to connect with Barangay Irawan and access essential community services.', officialsTitle: 'Barangay Officials', officialsCopy: 'Meet the leaders and public servants helping Barangay Irawan deliver faster, clearer services.', announcementsTitle: 'Announcement/Advisories', announcementsCopy: 'Stay informed with the latest barangay updates, reminders, and emergency advisories.' },
     actions: { requestOnline: 'Request online', loadingOfficials: 'Loading officials...' },
     footer: { rights: '© 2026 Barangay Irawan. All rights reserved.' },
     auth: {
@@ -2743,7 +2743,18 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     gap: 20px;
     align-items: center;
     text-align: center;
-    padding: 16px 0;
+    padding: 22px 18px;
+    background: #ffffff;
+    border: 1px solid rgba(221, 229, 239, 0.9);
+    border-radius: 18px;
+    box-shadow: 0 16px 36px rgba(22, 36, 26, 0.11), 0 4px 12px rgba(22, 36, 26, 0.05);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.official-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(46, 117, 82, 0.22);
+    box-shadow: 0 22px 46px rgba(22, 36, 26, 0.16), 0 8px 20px rgba(46, 117, 82, 0.08);
 }
 
 .official-avatar {
@@ -2882,6 +2893,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     text-align: center;
     border-radius: 14px;
     background: transparent;
+    box-shadow: 0 18px 44px rgba(22, 36, 26, 0.14), 0 6px 16px rgba(22, 36, 26, 0.07);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.vmg-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 24px 56px rgba(22, 36, 26, 0.18), 0 8px 22px rgba(39, 174, 96, 0.1);
 }
 .vmg-card .vmg-card-bg {
     position: absolute;
