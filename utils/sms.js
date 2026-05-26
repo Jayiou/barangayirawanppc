@@ -96,11 +96,13 @@ const getTwilioConfig = () => {
     const accountSid = String(env.TWILIO_ACCOUNT_SID || '').trim();
     const authToken = String(env.TWILIO_AUTH_TOKEN || '').trim();
     const fromNumber = String(env.TWILIO_NUMBER || '').trim();
+    const messagingServiceSid = String(env.TWILIO_MESSAGING_SERVICE_SID || '').trim();
 
     return {
         accountSid,
         authToken,
         fromNumber,
+        messagingServiceSid,
         isConfigured: Boolean(accountSid && authToken && fromNumber)
     };
 };
@@ -149,6 +151,39 @@ const saveSmsLog = async ({
     });
 
     return smsLog.save();
+};
+
+const buildTwilioMessagePayload = (twilioConfig, finalPhoneNumber, truncatedMessage) => {
+    const messagePayload = {
+        body: truncatedMessage,
+        to: finalPhoneNumber
+    };
+
+    if (twilioConfig.messagingServiceSid) {
+        messagePayload.messagingServiceSid = twilioConfig.messagingServiceSid;
+    } else {
+        messagePayload.from = twilioConfig.fromNumber;
+    }
+
+    return messagePayload;
+};
+
+const getSmsProviderErrorDetails = (error) => {
+    const providerStatus = error?.status ? String(error.status) : 'error';
+    const providerErrorCode = error?.code === undefined || error?.code === null ? '' : String(error.code);
+    let providerError = 'Unknown Twilio error';
+
+    if (error?.code === 21612) {
+        providerError = 'Twilio rejected the sender/recipient combination. Use a Messaging Service sender allowed for the destination country.';
+    } else if (error?.message) {
+        providerError = error.message;
+    }
+
+    return {
+        providerStatus,
+        providerError,
+        providerErrorCode
+    };
 };
 
 const sendSmsNotification = async ({
@@ -201,11 +236,7 @@ const sendSmsNotification = async ({
 
     try {
         const client = getTwilioClient();
-        const result = await client.messages.create({
-            body: truncatedMessage,
-            from: twilioConfig.fromNumber,
-            to: finalPhoneNumber
-        });
+        const result = await client.messages.create(buildTwilioMessagePayload(twilioConfig, finalPhoneNumber, truncatedMessage));
 
         await saveSmsLog({
             phoneNumber: finalPhoneNumber,
@@ -227,6 +258,12 @@ const sendSmsNotification = async ({
             messageContent: truncatedMessage
         };
     } catch (error) {
+        const {
+            providerStatus,
+            providerError,
+            providerErrorCode
+        } = getSmsProviderErrorDetails(error);
+
         await saveSmsLog({
             phoneNumber: finalPhoneNumber,
             messageType,
@@ -234,9 +271,9 @@ const sendSmsNotification = async ({
             recipientId,
             referenceId,
             status: 'failed',
-            providerStatus: error?.status ? String(error.status) : 'error',
-            providerError: error?.message ? error.message : 'Unknown Twilio error',
-            providerErrorCode: error?.code === undefined || error?.code === null ? '' : String(error.code)
+            providerStatus,
+            providerError,
+            providerErrorCode
         });
 
         logAtLevel('error', `Error sending ${messageType} SMS:`, error);

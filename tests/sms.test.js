@@ -219,3 +219,40 @@ test('sendSmsNotification skips invalid phone number and does not call Twilio', 
     assert.equal(FakeSmsLog.records[0].status, 'failed');
     assert.equal(FakeSmsLog.records[0].providerStatus, 'invalid_recipient');
 });
+
+test('sendSmsNotification uses messagingServiceSid when configured', async () => {
+    const createCalls = [];
+    const fakeClient = {
+        messages: {
+            create: async (payload) => {
+                createCalls.push(payload);
+                return { sid: 'SM999', status: 'queued' };
+            }
+        }
+    };
+
+    sms.configureSmsRuntime({
+        env: {
+            SMS_ENABLED: 'true',
+            TWILIO_ACCOUNT_SID: 'AC123',
+            TWILIO_AUTH_TOKEN: 'token',
+            TWILIO_NUMBER: '+15550001111',
+            TWILIO_MESSAGING_SERVICE_SID: 'MG1234567890abcdef1234567890abcdef'
+        },
+        smsLogModel: FakeSmsLog,
+        twilioClientFactory: () => fakeClient,
+        logger
+    });
+
+    const result = await sms.sendSmsNotification({
+        phoneNumber: '+639300625493',
+        messageType: 'document_status',
+        messageContent: 'Brgy Connect: test messaging service.'
+    });
+
+    assert.equal(result.sent, true);
+    assert.equal(createCalls.length, 1);
+    assert.equal(createCalls[0].messagingServiceSid, 'MG1234567890abcdef1234567890abcdef');
+    assert.equal(createCalls[0].from, undefined);
+    assert.equal(createCalls[0].to, '+639300625493');
+});
