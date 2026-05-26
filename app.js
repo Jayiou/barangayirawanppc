@@ -153,10 +153,20 @@ app.use(express.static(frontendDirectory, {
     etag: false,
     lastModified: false,
     setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html')) {
+        if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
+            return;
+        }
+
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return;
+        }
+
+        if (/\.(?:png|jpe?g|gif|svg|webp|avif|ico|mp3)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=604800');
         }
     }
 }));

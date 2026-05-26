@@ -6,13 +6,13 @@ const legacy = require('@vitejs/plugin-legacy').default;
 module.exports = defineConfig({
     plugins: [
         vue(),
-        legacy({
+        process.env.VITE_LEGACY_BUILD === 'true' && legacy({
             targets: ['defaults', 'iOS >= 11', 'Safari >= 11'],
             modernTargets: ['iOS >= 11', 'Safari >= 11'],
             modernPolyfills: true,
             renderLegacyChunks: true
         })
-    ],
+    ].filter(Boolean),
     root: __dirname,
     publicDir: 'public',
     envDir: path.resolve(__dirname, '..'),

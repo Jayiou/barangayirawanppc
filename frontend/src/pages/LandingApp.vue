@@ -1710,13 +1710,10 @@ const announcements = computed(() => [
 ]);
 
 onMounted(() => {
-    console.log('[LandingApp] onMounted hook called');
-    
     const pendingEmail = getPendingOtpEmail();
     if (pendingEmail) {
         pendingOtpEmail.value = pendingEmail;
         otpForm.email = pendingEmail;
-        console.log('[LandingApp] Restored pending OTP email:', pendingEmail);
     }
 
     const hasReset = hydrateResetPasswordFromUrl();
@@ -1724,31 +1721,9 @@ onMounted(() => {
         activeModal.value = 'reset-password';
         setStatus('Create a new password to finish resetting your account.', false);
     }
-    
-    console.log('[LandingApp] Preloading hero background image');
-    const img = new Image();
-    img.src = '/images/hero-bg.jpg';
-    img.onload = () => {
-        console.log('[LandingApp] ✓ Hero image loaded successfully');
-    };
-    img.onerror = () => {
-        console.log('[LandingApp] ℹ Hero image not found, fallback color will be used');
-    };
-    
-    console.log('[LandingApp] Preloading fonts');
-    if (document.fonts && document.fonts.load) {
-        try {
-            document.fonts.load('600 24px Fraunces');
-            document.fonts.load('400 16px Manrope');
-            console.log('[LandingApp] ✓ Fonts preload initiated');
-        } catch (e) {
-            console.log('[LandingApp] Font preload error (non-critical):', e.message);
-        }
-    }
 
     setupLocationMapLazyLoad();
     Promise.resolve().then(loadOfficialsAndAnimations);
-    console.log('[LandingApp] ✓ Component fully initialized and visible');
 });
 
 onBeforeUnmount(() => {
@@ -1848,7 +1823,7 @@ iframe[src*="recaptcha/api2/bframe"] {
 /* Left Visual Side (Image/Branding) */
 .auth-modal-visual {
     flex: 0 0 400px;
-    background: url('/images/hero-bg.jpg') center/cover no-repeat;
+    background: url('/images/hero-bg-1280.jpg') center/cover no-repeat;
     position: relative;
     display: flex;
     padding: 40px;
@@ -2971,7 +2946,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 .vmg-card .vmg-card-bg {
     position: absolute;
     inset: 0;
-    background-image: url('/images/hero-logo.jpg');
+    background-image: image-set(
+        url('/images/hero-logo-160.jpg') 1x,
+        url('/images/hero-logo-320.jpg') 2x
+    );
     background-repeat: no-repeat;
     background-position: center;
     background-size: 200px 200px;

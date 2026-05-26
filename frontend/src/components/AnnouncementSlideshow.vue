@@ -22,7 +22,7 @@
                          @click="handleCardClick(announcement, index)">
                         <div class="card">
                             <div v-if="announcement.imagePath || announcement.imageUrl" class="card-image">
-                                <img :src="announcement.imagePath || announcement.imageUrl" :alt="announcement.title">
+                                <img :src="announcement.imagePath || announcement.imageUrl" :alt="announcement.title" loading="lazy" decoding="async">
                             </div>
                             <div class="card-overlay"></div>
                             <div class="card-content">
@@ -62,7 +62,7 @@
             >
                 <div class="card">
                     <div v-if="announcement.imagePath || announcement.imageUrl" class="card-image">
-                        <img :src="announcement.imagePath || announcement.imageUrl" :alt="announcement.title">
+                        <img :src="announcement.imagePath || announcement.imageUrl" :alt="announcement.title" loading="lazy" decoding="async">
                     </div>
                     <div class="card-overlay"></div>
                     <div class="card-content">
@@ -85,7 +85,7 @@
             <div class="announcement-modal-content">
                 <button class="close-btn" @click="closeModal"><i class="fa-solid fa-xmark"></i></button>
                 <div v-if="selectedAnnouncement.imagePath || selectedAnnouncement.imageUrl" class="modal-image">
-                    <img :src="selectedAnnouncement.imagePath || selectedAnnouncement.imageUrl" :alt="selectedAnnouncement.title">
+                    <img :src="selectedAnnouncement.imagePath || selectedAnnouncement.imageUrl" :alt="selectedAnnouncement.title" decoding="async">
                 </div>
                 <div class="modal-body">
                     <span class="card-badge" style="margin-bottom: 12px;">{{ getStatusBadge(selectedAnnouncement.isActive) }}</span>

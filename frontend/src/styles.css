@@ -314,8 +314,10 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
 .landing-hero {
     position: relative;
     min-height: 730px;
-    /* Background image - replace URL with your image path */
-    background-image: url('/images/hero-bg.jpg');
+    background-image: image-set(
+        url('/images/hero-bg-960.jpg') 1x,
+        url('/images/hero-bg-1600.jpg') 2x
+    );
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -1806,7 +1808,10 @@ textarea { resize: vertical; }
     .landing-hero {
         min-height: 480px;
         background-attachment: scroll;
-        background-image: url('/images/hero-bg.jpg');
+        background-image: image-set(
+            url('/images/hero-bg-960.jpg') 1x,
+            url('/images/hero-bg-1280.jpg') 2x
+        );
         background-size: cover;
         background-position: center;
     }
