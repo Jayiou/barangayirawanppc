@@ -6,9 +6,7 @@ const { createHttpError } = require('../utils/httpError');
 const { isValidTransition } = require('../utils/statusWorkflows');
 const { logStatusChange } = require('../utils/statusLogger');
 const { sendDocumentStatusEmail, sendRequestStatusEmail } = require('../utils/mailer');
-const SMSLog = require('../models/SMSLog');
-const { truncateToSingleSegment } = require('../utils/sms');
-const { sendDocumentStatusSMS } = require('../utils/sms');
+const { sendDocumentStatusSMS, sendSmsNotification } = require('../utils/sms');
 
 const getPersonName = (person, fallback = 'Resident') => {
     const fullName = [
@@ -112,7 +110,6 @@ const notifyRequestStatus = async (record, requestLabel, status, notes = '', det
         notes,
         details
     );
-    // Also send a short SMS notification when phone is available
     const getRecipientPhone = (rec) => (
         rec?.contactNumber
         || rec?.residentId?.contactNumber
@@ -127,26 +124,19 @@ const notifyRequestStatus = async (record, requestLabel, status, notes = '', det
     const name = getPersonName(requester, 'Resident');
     const humanStatus = formatLabel(status);
     const message = `Brgy Connect: Hi ${name}, your ${requestLabel} is ${humanStatus}. Please check your email for full details.`;
-    const truncated = truncateToSingleSegment(message);
 
-    // decide messageType
     let messageType = 'resident_update';
     if (String(requestLabel).toLowerCase().includes('facility')) messageType = 'facility_reservation';
     else if (String(requestLabel).toLowerCase().includes('report')) messageType = 'report_status';
     else if (String(requestLabel).toLowerCase().includes('document')) messageType = 'document_status';
 
-    try {
-        await SMSLog.create({
-            phoneNumber: phone,
-            messageType,
-            messageContent: truncated,
-            recipientId: requester?._id || undefined,
-            status: 'sent'
-        });
-        console.log(`[SMS MOCK] Logged ${messageType} SMS to ${phone}: "${truncated}"`);
-    } catch (err) {
-        console.error('Error logging SMS for request status:', err);
-    }
+    await sendSmsNotification({
+        phoneNumber: phone,
+        messageType,
+        messageContent: message,
+        recipientId: requester?._id || undefined,
+        referenceId: String(record?._id || '')
+    });
 };
 
 const notifyDocumentStatus = async (documentRequest, status, notes = '') => {

@@ -6,8 +6,7 @@ const crypto = require('node:crypto');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendStatusUpdateEmail, sendPasswordResetEmail, sendCustomResidentEmail } = require('../utils/mailer');
-const { sendStatusUpdateSMS, truncateToSingleSegment } = require('../utils/sms');
-const SMSLog = require('../models/SMSLog');
+const { sendStatusUpdateSMS, sendSmsNotification } = require('../utils/sms');
 
 const residentProfileFields = [
     'firstName',
@@ -398,17 +397,15 @@ exports.sendResidentSMS = asyncHandler(async (req, res) => {
 
     const content = String(message || '').trim() || 'Your resident account has an update.';
     const prefixed = `Brgy Connect: ${content}`;
-    const truncated = truncateToSingleSegment(prefixed);
-
-    await SMSLog.create({
+    await sendSmsNotification({
         phoneNumber: resident.contactNumber,
         messageType: 'resident_update',
-        messageContent: truncated,
-        status: 'sent'
+        messageContent: prefixed,
+        recipientId: resident._id
     });
 
     res.json({
-        message: 'Resident SMS logged successfully.',
+        message: 'Resident SMS sent successfully.',
         details: { phoneNumber: resident.contactNumber }
     });
 });

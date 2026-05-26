@@ -24,6 +24,31 @@ const smsLogSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        provider: {
+            type: String,
+            trim: true,
+            default: 'twilio'
+        },
+        providerMessageId: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        providerStatus: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        providerError: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        providerErrorCode: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         recipientId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resident'
