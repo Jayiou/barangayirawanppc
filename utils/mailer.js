@@ -70,6 +70,7 @@ const buildDetailsHtml = (details) => {
 const FROM_NAME = 'Barangay Connect';
 const FROM_EMAIL = 'princejaydelapenaz@gmail.com';
 const EMAIL_REPLY_TO = 'princejaydelapenaz@gmail.com';
+const path = require('node:path');
 
 const hasValidFromDomain = !FROM_EMAIL.endsWith('.local') && !FROM_EMAIL.endsWith('.localhost');
 if (process.env.SENDGRID_API_KEY && !hasValidFromDomain) {
@@ -111,9 +112,10 @@ const normalizeSendGridAttachments = (attachments = []) => {
         }
 
         if (attachment.path) {
-            const fileData = fs.readFileSync(attachment.path);
+            const attachmentPath = resolveAttachmentPath(attachment.path);
+            const fileData = fs.readFileSync(attachmentPath);
             return {
-                filename: attachment.filename || attachment.path.split('/').pop(),
+                filename: attachment.filename || attachmentPath.split(/[\\/]/).pop(),
                 type: attachment.contentType || 'application/octet-stream',
                 content: fileData.toString('base64'),
                 disposition: attachment.contentDisposition || 'attachment'
@@ -125,6 +127,30 @@ const normalizeSendGridAttachments = (attachments = []) => {
             content: String(attachment)
         };
     });
+};
+
+const resolveAttachmentPath = (value) => {
+    const rawPath = String(value || '').trim();
+    if (!rawPath) return rawPath;
+
+    if (path.isAbsolute(rawPath) && fs.existsSync(rawPath)) {
+        return rawPath;
+    }
+
+    const normalized = rawPath.replace(/^\/+/, '').replace(/^public[\\/]/i, '');
+    const candidates = [
+        path.join(process.cwd(), normalized),
+        path.join(process.cwd(), 'public', normalized),
+        path.join(process.cwd(), 'public', 'uploads', path.basename(normalized))
+    ];
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    return rawPath;
 };
 
 const sendMail = async (mailOptions) => {
@@ -449,7 +475,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
             mailOptions.text = textBody + `\n\nDownload Link: ${filePath}`;
             mailOptions.html = htmlBody + `\n<p style="margin-top:12px; text-align:center;"><a href="${filePath}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#257f49; color:#fff; padding:10px 14px; border-radius:6px; text-decoration:none;">Download Document</a></p>`;
         } else if (typeof filePath === 'string' && filePath) {
-            mailOptions.attachments = [{ filename: `${documentType}.pdf`, path: filePath }];
+            mailOptions.attachments = [{ filename: `${documentType}.pdf`, path: resolveAttachmentPath(filePath) }];
         }
         
 

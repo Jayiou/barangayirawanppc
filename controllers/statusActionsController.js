@@ -8,6 +8,7 @@ const { logStatusChange } = require('../utils/statusLogger');
 const { sendDocumentStatusEmail, sendRequestStatusEmail } = require('../utils/mailer');
 const SMSLog = require('../models/SMSLog');
 const { truncateToSingleSegment } = require('../utils/sms');
+const { sendDocumentStatusSMS } = require('../utils/sms');
 
 const getPersonName = (person, fallback = 'Resident') => {
     const fullName = [
@@ -152,6 +153,8 @@ const notifyDocumentStatus = async (documentRequest, status, notes = '') => {
     const recipientEmail = getRecipientEmail(documentRequest);
     if (!recipientEmail) return;
 
+    const recipientPhone = documentRequest?.resident?.contactNumber || documentRequest?.contactNumber || '';
+
     await sendDocumentStatusEmail(
         recipientEmail,
         getPersonName(documentRequest.resident, 'Resident'),
@@ -160,6 +163,16 @@ const notifyDocumentStatus = async (documentRequest, status, notes = '') => {
         notes,
         buildDocumentEmailDetails(documentRequest, status)
     );
+
+    if (recipientPhone) {
+        await sendDocumentStatusSMS(
+            recipientPhone,
+            getPersonName(documentRequest.resident, 'Resident'),
+            documentRequest.type,
+            status,
+            String(documentRequest._id || '')
+        );
+    }
 };
 
 // ============ FACILITY RESERVATION ACTIONS ============
@@ -167,7 +180,7 @@ const notifyDocumentStatus = async (documentRequest, status, notes = '') => {
 exports.approveFacilityReservation = asyncHandler(async (req, res) => {
     const res_obj = await FacilityReservation.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -199,7 +212,7 @@ exports.rejectFacilityReservation = asyncHandler(async (req, res) => {
 
     const res_obj = await FacilityReservation.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -226,7 +239,7 @@ exports.rejectFacilityReservation = asyncHandler(async (req, res) => {
 exports.completeFacilityReservation = asyncHandler(async (req, res) => {
     const res_obj = await FacilityReservation.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -255,7 +268,7 @@ const updateDocumentRequestStatus = async (req, res, targetStatus, message) => {
     const { reason } = req.body;
     const documentRequest = await DocumentRequest.findById(req.params.id).populate({
         path: 'resident',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -282,7 +295,7 @@ const updateDocumentRequestStatus = async (req, res, targetStatus, message) => {
     const residentName = documentRequest.resident 
         ? `${documentRequest.resident.firstName} ${documentRequest.resident.lastName}`
         : 'Unknown Resident';
-    const actionDescription = `${documentRequest.type} document - ${targetStatus}${reason ? ` (${reason})` : ''}`;
+    const actionDescription = documentRequest.type + ' document - ' + targetStatus + (reason ? ' (' + reason + ')' : '');
     
     // Prepare additional data for audit log
     const additionalData = {
@@ -333,7 +346,7 @@ exports.completeDocumentRequest = asyncHandler(async (req, res) => {
 exports.startReviewReport = asyncHandler(async (req, res) => {
     const report = await Report.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -359,7 +372,7 @@ exports.startReviewReport = asyncHandler(async (req, res) => {
 exports.startProgressReport = asyncHandler(async (req, res) => {
     const report = await Report.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -385,7 +398,7 @@ exports.startProgressReport = asyncHandler(async (req, res) => {
 exports.resolveReport = asyncHandler(async (req, res) => {
     const report = await Report.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
@@ -417,7 +430,7 @@ exports.rejectReport = asyncHandler(async (req, res) => {
 
     const report = await Report.findById(req.params.id).populate({
         path: 'residentId',
-        select: 'firstName middleName lastName suffix email userId',
+        select: 'firstName middleName lastName suffix email contactNumber userId',
         populate: { path: 'userId', select: 'email username' }
     });
 
