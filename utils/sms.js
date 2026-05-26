@@ -1,5 +1,15 @@
 const SMSLog = require('../models/SMSLog');
 
+// Truncate messages to single-SMS limits to reduce billing/credits.
+const isBasicAscii = (text) => /^[\x00-\x7F]*$/.test(String(text || ''));
+const singleSegmentLimit = (text) => (isBasicAscii(text) ? 160 : 70);
+const truncateToSingleSegment = (text) => {
+    const t = String(text || '');
+    const limit = singleSegmentLimit(t);
+    if (t.length <= limit) return t;
+    return t.slice(0, Math.max(0, limit - 3)) + '...';
+};
+
 const formatLabel = (text) => {
     if (!text) return text;
     return text
@@ -21,30 +31,32 @@ const sendDocumentStatusSMS = async (phoneNumber, name, documentType, status, re
         let messageContent = '';
 
         if (status === 'approved') {
-            messageContent = `Hello ${name}! Your request for ${docTypeFormatted} has been APPROVED. We are now preparing your document. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is APPROVED. Please check your email for full details.${referenceNumber ? ' Ref: ' + referenceNumber : ''}`;
         } else if (status === 'processing') {
-            messageContent = `Hello ${name}! Your request for ${docTypeFormatted} is now PROCESSING. Our staff is preparing your document. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is PROCESSING. Please check your email for full details.`;
         } else if (status === 'ready_for_pickup') {
-            messageContent = `Great news ${name}! Your ${docTypeFormatted} is READY FOR PICKUP at the Barangay Hall. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} is READY FOR PICKUP. Please check your email for full details.`;
         } else if (status === 'rejected') {
-            messageContent = `Hello ${name}, unfortunately your request for ${docTypeFormatted} has been REJECTED. Please visit the Barangay Hall for more information. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request was REJECTED. Please check your email for full details.`;
         } else if (status === 'completed') {
-            messageContent = `Thank you ${name}! Your request for ${docTypeFormatted} has been marked as COMPLETED. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is COMPLETED. Please check your email for full details.`;
         } else {
             return;
         }
+        // Truncate message to single-segment to save credits
+        const truncated = truncateToSingleSegment(messageContent);
 
         // Save to SMS Log
         const smsLog = new SMSLog({
             phoneNumber,
             messageType: 'document_status',
-            messageContent,
+            messageContent: truncated,
             referenceId: referenceNumber,
             status: 'sent'
         });
 
         await smsLog.save();
-        console.log(`[SMS MOCK] Document Status SMS sent to ${phoneNumber}: "${messageContent}"`);
+        console.log(`[SMS MOCK] Document Status SMS logged to ${phoneNumber}: "${truncated}"`);
     } catch (error) {
         console.error('Error logging document status SMS:', error);
     }
@@ -60,23 +72,23 @@ const sendStatusUpdateSMS = async (phoneNumber, name, status) => {
         let messageContent = '';
 
         if (status === 'approved') {
-            messageContent = `Congratulations ${name}! Your Barangay Connect account registration has been APPROVED. You can now login to the portal. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your account is APPROVED. Please check your email for full details.`;
         } else if (status === 'rejected') {
-            messageContent = `Hello ${name}, your Barangay Connect account registration has been REJECTED. Please ensure all details are correct and try again or visit the Barangay Hall. - Barangay Connect`;
+            messageContent = `Brgy Connect: Hi ${name}, your account is REJECTED. Please check your email for full details.`;
         } else {
             return;
         }
-
+        const truncated = truncateToSingleSegment(messageContent);
         // Save to SMS Log
         const smsLog = new SMSLog({
             phoneNumber,
             messageType: 'resident_approval',
-            messageContent,
+            messageContent: truncated,
             status: 'sent'
         });
 
         await smsLog.save();
-        console.log(`[SMS MOCK] Status Update SMS sent to ${phoneNumber}: "${messageContent}"`);
+        console.log(`[SMS MOCK] Status Update SMS logged to ${phoneNumber}: "${truncated}"`);
     } catch (error) {
         console.error('Error logging status update SMS:', error);
     }
@@ -89,18 +101,19 @@ const sendAppointmentSMS = async (phoneNumber, name, appointmentDate, appointmen
             return;
         }
 
-        const messageContent = `Hi ${name}, your appointment at the Barangay Hall is scheduled for ${appointmentDate} at ${appointmentTime} for ${purpose}. - Barangay Connect`;
+        const messageContent = `Brgy Connect: Hi ${name}, your Appointment request on ${appointmentDate} ${appointmentTime} is ${purpose || 'scheduled'}. Please check your email for full details. Ref: Appointment`;
+        const truncated = truncateToSingleSegment(messageContent);
 
         // Save to SMS Log
         const smsLog = new SMSLog({
             phoneNumber,
             messageType: 'appointment_confirmation',
-            messageContent,
+            messageContent: truncated,
             status: 'sent'
         });
 
         await smsLog.save();
-        console.log(`[SMS MOCK] Appointment SMS sent to ${phoneNumber}: "${messageContent}"`);
+        console.log(`[SMS MOCK] Appointment SMS logged to ${phoneNumber}: "${truncated}"`);
     } catch (error) {
         console.error('Error logging appointment SMS:', error);
     }
@@ -110,5 +123,6 @@ module.exports = {
     sendDocumentStatusSMS,
     sendStatusUpdateSMS,
     sendAppointmentSMS,
-    formatLabel
+    formatLabel,
+    truncateToSingleSegment
 };

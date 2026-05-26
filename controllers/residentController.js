@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendStatusUpdateEmail, sendPasswordResetEmail, sendCustomResidentEmail } = require('../utils/mailer');
-const { sendStatusUpdateSMS } = require('../utils/sms');
+const { sendStatusUpdateSMS, truncateToSingleSegment } = require('../utils/sms');
 const SMSLog = require('../models/SMSLog');
 
 const residentProfileFields = [
@@ -396,11 +396,14 @@ exports.sendResidentSMS = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Resident contact number not available', { code: 'RESIDENT_CONTACT_MISSING' });
     }
 
-    const content = String(message || '').trim() || 'Barangay resident account update.';
+    const content = String(message || '').trim() || 'Your resident account has an update.';
+    const prefixed = `Brgy Connect: ${content}`;
+    const truncated = truncateToSingleSegment(prefixed);
+
     await SMSLog.create({
         phoneNumber: resident.contactNumber,
         messageType: 'resident_update',
-        messageContent: content,
+        messageContent: truncated,
         status: 'sent'
     });
 

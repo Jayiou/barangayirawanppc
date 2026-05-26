@@ -11,7 +11,11 @@ const smsLogSchema = new mongoose.Schema(
             type: String,
             enum: [
                 'document_status',
-                'resident_approval'
+                'resident_approval',
+                'resident_update',
+                'appointment_confirmation',
+                'facility_reservation',
+                'report_status'
             ],
             required: true
         },
