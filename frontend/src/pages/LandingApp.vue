@@ -28,93 +28,91 @@
             </div>
         </header>
 
-        <section class="landing-hero" id="home">
-            <div class="landing-hero-overlay"></div>
-            <div class="landing-hero-content">
-                <span class="eyebrow light animate-section slide-up">{{ texts.landing.hero.eyebrow }}</span>
-                <h2 class="animate-section slide-up">{{ texts.landing.hero.title }}</h2>
-                <h3 class="animate-section slide-up">{{ texts.landing.hero.subtitle }}</h3>
-                <p class="animate-section slide-up">
-                    {{ texts.landing.hero.copy }}
-                </p>
-            </div>
-        </section>
+        <main class="landing-main" id="main-content">
+            <section class="landing-hero" id="home">
+                <div class="landing-hero-overlay"></div>
+                <div class="landing-hero-content">
+                    <span class="eyebrow light animate-section slide-up">{{ texts.landing.hero.eyebrow }}</span>
+                    <h2 class="animate-section slide-up">{{ texts.landing.hero.title }}</h2>
+                    <h3 class="animate-section slide-up">{{ texts.landing.hero.subtitle }}</h3>
+                    <p class="animate-section slide-up">
+                        {{ texts.landing.hero.copy }}
+                    </p>
+                </div>
+            </section>
 
-        <section class="landing-lower-grid" id="announcements">
-            <AnnouncementSlideshow />
-        </section>
+            <section class="landing-lower-grid" id="announcements">
+                <AnnouncementSlideshow />
+            </section>
 
-        <!-- Vision / Mission / Goals Section -->
-        <section class="landing-vmg-section animate-section slide-up" id="vmg">
+            <!-- Vision / Mission / Goals Section -->
+            <section class="landing-vmg-section animate-section slide-up" id="vmg">
 
-            <div class="vmg-grid">
-                <article class="vmg-card animate-section slide-up">
-                    <div class="vmg-card-bg"></div>
-                    <div class="vmg-wave top"></div>
-                    <div class="vmg-wave outer top"></div>
-                    <div class="vmg-overlay"></div>
-                    <div class="vmg-copy">
-                        <h4>VISION</h4>
-                        <p><strong>BARANGAY IRAWAN:</strong><br>A PROGRESSIVE AGRICULTURAL TRADING CENTER OF PALAWAN, DEMONSTRATING A CLEAN AND GREEN ENVIRONMENT, INHABITED BY A COMPASSIONATE AND EMPOWERED CITIZENRY UNDER A PARTICIPATORY AND ACCOUNTABLE GOVERNANCE.</p>
-                    </div>
-                    <div class="vmg-wave bottom"></div>
-                    <div class="vmg-wave outer bottom"></div>
-                </article>
+                <div class="vmg-grid">
+                    <article class="vmg-card animate-section slide-up">
+                        <div class="vmg-card-bg"></div>
+                        <div class="vmg-wave top"></div>
+                        <div class="vmg-wave outer top"></div>
+                        <div class="vmg-overlay"></div>
+                        <div class="vmg-copy">
+                            <h4>VISION</h4>
+                            <p><strong>BARANGAY IRAWAN:</strong><br>A PROGRESSIVE AGRICULTURAL TRADING CENTER OF PALAWAN, DEMONSTRATING A CLEAN AND GREEN ENVIRONMENT, INHABITED BY A COMPASSIONATE AND EMPOWERED CITIZENRY UNDER A PARTICIPATORY AND ACCOUNTABLE GOVERNANCE.</p>
+                        </div>
+                        <div class="vmg-wave bottom"></div>
+                        <div class="vmg-wave outer bottom"></div>
+                    </article>
 
-                <article class="vmg-card animate-section slide-up">
-                    <div class="vmg-card-bg"></div>
-                    <div class="vmg-wave top"></div>
-                    <div class="vmg-wave outer top"></div>
-                    <div class="vmg-overlay"></div>
-                    <div class="vmg-copy">
-                        <h4>MISSION</h4>
-                        <p>WE AIM TO BE A PEACEFUL, GREEN AND PROGRESSIVE COMMUNITY.</p>
-                    </div>
-                    <div class="vmg-wave bottom"></div>
-                    <div class="vmg-wave outer bottom"></div>
-                </article>
+                    <article class="vmg-card animate-section slide-up">
+                        <div class="vmg-card-bg"></div>
+                        <div class="vmg-wave top"></div>
+                        <div class="vmg-wave outer top"></div>
+                        <div class="vmg-overlay"></div>
+                        <div class="vmg-copy">
+                            <h4>MISSION</h4>
+                            <p>WE AIM TO BE A PEACEFUL, GREEN AND PROGRESSIVE COMMUNITY.</p>
+                        </div>
+                        <div class="vmg-wave bottom"></div>
+                        <div class="vmg-wave outer bottom"></div>
+                    </article>
 
-                <article class="vmg-card animate-section slide-up">
-                    <div class="vmg-card-bg"></div>
-                    <div class="vmg-wave top"></div>
-                    <div class="vmg-wave outer top"></div>
-                    <div class="vmg-overlay"></div>
-                    <div class="vmg-copy">
-                        <h4>GOALS</h4>
-                        <p>TO GIVE ENOUGH SERVICES TO ALL THE RESIDENCES OF THIS BARANGAY, TO PROVIDE LIVELIHOOD PROGRAMS FOR BETTER LIVING AND CREATE MORE PROJECTS FOR THE BENEFITS OF THE CONSTITUENTS.</p>
-                    </div>
-                    <div class="vmg-wave bottom"></div>
-                    <div class="vmg-wave outer bottom"></div>
-                </article>
-            </div>
-        </section>
-        <section class="landing-services-section animate-section slide-up" id="services">
-            <div class="landing-section-heading center">
-                <h3>{{ texts.landing.sections.servicesTitle }}</h3>
-                <p>{{ texts.landing.sections.servicesCopy }}</p>
-            </div>
+                    <article class="vmg-card animate-section slide-up">
+                        <div class="vmg-card-bg"></div>
+                        <div class="vmg-wave top"></div>
+                        <div class="vmg-wave outer top"></div>
+                        <div class="vmg-overlay"></div>
+                        <div class="vmg-copy">
+                            <h4>GOALS</h4>
+                            <p>TO GIVE ENOUGH SERVICES TO ALL THE RESIDENCES OF THIS BARANGAY, TO PROVIDE LIVELIHOOD PROGRAMS FOR BETTER LIVING AND CREATE MORE PROJECTS FOR THE BENEFITS OF THE CONSTITUENTS.</p>
+                        </div>
+                        <div class="vmg-wave bottom"></div>
+                        <div class="vmg-wave outer bottom"></div>
+                    </article>
+                </div>
+            </section>
+            <section class="landing-services-section animate-section slide-up" id="services">
+                <div class="landing-section-heading center">
+                    <h3>{{ texts.landing.sections.servicesTitle }}</h3>
+                    <p>{{ texts.landing.sections.servicesCopy }}</p>
+                </div>
 
-            <div class="landing-service-grid">
-                <article
-                    v-for="service in services"
-                    :key="service.title"
-                    :class="['landing-service-card animate-section slide-left', { 'is-clickable': service.action }]"
-                    :role="service.action ? 'button' : null"
-                    :tabindex="service.action ? 0 : null"
-                    :aria-label="service.action ? `${service.title} request form` : null"
-                    @click="handleServiceClick(service)"
-                    @keydown.enter.prevent="handleServiceClick(service)"
-                    @keydown.space.prevent="handleServiceClick(service)"
-                >
-                    <div class="landing-service-icon">{{ service.icon }}</div>
-                    <h4>{{ service.title }}</h4>
-                    <p>{{ service.copy }}</p>
-                    <span v-if="service.action" class="landing-service-cta">{{ texts.landing.actions.requestOnline }}</span>
-                </article>
-            </div>
-        </section>
+                <div class="landing-service-grid">
+                    <component
+                        v-for="service in services"
+                        :is="service.action ? 'button' : 'article'"
+                        :key="service.title"
+                        :class="['landing-service-card animate-section slide-left', { 'is-clickable': service.action }]"
+                        :type="service.action ? 'button' : null"
+                        @click="service.action ? handleServiceClick(service) : null"
+                    >
+                        <div class="landing-service-icon">{{ service.icon }}</div>
+                        <h4>{{ service.title }}</h4>
+                        <p>{{ service.copy }}</p>
+                        <span v-if="service.action" class="landing-service-cta">{{ texts.landing.actions.requestOnline }}</span>
+                    </component>
+                </div>
+            </section>
 
-        <section class="landing-officials-section animate-section slide-up" id="officials">
+            <section class="landing-officials-section animate-section slide-up" id="officials">
             <div class="landing-section-heading center">
                 <h3>{{ texts.landing.sections.officialsTitle }}</h3>
                 <p>{{ texts.landing.sections.officialsCopy }}</p>
@@ -175,43 +173,44 @@
                     </article>
                 </div>
             </div>
-        </section>
+            </section>
 
-        <section class="landing-location-band" id="location" ref="locationBandRef">
-            <div class="landing-location-inner">
-                <div class="landing-location-copy animate-section slide-up">
-                    <span class="eyebrow">Barangay Location</span>
-                    <h3>Visit Barangay Irawan Hall</h3>
-                    <p>
-                        View our exact location in Puerto Princesa and tap the map to open Google Maps for directions.
-                    </p>
+            <section class="landing-location-band" id="location" ref="locationBandRef">
+                <div class="landing-location-inner">
+                    <div class="landing-location-copy animate-section slide-up">
+                        <span class="eyebrow">Barangay Location</span>
+                        <h3>Visit Barangay Irawan Hall</h3>
+                        <p>
+                            View our exact location in Puerto Princesa and tap the map to open Google Maps for directions.
+                        </p>
+                    </div>
+
+                    <a
+                        class="landing-map-link animate-section slide-up"
+                        href="https://www.google.com/maps/search/?api=1&query=Barangay+Hall+Irawan+Puerto+Princesa+Palawan"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open Barangay Irawan Hall in Google Maps"
+                    >
+                        <iframe
+                            v-if="mapLoaded"
+                            class="landing-map-frame"
+                            src="https://maps.google.com/maps?q=Barangay%20Hall%20Irawan%20Puerto%20Princesa%20Palawan&z=16&output=embed"
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"
+                            title="Barangay Irawan Hall location map"
+                        ></iframe>
+                        <div v-else class="landing-map-placeholder">
+                            <span>Tap to open the map</span>
+                        </div>
+                        <div class="landing-map-overlay">
+                            <span>{{ mapLoaded ? 'Open in Google Maps' : 'Load map' }}</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </div>
+                    </a>
                 </div>
-
-                <a
-                    class="landing-map-link animate-section slide-up"
-                    href="https://www.google.com/maps/search/?api=1&query=Barangay+Hall+Irawan+Puerto+Princesa+Palawan"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Open Barangay Irawan Hall in Google Maps"
-                >
-                    <iframe
-                        v-if="mapLoaded"
-                        class="landing-map-frame"
-                        src="https://maps.google.com/maps?q=Barangay%20Hall%20Irawan%20Puerto%20Princesa%20Palawan&z=16&output=embed"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        title="Barangay Irawan Hall location map"
-                    ></iframe>
-                    <div v-else class="landing-map-placeholder">
-                        <span>Tap to open the map</span>
-                    </div>
-                    <div class="landing-map-overlay">
-                        <span>{{ mapLoaded ? 'Open in Google Maps' : 'Load map' }}</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </div>
-                </a>
-            </div>
-        </section>
+            </section>
+        </main>
 
         <footer class="landing-footer">
             <div class="landing-footer-inner">
@@ -220,7 +219,7 @@
                         <div class="brand-mark small">BI</div>
                         <div>
                             <strong>Barangay Irawan</strong>
-                            <div class="fine-print">Puerto Princesa City</div>
+                            <div class="fine-print landing-footer-note">Puerto Princesa City</div>
                         </div>
                     </div>
 
@@ -250,7 +249,7 @@
                         </a>
                     </div>
 
-                    <div class="fine-print">{{ texts.landing.footer.rights }}</div>
+                    <div class="fine-print landing-footer-note">{{ texts.landing.footer.rights }}</div>
                 </div>
             </div>
         </footer>
@@ -2972,7 +2971,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 .vmg-card .vmg-card-bg {
     position: absolute;
     inset: 0;
-    background-image: url('/images/hero-logo.png');
+    background-image: url('/images/hero-logo.jpg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 200px 200px;

@@ -738,6 +738,12 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     min-height: 230px;
     min-width: 0;
     max-width: 100%;
+    width: 100%;
+    display: block;
+    appearance: none;
+    text-align: left;
+    font: inherit;
+    color: inherit;
     box-shadow: 0 16px 36px rgba(22, 36, 26, 0.12), 0 4px 12px rgba(22, 36, 26, 0.06);
     transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
@@ -946,6 +952,10 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
 }
 .landing-footer-note {
     color: rgba(255, 255, 255, 0.7);
+}
+
+.landing-footer .fine-print {
+    color: rgba(255, 255, 255, 0.84);
 }
 .landing-modal-backdrop {
     position: fixed;

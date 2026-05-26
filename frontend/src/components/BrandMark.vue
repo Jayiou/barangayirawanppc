@@ -1,7 +1,7 @@
 <template>
     <div class="brand-row">
         <div :class="['brand-mark', { admin }]">
-            <img src="/images/hero-logo.png" alt="Logo" class="brand-logo" />
+            <img src="/images/hero-logo.jpg" alt="Logo" class="brand-logo" />
         </div>
         <div>
             <span class="eyebrow">{{ eyebrow }}</span>

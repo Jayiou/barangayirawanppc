@@ -44,6 +44,9 @@
                         :key="index"
                         class="dot" 
                         :class="{ active: index === currentSlide }"
+                        type="button"
+                        :aria-label="`Go to announcement ${index + 1}: ${announcement.title}`"
+                        :aria-current="index === currentSlide ? 'true' : null"
                         @click="goToSlide(index)">
                 </button>
             </div>
@@ -561,24 +564,40 @@ onBeforeUnmount(() => {
 }
 
 .dot {
+    border: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    display: inline-grid;
+    place-items: center;
+    transition: transform 0.2s ease;
+}
+
+.dot::before {
+    content: '';
     width: 10px;
     height: 10px;
-    border-radius: 50%;
+    border-radius: 999px;
     background: rgba(22, 36, 26, 0.2);
-    border: none;
-    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.dot.active {
+.dot.active::before {
     background: linear-gradient(135deg, #d52a2a, #a41c1c);
-    transform: scale(1.2);
     width: 24px;
     border-radius: 6px;
 }
 
-.dot:hover {
+.dot:hover::before,
+.dot:focus-visible::before {
     background: rgba(22, 36, 26, 0.4);
+}
+
+.dot:focus-visible {
+    outline: 2px solid rgba(164, 28, 28, 0.45);
+    outline-offset: 2px;
 }
 
 .no-announcements {
