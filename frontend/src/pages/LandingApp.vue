@@ -177,7 +177,7 @@
             </div>
         </section>
 
-        <section class="landing-location-band" id="location">
+        <section class="landing-location-band" id="location" ref="locationBandRef">
             <div class="landing-location-inner">
                 <div class="landing-location-copy animate-section slide-up">
                     <span class="eyebrow">Barangay Location</span>
@@ -195,14 +195,18 @@
                     aria-label="Open Barangay Irawan Hall in Google Maps"
                 >
                     <iframe
+                        v-if="mapLoaded"
                         class="landing-map-frame"
                         src="https://maps.google.com/maps?q=Barangay%20Hall%20Irawan%20Puerto%20Princesa%20Palawan&z=16&output=embed"
                         loading="lazy"
                         referrerpolicy="no-referrer-when-downgrade"
                         title="Barangay Irawan Hall location map"
                     ></iframe>
+                    <div v-else class="landing-map-placeholder">
+                        <span>Tap to open the map</span>
+                    </div>
                     <div class="landing-map-overlay">
-                        <span>Open in Google Maps</span>
+                        <span>{{ mapLoaded ? 'Open in Google Maps' : 'Load map' }}</span>
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     </div>
                 </a>
@@ -977,7 +981,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
@@ -1248,6 +1252,9 @@ const resumeOtpVerification = () => {
 
 const officials = ref([]);
 const officialsLoading = ref(false);
+const mapLoaded = ref(false);
+const locationBandRef = ref(null);
+let locationMapObserver = null;
 const positionOrder = {
     'Barangay Captain': 1,
     'Barangay Secretary': 2,
@@ -1316,6 +1323,29 @@ const loadRecaptcha = () => {
             setStatus('reCaptcha failed to load. Please refresh the page.', true);
         });
 };
+
+    const setupLocationMapLazyLoad = () => {
+        if (mapLoaded.value) {
+            return;
+        }
+
+        if (typeof IntersectionObserver === 'undefined' || !locationBandRef.value) {
+            mapLoaded.value = true;
+            return;
+        }
+
+        locationMapObserver = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+                mapLoaded.value = true;
+                if (locationMapObserver) {
+                    locationMapObserver.disconnect();
+                    locationMapObserver = null;
+                }
+            }
+        }, { rootMargin: '200px 0px' });
+
+        locationMapObserver.observe(locationBandRef.value);
+    };
 
 // UI helpers
 const getModalTitle = (mode) => {
@@ -1682,10 +1712,6 @@ const announcements = computed(() => [
 
 onMounted(() => {
     console.log('[LandingApp] onMounted hook called');
-
-    loadRecaptcha().catch(() => {
-        // The register flow will show a visible error if the script never becomes available.
-    });
     
     const pendingEmail = getPendingOtpEmail();
     if (pendingEmail) {
@@ -1721,8 +1747,16 @@ onMounted(() => {
         }
     }
 
+    setupLocationMapLazyLoad();
     Promise.resolve().then(loadOfficialsAndAnimations);
     console.log('[LandingApp] ✓ Component fully initialized and visible');
+});
+
+onBeforeUnmount(() => {
+    if (locationMapObserver) {
+        locationMapObserver.disconnect();
+        locationMapObserver = null;
+    }
 });
 
 </script>

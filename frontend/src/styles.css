@@ -851,6 +851,20 @@ h1, h2, h3 { font-family: "Fraunces", serif; margin: 0; }
     display: block;
     pointer-events: none;
 }
+.landing-map-placeholder {
+    width: 100%;
+    min-height: 420px;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.55), rgba(231, 239, 233, 0.9) 55%),
+        linear-gradient(180deg, #eef4ef, #dde7e0);
+    color: #31463a;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-align: center;
+}
 .landing-map-overlay {
     position: absolute;
     right: 16px;
@@ -1842,6 +1856,9 @@ textarea { resize: vertical; }
     }
     .landing-map-link,
     .landing-map-frame {
+        min-height: 300px;
+    }
+    .landing-map-placeholder {
         min-height: 300px;
     }
     .landing-map-overlay {
