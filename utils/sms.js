@@ -54,6 +54,41 @@ const normalizePhoneNumber = (value) => String(value || '')
     .replace(/[\s()-]/g, '')
     .trim();
 
+const toE164PhoneNumber = (value) => {
+    const normalized = normalizePhoneNumber(value);
+    if (!normalized) return '';
+
+    // Keep only leading plus and digits for provider-safe parsing.
+    const cleaned = normalized
+        .replace(/(?!^)[+]/g, '')
+        .replace(/[^\d+]/g, '');
+
+    if (!cleaned) return '';
+
+    let candidate = cleaned;
+
+    // Handle international prefix format like 0063...
+    if (candidate.startsWith('00')) {
+        candidate = '+' + candidate.slice(2);
+    }
+
+    // Common PH local formats: 09XXXXXXXXX or 9XXXXXXXXX
+    if (/^09\d{9}$/.test(candidate)) {
+        candidate = '+63' + candidate.slice(1);
+    } else if (/^9\d{9}$/.test(candidate)) {
+        candidate = '+63' + candidate;
+    } else if (/^63\d{10}$/.test(candidate)) {
+        candidate = '+' + candidate;
+    }
+
+    // Strict E.164 validation after normalization.
+    if (!/^\+[1-9]\d{7,14}$/.test(candidate)) {
+        return '';
+    }
+
+    return candidate;
+};
+
 const isSmsEnabled = () => String(getEnv().SMS_ENABLED || '').toLowerCase() === 'true';
 
 const getTwilioConfig = () => {
@@ -128,23 +163,23 @@ const sendSmsNotification = async ({
         return { sent: false, skipped: true, reason: 'disabled' };
     }
 
-    const finalPhoneNumber = normalizePhoneNumber(phoneNumber);
+    const finalPhoneNumber = toE164PhoneNumber(phoneNumber);
     const truncatedMessage = truncateToSingleSegment(messageContent);
 
     if (!finalPhoneNumber) {
-        const errorMessage = 'Recipient phone number is missing';
+        const errorMessage = 'Recipient phone number is missing or invalid. Use E.164 format (e.g. +639XXXXXXXXX).';
         await saveSmsLog({
-            phoneNumber: '',
+            phoneNumber: normalizePhoneNumber(phoneNumber),
             messageType,
             messageContent: truncatedMessage,
             recipientId,
             referenceId,
             status: 'failed',
-            providerStatus: 'missing_recipient',
+            providerStatus: 'invalid_recipient',
             providerError: errorMessage
         });
-        logAtLevel('warn', `[SMS] Missing phone number for ${messageType}.`);
-        return { sent: false, skipped: true, reason: 'missing_recipient' };
+        logAtLevel('warn', `[SMS] Invalid phone number for ${messageType}. Expected E.164, got: "${phoneNumber || ''}"`);
+        return { sent: false, skipped: true, reason: 'invalid_recipient' };
     }
 
     const twilioConfig = getTwilioConfig();

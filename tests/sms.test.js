@@ -145,3 +145,77 @@ test('sendStatusUpdateSMS records a failed log when Twilio returns an error', as
     assert.equal(FakeSmsLog.records[0].providerErrorCode, '21211');
     assert.equal(FakeSmsLog.records[0].providerStatus, '400');
 });
+
+test('sendSmsNotification normalizes PH local numbers to E.164 before Twilio send', async () => {
+    const createCalls = [];
+    const fakeClient = {
+        messages: {
+            create: async (payload) => {
+                createCalls.push(payload);
+                return { sid: 'SM456', status: 'queued' };
+            }
+        }
+    };
+
+    sms.configureSmsRuntime({
+        env: {
+            SMS_ENABLED: 'true',
+            TWILIO_ACCOUNT_SID: 'AC123',
+            TWILIO_AUTH_TOKEN: 'token',
+            TWILIO_NUMBER: '+15550001111'
+        },
+        smsLogModel: FakeSmsLog,
+        twilioClientFactory: () => fakeClient,
+        logger
+    });
+
+    const result = await sms.sendSmsNotification({
+        phoneNumber: '09300620000',
+        messageType: 'document_status',
+        messageContent: 'Brgy Connect: test notification.'
+    });
+
+    assert.equal(result.sent, true);
+    assert.equal(createCalls.length, 1);
+    assert.equal(createCalls[0].to, '+639300620000');
+    assert.equal(FakeSmsLog.records.length, 1);
+    assert.equal(FakeSmsLog.records[0].phoneNumber, '+639300620000');
+});
+
+test('sendSmsNotification skips invalid phone number and does not call Twilio', async () => {
+    const createCalls = [];
+    const fakeClient = {
+        messages: {
+            create: async (payload) => {
+                createCalls.push(payload);
+                return { sid: 'SM789', status: 'queued' };
+            }
+        }
+    };
+
+    sms.configureSmsRuntime({
+        env: {
+            SMS_ENABLED: 'true',
+            TWILIO_ACCOUNT_SID: 'AC123',
+            TWILIO_AUTH_TOKEN: 'token',
+            TWILIO_NUMBER: '+15550001111'
+        },
+        smsLogModel: FakeSmsLog,
+        twilioClientFactory: () => fakeClient,
+        logger
+    });
+
+    const result = await sms.sendSmsNotification({
+        phoneNumber: '0930062XXXX',
+        messageType: 'document_status',
+        messageContent: 'Brgy Connect: test notification.'
+    });
+
+    assert.equal(result.sent, false);
+    assert.equal(result.skipped, true);
+    assert.equal(result.reason, 'invalid_recipient');
+    assert.equal(createCalls.length, 0);
+    assert.equal(FakeSmsLog.records.length, 1);
+    assert.equal(FakeSmsLog.records[0].status, 'failed');
+    assert.equal(FakeSmsLog.records[0].providerStatus, 'invalid_recipient');
+});
