@@ -1320,6 +1320,7 @@ const smsLogsLoading = ref(false);
 const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
+const filteredSMSLogs = computed(() => smsLogs.value);
 const residentTab = ref('personal');
 const residentAccountStatus = computed(() => selectedItem.value?.userId?.accountStatus || editForm.status || 'pending_approval');
 const canApproveRejectResident = computed(() => !['approved', 'rejected'].includes(residentAccountStatus.value));
