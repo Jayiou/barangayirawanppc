@@ -698,6 +698,10 @@
                                 <option value="">All Types</option>
                                 <option value="document_status">Document Status</option>
                                 <option value="resident_approval">Resident Approval</option>
+                                <option value="resident_update">Resident Update</option>
+                                <option value="appointment_confirmation">Appointment Confirmation</option>
+                                <option value="facility_reservation">Facility Reservation</option>
+                                <option value="report_status">Report Status</option>
 
                             </select>
                             <button @click="loadSMSLogs" class="primary-button" style="padding: 8px 16px;"><i class="fa-solid fa-refresh"></i> Refresh</button>
