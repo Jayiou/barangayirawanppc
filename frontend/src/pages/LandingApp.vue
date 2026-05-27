@@ -927,9 +927,6 @@
                             <div v-if="privacyOverlay" class="modern-form privacy-policy-view privacy-overlay">
                                 <div class="privacy-header">
                                     <h2>Privacy Policy</h2>
-                                    <button type="button" class="privacy-close-btn" @click="hidePrivacyOverlay">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
                                 </div>
 
                                 <div class="privacy-content">
@@ -2400,14 +2397,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 }
 
 .privacy-consent-label {
-    align-items: flex-start;
+    align-items: center;
+    gap: 8px;
 }
 
 .privacy-consent-label span {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    flex-wrap: wrap;
+    display: inline;
     line-height: 1.45;
 }
 
