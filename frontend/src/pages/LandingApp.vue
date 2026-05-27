@@ -348,6 +348,35 @@
                                     </div>
                                 </div>
 
+                                <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
+                                    <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
+                                    <button type="button" class="ghost-button" @click="captureGuestCurrentLocation" :disabled="guestLocatingPosition">
+                                        {{ guestLocatingPosition ? 'Getting location...' : 'Use My Current Location' }}
+                                    </button>
+                                    <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;">
+                                        <strong style="color: #3a4e43;">How it works:</strong><br>
+                                        1️⃣ Click the button above<br>
+                                        2️⃣ A popup will appear asking for permission<br>
+                                        3️⃣ Tap <strong>Allow</strong><br>
+                                        💡 Safari tip: if no popup appears, go to iPhone Settings → Privacy & Security → Location Services → Safari Websites → <strong>While Using the App</strong>.
+                                    </small>
+                                    <small v-if="guestHasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ guestReportForm.locationLatitude }}, {{ guestReportForm.locationLongitude }} (±{{ guestReportForm.locationAccuracy || 'N/A' }}m)</small>
+                                    <iframe
+                                        v-if="guestReportMapEmbedUrl"
+                                        :src="guestReportMapEmbedUrl"
+                                        title="Guest report location preview map"
+                                        style="width: 100%; height: 180px; border: 1px solid #dce6e1; border-radius: 8px;"
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                    ></iframe>
+                                </div>
+
+                                <label v-if="guestReportTypeConfig.requireProof">
+                                    <span>{{ guestReportTypeConfig.proofLabel }}</span>
+                                    <input type="file" accept="image/jpeg,image/png,image/jpg" multiple @change="handleGuestReportProofFiles" required>
+                                </label>
+                                <small v-if="guestReportProofFiles.length" style="color: #4f6b5d;">{{ guestReportProofFiles.length }} file(s) selected</small>
+
                                 <div class="two-col-grid">
                                     <div class="input-group">
                                         <label for="guest-report-first-name">First Name</label>
@@ -1000,6 +1029,7 @@ import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
 import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
+import { REPORT_TYPE_CONFIG } from '@/shared/reportTypeConfig';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
@@ -1109,6 +1139,9 @@ const guestReportFormDefaults = {
     reportType: 'noise_complaint',
     description: '',
     locationText: '',
+    locationLatitude: '',
+    locationLongitude: '',
+    locationAccuracy: '',
     incidentDate: '',
     priority: 'medium',
     firstName: '',
@@ -1121,6 +1154,17 @@ const guestReportFormDefaults = {
     agreePrivacy: false
 };
 const guestReportForm = reactive({ ...guestReportFormDefaults });
+const guestReportProofFiles = ref([]);
+const guestLocatingPosition = ref(false);
+const guestHasCapturedCoordinates = computed(() => Boolean(guestReportForm.locationLatitude && guestReportForm.locationLongitude));
+const guestReportMapEmbedUrl = computed(() => {
+    if (!guestHasCapturedCoordinates.value) {
+        return '';
+    }
+
+    return `https://maps.google.com/maps?q=${guestReportForm.locationLatitude},${guestReportForm.locationLongitude}&z=16&output=embed`;
+});
+const guestReportTypeConfig = computed(() => REPORT_TYPE_CONFIG[guestReportForm.reportType] || REPORT_TYPE_CONFIG.other);
 const guestReservationFormDefaults = {
     facilityName: 'barangay_hall',
     reservationDate: '',
@@ -1694,6 +1738,7 @@ const handleResetPassword = async () => {
 
 const resetGuestReportForm = () => {
     Object.assign(guestReportForm, guestReportFormDefaults);
+    guestReportProofFiles.value = [];
 };
 
 const resetGuestReservationForm = () => {
@@ -1703,10 +1748,126 @@ const resetGuestReservationForm = () => {
 
 const isGuestReportLoading = ref(false);
 
+const handleGuestReportProofFiles = (event) => {
+    const incoming = Array.from(event.target.files || []);
+    guestReportProofFiles.value = incoming.slice(0, 5);
+};
+
+const isGuestSafariBrowser = () => {
+    const userAgent = navigator.userAgent || '';
+    return /Safari/i.test(userAgent) && !/Chrome|CriOS|Edg|OPR|FxiOS|Android/i.test(userAgent);
+};
+
+const requestGuestGeolocation = (options) => new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+});
+
+const readGuestGeolocationPermissionState = async () => {
+    try {
+        if (!navigator.permissions?.query) {
+            return 'unknown';
+        }
+
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        return permission.state;
+    } catch {
+        return 'unknown';
+    }
+};
+
+const isGuestSecureGeolocationContext = () => globalThis.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+const getGuestGeolocationErrorMessage = (error, safari) => {
+    if (error?.code === 1) {
+        return safari
+            ? '🔒 Safari location access is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then open this site in Safari again and tap "Use My Current Location".'
+            : '🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.';
+    }
+
+    if (error?.code === 2) {
+        return safari
+            ? '⚠️ Safari could not get your location. Make sure iPhone Location Services is ON and Safari Websites is set to "While Using the App", then try again.'
+            : '⚠️ Location Not Available: Make sure Location Services/GPS is ON in your phone settings, and you have a good network signal. Then try again.';
+    }
+
+    if (error?.code === 3) {
+        return '⏱️ Timeout: Getting your location is taking too long. Check that Location Services is ON and your network is working, then try again.';
+    }
+
+    return error?.message || 'Unable to capture your location.';
+};
+
+const captureGuestCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+        setStatus('Geolocation is not supported on this device/browser.', true);
+        return;
+    }
+
+    const safari = isGuestSafariBrowser();
+    if (!isGuestSecureGeolocationContext()) {
+        setStatus('Geolocation requires a secure connection (HTTPS). Please ensure you\'re using HTTPS on this site.', true);
+        return;
+    }
+
+    guestLocatingPosition.value = true;
+
+    try {
+        const permissionState = await readGuestGeolocationPermissionState();
+
+        if (permissionState === 'denied') {
+            setStatus(
+                safari
+                    ? '🔒 Safari location access is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then open this site in Safari again and tap "Use My Current Location".'
+                    : '🔒 Location access is blocked in this browser. Go to your browser settings → Permissions → Location, and allow access for this site. Then come back and try again.',
+                true
+            );
+            return;
+        }
+
+        const position = await requestGuestGeolocation({
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 5000
+        });
+
+        guestReportForm.locationLatitude = String(position.coords.latitude.toFixed(6));
+        guestReportForm.locationLongitude = String(position.coords.longitude.toFixed(6));
+        guestReportForm.locationAccuracy = String(Math.round(position.coords.accuracy || 0));
+        setStatus('Current location captured.');
+    } catch (error) {
+        if (error?.code !== 1) {
+            try {
+                const fallbackPosition = await requestGuestGeolocation({
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+
+                guestReportForm.locationLatitude = String(fallbackPosition.coords.latitude.toFixed(6));
+                guestReportForm.locationLongitude = String(fallbackPosition.coords.longitude.toFixed(6));
+                guestReportForm.locationAccuracy = String(Math.round(fallbackPosition.coords.accuracy || 0));
+                setStatus('Location captured (lower accuracy mode).');
+                return;
+            } catch (fallbackError) {
+                error = fallbackError;
+            }
+        }
+
+        setStatus(getGuestGeolocationErrorMessage(error, safari), true);
+    } finally {
+        guestLocatingPosition.value = false;
+    }
+};
+
 const handleGuestReportRequest = async () => {
     if (isGuestReportLoading.value) return;
     if (!guestReportForm.agreePrivacy) {
         setStatus('Please accept the Privacy Policy before submitting your report.', true);
+        return;
+    }
+
+    if (guestReportTypeConfig.value.requireProof && guestReportProofFiles.value.length === 0) {
+        setStatus('Please upload at least one proof image for this report type.', true);
         return;
     }
 
@@ -1717,30 +1878,37 @@ const handleGuestReportRequest = async () => {
 
     isGuestReportLoading.value = true;
     try {
-        const payload = {
-            ...guestReportForm,
-            reportType: String(guestReportForm.reportType || '').trim(),
-            description: String(guestReportForm.description || '').trim(),
-            locationText: String(guestReportForm.locationText || '').trim(),
-            incidentDate: guestReportForm.incidentDate || undefined,
-            priority: guestReportForm.priority,
-            firstName: String(guestReportForm.firstName || '').trim(),
-            middleName: String(guestReportForm.middleName || '').trim(),
-            lastName: String(guestReportForm.lastName || '').trim(),
-            suffix: String(guestReportForm.suffix || '').trim(),
-            contactNumber: String(guestReportForm.contactNumber || '').trim(),
-            email: String(guestReportForm.email || '').trim().toLowerCase(),
-            address: String(guestReportForm.address || '').trim()
-        };
+        const submittedEmail = String(guestReportForm.email || '').trim().toLowerCase();
+        const payload = new FormData();
+
+        payload.append('reportType', String(guestReportForm.reportType || '').trim());
+        payload.append('description', String(guestReportForm.description || '').trim());
+        payload.append('locationText', String(guestReportForm.locationText || '').trim());
+        payload.append('incidentDate', guestReportForm.incidentDate || '');
+        payload.append('priority', guestReportForm.priority);
+        payload.append('firstName', String(guestReportForm.firstName || '').trim());
+        payload.append('middleName', String(guestReportForm.middleName || '').trim());
+        payload.append('lastName', String(guestReportForm.lastName || '').trim());
+        payload.append('suffix', String(guestReportForm.suffix || '').trim());
+        payload.append('contactNumber', String(guestReportForm.contactNumber || '').trim());
+        payload.append('email', submittedEmail);
+        payload.append('address', String(guestReportForm.address || '').trim());
+        payload.append('locationLatitude', String(guestReportForm.locationLatitude || ''));
+        payload.append('locationLongitude', String(guestReportForm.locationLongitude || ''));
+        payload.append('locationAccuracy', String(guestReportForm.locationAccuracy || ''));
+
+        guestReportProofFiles.value.forEach((file) => {
+            payload.append('proofFiles', file);
+        });
 
         const result = await apiFetch('/reports/public', {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: payload
         });
 
         resetGuestReportForm();
         closeModal();
-        setStatus(`Report submitted. We will send the update to ${result.email || payload.email}.`, false);
+        setStatus(`Report submitted. We will send the update to ${result.email || submittedEmail}.`, false);
     } catch (error) {
         setStatus(error.message, true);
     } finally {

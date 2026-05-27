@@ -321,7 +321,7 @@ exports.createReport = asyncHandler(async (req, res) => {
 
 exports.createPublicReport = asyncHandler(async (req, res) => {
     const pickedData = pickFields(req.body, [...reportFields, ...reportRequesterFields]);
-    const normalized = normalizeReportPayload(pickedData);
+    const normalized = normalizeReportPayload(pickedData, req.files);
 
     if (normalized.error) {
         throw createHttpError(400, normalized.error, { code: 'REPORT_VALIDATION_ERROR' });

@@ -15,7 +15,7 @@ const {
 } = require('../controllers/reportController');
 
 router.post('/', authMiddleware, roleMiddleware('resident'), upload.array('proofFiles', 5), createReport);
-router.post('/public', publicReportLimiter, createPublicReport);
+router.post('/public', publicReportLimiter, upload.array('proofFiles', 5), createPublicReport);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyReports);
 router.get('/:id', authMiddleware, getReportById);
 router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyReport);

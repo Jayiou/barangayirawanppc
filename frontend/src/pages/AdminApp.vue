@@ -469,6 +469,11 @@
                                     </div>
                                     <label><span>Available Evacuation Centers (comma separated)</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" placeholder="Barangay Hall, Covered Court"></label>
                                     <label><span>Advisory Message</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required placeholder="Safety reminders and evacuation instructions"></textarea></label>
+                                    <label><span>Picture (optional)</span><input type="file" accept="image/*" @change="handleDisasterAdvisoryImageChange"></label>
+                                    <div v-if="disasterAdvisoryImagePreview" style="display:grid; gap:6px; margin-top:-8px;">
+                                        <img :src="disasterAdvisoryImagePreview" alt="Disaster advisory preview" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; border:1px solid #dce6e1;">
+                                        <small class="fine-print">{{ disasterAdvisoryImageFile ? disasterAdvisoryImageFile.name : 'Current advisory picture' }}</small>
+                                    </div>
                                     <label><span>Status</span>
                                         <select v-model="disasterAdvisoryForm.status">
                                             <option value="upcoming">Upcoming</option>
@@ -498,9 +503,11 @@
                                         </div>
                                         <div class="fine-print" style="margin-top:4px;">Impact Date: {{ formatDate(advisory.expectedImpactDate) }}</div>
                                         <div class="fine-print">Severity: {{ normalizeLabel(advisory.severity) }}</div>
+                                        <img v-if="advisory.imagePath" :src="resolveProofImageUrl(advisory.imagePath)" alt="Disaster advisory" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; border:1px solid #dce6e1; margin-top:8px;">
                                         <p style="margin:8px 0 0;">{{ advisory.advisoryMessage }}</p>
                                         <small class="fine-print" style="display:block; margin-top:8px;">Flood-Prone Areas: {{ advisory.floodProneAreas?.join(', ') || 'N/A' }}</small>
                                         <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
+                                        <small class="fine-print" style="display:block;">Residents Notified: {{ advisory.notifiedResidentCount || 0 }}</small>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
                                             <button class="ghost-button" type="button" @click="editDisasterAdvisory(advisory)"><i class="fa-solid fa-pen"></i> Edit</button>
                                             <button class="ghost-button" type="button" @click="deleteDisasterAdvisory(advisory._id)"><i class="fa-solid fa-trash"></i> Delete</button>
@@ -1620,6 +1627,9 @@ const residentModalLoading = ref(false);
 const confirmingAction = ref(null);
 const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
+const disasterAdvisoryImageFile = ref(null);
+const disasterAdvisoryImagePreview = ref('');
+let disasterAdvisoryPreviewUrl = '';
 const isSubmitting = ref(false);
 const previewLoading = ref(false);
 const documentEmailLoading = ref(false);
@@ -1843,6 +1853,7 @@ const disasterAdvisoryForm = reactive({
     severity: 'medium',
     evacuationCenters: '',
     advisoryMessage: '',
+    imagePath: '',
     status: 'upcoming'
 });
 const disasterFloodAreaRows = ref([createFloodProneAreaRow()]);
@@ -2526,14 +2537,57 @@ const resetDisasterAdvisoryForm = () => {
     disasterAdvisoryForm.severity = 'medium';
     disasterAdvisoryForm.evacuationCenters = '';
     disasterAdvisoryForm.advisoryMessage = '';
+    disasterAdvisoryForm.imagePath = '';
     disasterAdvisoryForm.status = 'upcoming';
     disasterFloodAreaRows.value = [createFloodProneAreaRow()];
+    disasterAdvisoryImageFile.value = null;
+    if (disasterAdvisoryPreviewUrl) {
+        URL.revokeObjectURL(disasterAdvisoryPreviewUrl);
+        disasterAdvisoryPreviewUrl = '';
+    }
+    disasterAdvisoryImagePreview.value = '';
 };
 
 const splitByComma = (value) => String(value || '')
     .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+
+const handleDisasterAdvisoryImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    disasterAdvisoryImageFile.value = file;
+
+    if (disasterAdvisoryPreviewUrl) {
+        URL.revokeObjectURL(disasterAdvisoryPreviewUrl);
+        disasterAdvisoryPreviewUrl = '';
+    }
+
+    if (file) {
+        disasterAdvisoryPreviewUrl = URL.createObjectURL(file);
+        disasterAdvisoryImagePreview.value = disasterAdvisoryPreviewUrl;
+        return;
+    }
+
+    disasterAdvisoryImagePreview.value = resolveProofImageUrl(disasterAdvisoryForm.imagePath);
+};
+
+const buildDisasterAdvisoryFormData = (payload) => {
+    const formData = new FormData();
+    formData.append('disasterType', payload.disasterType);
+    formData.append('expectedImpactDate', payload.expectedImpactDate);
+    formData.append('severity', payload.severity);
+    formData.append('advisoryMessage', payload.advisoryMessage);
+    formData.append('status', payload.status);
+
+    payload.floodProneAreas.forEach((area) => formData.append('floodProneAreas', area));
+    payload.evacuationCenters.forEach((center) => formData.append('evacuationCenters', center));
+
+    if (disasterAdvisoryImageFile.value) {
+        formData.append('image', disasterAdvisoryImageFile.value);
+    }
+
+    return formData;
+};
 
 const saveDisasterAdvisory = async () => {
     if (!disasterAdvisoryForm.expectedImpactDate || !disasterAdvisoryForm.advisoryMessage.trim()) {
@@ -2554,17 +2608,18 @@ const saveDisasterAdvisory = async () => {
     };
 
     isSubmitting.value = true;
+    const body = buildDisasterAdvisoryFormData(payload);
     try {
         if (disasterAdvisoryForm._id) {
             await apiFetch(`/disaster-advisories/${disasterAdvisoryForm._id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(payload)
+                body
             });
             showToast('Disaster advisory updated.');
         } else {
             await apiFetch('/disaster-advisories', {
                 method: 'POST',
-                body: JSON.stringify(payload)
+                body
             });
             showToast('Disaster advisory created.');
         }
@@ -2585,7 +2640,14 @@ const editDisasterAdvisory = (advisory) => {
     disasterFloodAreaRows.value = normalizeFloodProneAreaRows(advisory.floodProneAreas);
     disasterAdvisoryForm.evacuationCenters = Array.isArray(advisory.evacuationCenters) ? advisory.evacuationCenters.join(', ') : '';
     disasterAdvisoryForm.advisoryMessage = advisory.advisoryMessage || '';
+    disasterAdvisoryForm.imagePath = advisory.imagePath || '';
     disasterAdvisoryForm.status = advisory.status || 'upcoming';
+    disasterAdvisoryImageFile.value = null;
+    if (disasterAdvisoryPreviewUrl) {
+        URL.revokeObjectURL(disasterAdvisoryPreviewUrl);
+        disasterAdvisoryPreviewUrl = '';
+    }
+    disasterAdvisoryImagePreview.value = resolveProofImageUrl(advisory.imagePath);
 };
 
 const deleteDisasterAdvisory = async (advisoryId) => {
@@ -3975,6 +4037,10 @@ watch(unreadReports, (newReports) => {
 onBeforeUnmount(() => {
     clearToast();
     clearResidentProofPreview();
+    if (disasterAdvisoryPreviewUrl) {
+        URL.revokeObjectURL(disasterAdvisoryPreviewUrl);
+        disasterAdvisoryPreviewUrl = '';
+    }
     stopNotificationPolling();
 });
 

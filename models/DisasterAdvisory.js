@@ -33,6 +33,20 @@ const disasterAdvisorySchema = new mongoose.Schema(
             trim: true,
             required: true
         },
+        imagePath: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        notificationSentAt: {
+            type: Date,
+            default: null
+        },
+        notifiedResidentCount: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
         status: {
             type: String,
             enum: ['upcoming', 'ongoing', 'ended'],
