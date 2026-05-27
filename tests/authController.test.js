@@ -309,6 +309,7 @@ test('changePassword updates the resident password when current password matches
         _id: 'user-123',
         password: 'hashed-old',
         async save() {
+            savedUser = this;
             this.saved = true;
         }
     });
@@ -521,7 +522,7 @@ test('confirmAdminEmailChange updates the email after token verification', async
     };
 
     User.findOne = async (query) => {
-        assert.equal(query.email, 'new-admin@example.com');
+        assert.equal(query.email, undefined);
         assert.equal(query.pendingEmail, 'new-admin@example.com');
         assert.equal(query.emailChangeToken, hashedToken);
         return savedUserRecord;

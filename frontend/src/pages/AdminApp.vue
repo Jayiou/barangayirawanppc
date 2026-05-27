@@ -123,7 +123,6 @@
             <!-- Sidebar Navigation -->
                 <nav class="sidebar-nav">
                 <button :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
-                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ texts.admin.sidebar.profile }}</button>
                 <button :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
                 <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
                 <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
@@ -134,6 +133,7 @@
                 <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
                 <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ texts.admin.sidebar.smsLogs }}</button>
+                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ texts.admin.sidebar.profile }}</button>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -154,7 +154,6 @@
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
                 <nav class="mobile-quick-nav" aria-label="Admin quick navigation">
                     <button :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ texts.admin.sidebar.dashboard }}</span></button>
-                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
                     <button :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ texts.admin.sidebar.announcements }}</span></button>
                     <button :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ texts.admin.sidebar.residents }}</span></button>
                     <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
@@ -164,6 +163,7 @@
                     <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
                     <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
+                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
                 </nav>
             </header>
             <!-- Dashboard View -->
@@ -681,7 +681,16 @@
                                     </label>
                                     <label>
                                         <span>Current Password</span>
-                                        <input v-model="profileForm.currentPassword" type="password" autocomplete="current-password" placeholder="Enter current password">
+                                        <div class="profile-password-input">
+                                            <input v-model="profileForm.currentPassword" :type="adminProfilePasswordVisibility.emailCurrent ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter current password">
+                                            <button
+                                                type="button"
+                                                :aria-label="adminProfilePasswordVisibility.emailCurrent ? 'Hide current password' : 'Show current password'"
+                                                @click="toggleAdminProfilePasswordVisibility('emailCurrent')"
+                                            >
+                                                <i :class="adminProfilePasswordVisibility.emailCurrent ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                                            </button>
+                                        </div>
                                     </label>
                                     <button type="button" class="primary-button" :disabled="profileLoading" @click="requestAdminEmailChange" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px;">
                                         <i :class="profileLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
@@ -690,20 +699,59 @@
                                     <p class="fine-print" style="margin: 0;">{{ texts.admin.profile.helper }}</p>
                                 </div>
                             </article>
-                        </section>
 
-                        <section class="ops-analytics-panel">
-                            <div class="ops-analytics-top">
-                                <div>
-                                    <span class="ops-kicker">Security flow</span>
-                                    <h2>Email change verification</h2>
+                            <article class="ops-mini-panel">
+                                <div class="ops-panel-heading">
+                                    <h3>Change Password</h3>
+                                    <span>Update admin credentials</span>
                                 </div>
-                            </div>
 
-                            <div class="dashboard-empty-state" style="min-height: 0; padding-top: 0;">
-                                <i class="fa-solid fa-shield-halved"></i>
-                                <p>{{ texts.admin.profile.flow }}</p>
-                            </div>
+                                <form class="stack" style="gap: 0.85rem;" @submit.prevent="changeAdminPassword">
+                                    <label>
+                                        <span>Current Password</span>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.currentPassword" :type="adminProfilePasswordVisibility.current ? 'text' : 'password'" autocomplete="current-password" required>
+                                            <button
+                                                type="button"
+                                                :aria-label="adminProfilePasswordVisibility.current ? 'Hide current password' : 'Show current password'"
+                                                @click="toggleAdminProfilePasswordVisibility('current')"
+                                            >
+                                                <i :class="adminProfilePasswordVisibility.current ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                                            </button>
+                                        </div>
+                                    </label>
+                                    <label>
+                                        <span>New Password</span>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.newPassword" :type="adminProfilePasswordVisibility.new ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
+                                            <button
+                                                type="button"
+                                                :aria-label="adminProfilePasswordVisibility.new ? 'Hide new password' : 'Show new password'"
+                                                @click="toggleAdminProfilePasswordVisibility('new')"
+                                            >
+                                                <i :class="adminProfilePasswordVisibility.new ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                                            </button>
+                                        </div>
+                                    </label>
+                                    <label>
+                                        <span>Confirm New Password</span>
+                                        <div class="profile-password-input">
+                                            <input v-model="changePasswordForm.confirmPassword" :type="adminProfilePasswordVisibility.confirm ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
+                                            <button
+                                                type="button"
+                                                :aria-label="adminProfilePasswordVisibility.confirm ? 'Hide confirm password' : 'Show confirm password'"
+                                                @click="toggleAdminProfilePasswordVisibility('confirm')"
+                                            >
+                                                <i :class="adminProfilePasswordVisibility.confirm ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                                            </button>
+                                        </div>
+                                    </label>
+                                    <button type="submit" class="primary-button" :disabled="changePasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px;">
+                                        <i :class="changePasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i>
+                                        {{ changePasswordLoading ? 'Updating Password...' : 'Update Password' }}
+                                    </button>
+                                </form>
+                            </article>
                         </section>
                     </div>
                 </div>
@@ -1336,6 +1384,7 @@ const {
     forgotPasswordForm,
     resetPasswordForm,
     profileForm,
+    changePasswordForm,
     emailChangeConfirmForm,
     loginStatus,
     profileStatus,
@@ -1345,6 +1394,7 @@ const {
     forgotPasswordLoading,
     resetPasswordLoading,
     profileLoading,
+    changePasswordLoading,
     emailChangeConfirmLoading,
     initializing,
     setAuthView,
@@ -1356,10 +1406,14 @@ const {
     submitAdminPasswordReset,
     requestAdminEmailChange,
     confirmAdminEmailChange,
+    changeAdminPassword,
     syncAdminProfileFormFromUser,
     logout,
     initSession
 } = useAdminAuth();
+
+const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
+const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs', 'profile']);
 
 const texts = {
     admin: {
@@ -1400,8 +1454,7 @@ const texts = {
             requestNew: 'Request a new reset link'
         },
         profile: {
-            helper: 'Use this email for password recovery and admin notices. Changing it requires your current password and verification from the new inbox.',
-            flow: 'Recovery still uses your email, but login continues to use your username. The new email only becomes active after the confirmation link is opened.'
+            helper: 'Use this email for password recovery and admin notices. Changing it requires your current password and verification from the new inbox.'
         },
         sidebar: {
             dashboard: 'Dashboard',
@@ -1450,6 +1503,7 @@ const sidebarOpen = ref(false);
 const showAdminPassword = ref(false);
 const showResetPassword = ref(false);
 const showResetConfirmPassword = ref(false);
+const adminProfilePasswordVisibility = reactive({ emailCurrent: false, current: false, new: false, confirm: false });
 const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
@@ -1476,6 +1530,10 @@ const residentProofPreview = reactive({
     loading: false,
     error: ''
 });
+
+const toggleAdminProfilePasswordVisibility = (field) => {
+    adminProfilePasswordVisibility[field] = !adminProfilePasswordVisibility[field];
+};
 const hoveredTrendIndex = ref(null);
 const setHoveredTrendIndex = (index) => {
     hoveredTrendIndex.value = index;
@@ -1483,6 +1541,28 @@ const setHoveredTrendIndex = (index) => {
 const clearHoveredTrendIndex = () => {
     hoveredTrendIndex.value = null;
 };
+
+const getStoredAdminView = () => {
+    const storedView = globalThis.sessionStorage?.getItem(ADMIN_VIEW_STORAGE_KEY) || '';
+    return ADMIN_VIEWS.has(storedView) ? storedView : '';
+};
+
+const setStoredAdminView = (view) => {
+    if (!ADMIN_VIEWS.has(view)) return;
+    globalThis.sessionStorage?.setItem(ADMIN_VIEW_STORAGE_KEY, view);
+};
+
+const clearStoredAdminView = () => {
+    globalThis.sessionStorage?.removeItem(ADMIN_VIEW_STORAGE_KEY);
+};
+
+watch(currentView, (view) => {
+    if (!isAuthenticated.value || !ADMIN_VIEWS.has(view)) {
+        return;
+    }
+
+    setStoredAdminView(view);
+});
 const reportAlertVisible = ref(false);
 const reportAlertBusy = ref(false);
 const reportAlertReports = ref([]);
@@ -3313,6 +3393,7 @@ onBeforeUnmount(() => {
 
 watch(isAuthenticated, async (authed) => {
     if (authed) {
+        currentView.value = getStoredAdminView() || 'dashboard';
         await Promise.all([
             loadAll(),
             loadSMSLogs()

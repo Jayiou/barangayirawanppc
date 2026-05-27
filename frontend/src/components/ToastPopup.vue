@@ -5,7 +5,6 @@
                 <i :class="iconClass"></i>
             </div>
             <div class="toast-body">
-                <strong>{{ title }}</strong>
                 <p>{{ message }}</p>
             </div>
             <button type="button" class="toast-close" :aria-label="`Dismiss ${type} message`" @click="$emit('close')">
@@ -32,12 +31,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 let timeoutId = null;
-
-const title = computed(() => ({
-    success: 'Success',
-    error: 'Action failed',
-    info: 'Notice'
-}[props.type] || 'Notice'));
 
 const iconClass = computed(() => ({
     success: 'fa-solid fa-circle-check',
@@ -151,14 +144,6 @@ onBeforeUnmount(() => {
 
 .toast-body {
     min-width: 0;
-}
-
-.toast-body strong {
-    display: block;
-    font-size: 0.98rem;
-    color: #16241a;
-    margin-bottom: 2px;
-    letter-spacing: 0.01em;
 }
 
 .toast-body p {

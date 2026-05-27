@@ -634,15 +634,15 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     const newEmail = normalizeEmail(req.body?.newEmail);
 
     if (!userId || !currentPassword || !newEmail) {
-        throw createHttpError(400, 'Current password and new email are required.', { code: 'ADMIN_EMAIL_CHANGE_VALIDATION_ERROR' });
+        throw createHttpError(400, 'Current password and new email are required.', { code: 'EMAIL_CHANGE_VALIDATION_ERROR' });
     }
 
     if (!isValidEmail(newEmail)) {
-        throw createHttpError(400, 'Please provide a valid email address.', { code: 'ADMIN_EMAIL_CHANGE_VALIDATION_ERROR' });
+        throw createHttpError(400, 'Please provide a valid email address.', { code: 'EMAIL_CHANGE_VALIDATION_ERROR' });
     }
 
     const user = await User.findById(userId);
-    if (user?.role !== 'admin') {
+    if (!user || !['admin', 'resident'].includes(user.role)) {
         throw createHttpError(403, 'Access denied', { code: 'AUTH_FORBIDDEN' });
     }
 
@@ -652,12 +652,12 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     }
 
     if (normalizeEmail(user.email) === newEmail) {
-        throw createHttpError(400, 'The new email must be different from the current email.', { code: 'ADMIN_EMAIL_CHANGE_NOOP' });
+        throw createHttpError(400, 'The new email must be different from the current email.', { code: 'EMAIL_CHANGE_NOOP' });
     }
 
     const existingUser = await User.findOne({ email: newEmail, _id: { $ne: user._id } });
     if (existingUser) {
-        throw createHttpError(409, 'That email is already in use.', { code: 'ADMIN_EMAIL_CHANGE_CONFLICT' });
+        throw createHttpError(409, 'That email is already in use.', { code: 'EMAIL_CHANGE_CONFLICT' });
     }
 
     const emailChangeToken = generateEmailChangeToken();
@@ -667,7 +667,8 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     await user.save();
 
     try {
-        const confirmationLink = `${getAppOrigin(req)}${getSafeRedirectPath(req.body?.redirectPath || '/admin')}?emailChangeToken=${encodeURIComponent(emailChangeToken)}&email=${encodeURIComponent(newEmail)}&redirect=email-change`;
+        const defaultRedirectPath = user.role === 'admin' ? '/admin' : '/portal';
+        const confirmationLink = `${getAppOrigin(req)}${getSafeRedirectPath(req.body?.redirectPath || defaultRedirectPath)}?emailChangeToken=${encodeURIComponent(emailChangeToken)}&email=${encodeURIComponent(newEmail)}&redirect=email-change`;
         await mailer.sendAdminEmailChangeVerificationEmail(newEmail, user.username, confirmationLink);
     } catch (mailError) {
         console.error('Admin email change verification email could not be sent:', mailError);
@@ -692,7 +693,6 @@ exports.confirmAdminEmailChange = asyncHandler(async (req, res) => {
         pendingEmail: email,
         emailChangeToken: hashedToken,
         emailChangeExpires: { $gt: new Date() },
-        role: 'admin'
     });
 
     if (!user) {
@@ -705,8 +705,12 @@ exports.confirmAdminEmailChange = asyncHandler(async (req, res) => {
     user.emailChangeExpires = undefined;
     await user.save();
 
+    if (user.role === 'resident') {
+        await Resident.findOneAndUpdate({ userId: user._id }, { email });
+    }
+
     res.json({
-        message: 'Admin email updated successfully.',
+        message: user.role === 'admin' ? 'Admin email updated successfully.' : 'Email updated successfully.',
         user: {
             id: user._id,
             username: user.username,

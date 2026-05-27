@@ -1,6 +1,8 @@
 import { ref, reactive } from 'vue';
 import { apiFetch, setAuth, clearAuth, getAuth } from '@/shared/client';
 
+const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
+
 export function useAdminAuth() {
     const isAuthenticated = ref(false);
     const user = ref(null);
@@ -9,6 +11,7 @@ export function useAdminAuth() {
     const forgotPasswordForm = reactive({ email: '' });
     const resetPasswordForm = reactive({ email: '', resetToken: '', password: '', confirmPassword: '' });
     const profileForm = reactive({ newEmail: '', currentPassword: '' });
+    const changePasswordForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const emailChangeConfirmForm = reactive({ email: '', emailChangeToken: '' });
     const loginStatus = ref('');
     const profileStatus = ref('');
@@ -19,6 +22,7 @@ export function useAdminAuth() {
     const forgotPasswordLoading = ref(false);
     const resetPasswordLoading = ref(false);
     const profileLoading = ref(false);
+    const changePasswordLoading = ref(false);
     const emailChangeConfirmLoading = ref(false);
 
     const setAuthView = (view) => {
@@ -219,7 +223,7 @@ export function useAdminAuth() {
 
         profileLoading.value = true;
         try {
-            const response = await apiFetch('/auth/admin/email-change-request', {
+            const response = await apiFetch('/auth/email-change-request', {
                 method: 'POST',
                 body: JSON.stringify({
                     currentPassword: profileForm.currentPassword,
@@ -257,7 +261,7 @@ export function useAdminAuth() {
 
         emailChangeConfirmLoading.value = true;
         try {
-            const response = await apiFetch('/auth/admin/email-change-confirm', {
+            const response = await apiFetch('/auth/email-change-confirm', {
                 method: 'POST',
                 body: JSON.stringify({
                     email: emailChangeConfirmForm.email,
@@ -286,8 +290,35 @@ export function useAdminAuth() {
         }
     };
 
+    const changeAdminPassword = async () => {
+        if (changePasswordLoading.value) return;
+
+        if (!changePasswordForm.currentPassword || !changePasswordForm.newPassword || !changePasswordForm.confirmPassword) {
+            setProfileStatus('Current password, new password, and confirmation are required.', true);
+            return;
+        }
+
+        changePasswordLoading.value = true;
+        try {
+            const response = await apiFetch('/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify(changePasswordForm)
+            });
+
+            changePasswordForm.currentPassword = '';
+            changePasswordForm.newPassword = '';
+            changePasswordForm.confirmPassword = '';
+            setProfileStatus(response.message || 'Password updated successfully.', false);
+        } catch (error) {
+            setProfileStatus(error?.message || 'Unable to update password right now.', true);
+        } finally {
+            changePasswordLoading.value = false;
+        }
+    };
+
     const logout = () => {
         clearAuth();
+        globalThis.sessionStorage?.removeItem(ADMIN_VIEW_STORAGE_KEY);
         isAuthenticated.value = false;
         user.value = null;
         loginStatus.value = '';
@@ -296,6 +327,9 @@ export function useAdminAuth() {
         loginForm.password = '';
         profileForm.newEmail = '';
         profileForm.currentPassword = '';
+        changePasswordForm.currentPassword = '';
+        changePasswordForm.newPassword = '';
+        changePasswordForm.confirmPassword = '';
         emailChangeConfirmForm.email = '';
         emailChangeConfirmForm.emailChangeToken = '';
     };
@@ -321,6 +355,7 @@ export function useAdminAuth() {
         } catch (error) {
             console.error('Session init failed:', error);
             clearAuth();
+            globalThis.sessionStorage?.removeItem(ADMIN_VIEW_STORAGE_KEY);
             isAuthenticated.value = false;
         } finally {
             initializing.value = false;
@@ -345,6 +380,7 @@ export function useAdminAuth() {
         forgotPasswordForm,
         resetPasswordForm,
         profileForm,
+        changePasswordForm,
         emailChangeConfirmForm,
         loginStatus,
         profileStatus,
@@ -354,6 +390,7 @@ export function useAdminAuth() {
         forgotPasswordLoading,
         resetPasswordLoading,
         profileLoading,
+        changePasswordLoading,
         emailChangeConfirmLoading,
         initializing,
         setAuthView,
@@ -365,6 +402,7 @@ export function useAdminAuth() {
         submitAdminPasswordReset,
         requestAdminEmailChange,
         confirmAdminEmailChange,
+        changeAdminPassword,
         syncAdminProfileFormFromUser,
         logout,
         initSession

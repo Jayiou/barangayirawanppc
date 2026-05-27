@@ -1757,6 +1757,24 @@ const handleGuestReservationRequest = async () => {
         return;
     }
 
+    if (guestReservationRequiresQuantity.value) {
+        const availableQuantity = Number(guestFacilityAvailability.value?.availableQuantity);
+
+        if (Number.isFinite(availableQuantity)) {
+            const requestedQuantity = Number(guestReservationForm.quantity || 0);
+
+            if (availableQuantity <= 0) {
+                setStatus(`No ${selectedGuestReservationItem.value?.availableLabel || 'items'} are available for the selected time.`, true);
+                return;
+            }
+
+            if (requestedQuantity > availableQuantity) {
+                setStatus(`Only ${availableQuantity} ${selectedGuestReservationItem.value?.availableLabel || 'items'} are available for the selected time.`, true);
+                return;
+            }
+        }
+    }
+
     isGuestReservationLoading.value = true;
     try {
         const payload = {

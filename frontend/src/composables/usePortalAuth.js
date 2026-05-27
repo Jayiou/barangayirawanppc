@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 import { apiFetch, clearAuth } from '@/shared/client';
 
+const PORTAL_VIEW_STORAGE_KEY = 'barangayPortalCurrentView';
+
 export function usePortalAuth() {
     const user = ref(null);
     const initializing = ref(true);
@@ -17,6 +19,7 @@ export function usePortalAuth() {
         } catch (error) {
             console.error('Session check failed:', error);
             clearAuth();
+            globalThis.sessionStorage?.removeItem(PORTAL_VIEW_STORAGE_KEY);
             globalThis.location.href = '/';
             return false;
         } finally {
@@ -26,6 +29,7 @@ export function usePortalAuth() {
 
     const logout = () => {
         clearAuth();
+        globalThis.sessionStorage?.removeItem(PORTAL_VIEW_STORAGE_KEY);
         globalThis.location.href = '/';
     };
 

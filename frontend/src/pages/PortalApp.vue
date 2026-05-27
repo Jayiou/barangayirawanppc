@@ -176,7 +176,16 @@
                                     </div>
                                     <div class="form-grid two-column">
                                         <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
-                                        <label><span>Contact Number</span><input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+63XXXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$"></label>
+                                        <label>
+                                            <span>Contact Number</span>
+                                            <div class="phone-input-wrapper">
+                                                <span class="phone-country-badge" aria-hidden="true">
+                                                    <span class="phone-country-flag">🇵🇭</span>
+                                                    <span>PH</span>
+                                                </span>
+                                                <input v-model="profile.contactNumber" type="tel" inputmode="tel" placeholder="+639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" @focus="ensureProfilePhonePrefix" @input="formatProfilePhoneInput">
+                                            </div>
+                                        </label>
                                         <label>
                                             <span>Civil Status</span>
                                             <select v-model="profile.civilStatus">
@@ -207,6 +216,40 @@
                                         <button type="button" class="ghost-button" @click="cancelProfileEdit">Discard Changes</button>
                                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Changes' }}</button>
                                     </div>
+                                </form>
+                            </section>
+
+                            <section class="profile-panel">
+                                <div class="section-head profile-panel-head">
+                                    <div>
+                                        <span class="eyebrow">About Account</span>
+                                        <h4>Change Gmail</h4>
+                                    </div>
+                                </div>
+
+                                <form class="stack profile-password-form" @submit.prevent="handleRequestEmailChange">
+                                    <label>
+                                        <span>Current Gmail</span>
+                                        <input :value="user?.email || profile.email || ''" type="email" readonly>
+                                    </label>
+                                    <label v-if="user?.pendingEmail">
+                                        <span>Pending Gmail</span>
+                                        <input :value="user.pendingEmail" type="email" readonly>
+                                    </label>
+                                    <label>
+                                        <span>New Gmail</span>
+                                        <input v-model="emailChangeForm.newEmail" type="email" autocomplete="email" placeholder="juan@example.com" required>
+                                    </label>
+                                    <label>
+                                        <span>Current Password</span>
+                                        <div class="profile-password-input">
+                                            <input v-model="emailChangeForm.currentPassword" :type="passwordVisibility.emailCurrent ? 'text' : 'password'" autocomplete="current-password" required>
+                                            <button type="button" :aria-label="passwordVisibility.emailCurrent ? 'Hide current password' : 'Show current password'" @click="togglePasswordVisibility('emailCurrent')">
+                                                <i :class="passwordVisibility.emailCurrent ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+                                            </button>
+                                        </div>
+                                    </label>
+                                    <button type="submit" class="primary-button" :disabled="isChangingEmail">{{ isChangingEmail ? 'Sending Verification...' : 'Send Verification Link' }}</button>
                                 </form>
                             </section>
 
@@ -700,7 +743,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import BrandMark from '@/components/BrandMark.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
-import { apiFetch, formatDate } from '@/shared/client';
+import { apiFetch, formatDate, getAuth, setAuth } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
@@ -711,6 +754,9 @@ import { useDocuments } from '@/composables/useDocuments';
 
 // Composables
 const { user, initializing, ensureResident, logout } = usePortalAuth();
+
+const PORTAL_VIEW_STORAGE_KEY = 'barangayPortalCurrentView';
+const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'reports', 'disaster', 'profile']);
 
 const confirmLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
@@ -764,7 +810,10 @@ const defaultDocumentForm = () => ({ type: 'certificate', fields: getDocumentDef
 const documentForm = ref(defaultDocumentForm());
 const editingDocumentRequestId = ref(null);
 const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
-const passwordVisibility = reactive({ current: false, new: false, confirm: false });
+const emailChangeForm = ref({ newEmail: '', currentPassword: '' });
+const isChangingEmail = ref(false);
+const isConfirmingEmailChange = ref(false);
+const passwordVisibility = reactive({ emailCurrent: false, current: false, new: false, confirm: false });
 const profileImageFile = ref(null);
 const profileImageInput = ref(null);
 const profileImagePreview = ref('');
@@ -1027,6 +1076,54 @@ const displayName = computed(() => {
     return parts.length ? parts.join(' ') : user.value?.username || 'Resident Profile';
 });
 
+const getStoredPortalView = () => {
+    const storedView = globalThis.sessionStorage?.getItem(PORTAL_VIEW_STORAGE_KEY) || '';
+    return PORTAL_VIEWS.has(storedView) ? storedView : '';
+};
+
+const setStoredPortalView = (view) => {
+    if (!PORTAL_VIEWS.has(view)) return;
+    globalThis.sessionStorage?.setItem(PORTAL_VIEW_STORAGE_KEY, view);
+};
+
+const ensureProfilePhonePrefix = () => {
+    if (!String(profile.contactNumber || '').trim()) {
+        profile.contactNumber = '+63';
+    }
+};
+
+const formatProfilePhoneInput = () => {
+    let value = String(profile.contactNumber || '').replace(/[^\d+]/g, '');
+
+    if (value.startsWith('+63')) {
+        profile.contactNumber = `+63${value.slice(3).replace(/\D/g, '').slice(0, 10)}`;
+        return;
+    }
+
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+        profile.contactNumber = '+63';
+        return;
+    }
+
+    if (digits.startsWith('63')) {
+        profile.contactNumber = `+63${digits.slice(2, 12)}`;
+        return;
+    }
+
+    if (digits.startsWith('09')) {
+        profile.contactNumber = `+63${digits.slice(1, 11)}`;
+        return;
+    }
+
+    if (digits.startsWith('9')) {
+        profile.contactNumber = `+63${digits.slice(0, 10)}`;
+        return;
+    }
+
+    profile.contactNumber = `+63${digits.slice(0, 10)}`;
+};
+
 watch(() => profile.purok, () => {
     const zones = selectedPurokZones.value;
 
@@ -1073,6 +1170,7 @@ const handleSubmitDocument = async () => {
 
 const setResidentView = (view) => {
     currentView.value = view;
+    setStoredPortalView(view);
     document.activeElement?.blur();
 
     if (globalThis.matchMedia('(max-width: 760px)').matches) {
@@ -1669,8 +1767,97 @@ const handleChangePassword = async () => {
     }
 };
 
+const syncResidentAuthUser = (updates = {}) => {
+    if (!user.value) return;
+
+    user.value = { ...user.value, ...updates };
+    const auth = getAuth();
+    if (auth.token) {
+        setAuth(auth.token, user.value);
+    }
+};
+
+const handleRequestEmailChange = async () => {
+    if (isChangingEmail.value) return;
+
+    if (!emailChangeForm.value.newEmail || !emailChangeForm.value.currentPassword) {
+        setStatus('Please enter your new Gmail and current password.', true);
+        return;
+    }
+
+    isChangingEmail.value = true;
+    try {
+        const response = await apiFetch('/auth/email-change-request', {
+            method: 'POST',
+            body: JSON.stringify({
+                currentPassword: emailChangeForm.value.currentPassword,
+                newEmail: emailChangeForm.value.newEmail,
+                appUrl: globalThis.location?.origin || '',
+                redirectPath: '/portal'
+            })
+        });
+
+        syncResidentAuthUser({ pendingEmail: response.pendingEmail || emailChangeForm.value.newEmail });
+        emailChangeForm.value = { newEmail: '', currentPassword: '' };
+        setStatus(response.message || 'A confirmation link has been sent to your new Gmail.');
+    } catch (error) {
+        setStatus(error.message || 'Unable to send Gmail verification right now.', true);
+    } finally {
+        isChangingEmail.value = false;
+    }
+};
+
+const confirmResidentEmailChangeFromUrl = async () => {
+    const params = new URLSearchParams(globalThis.location.search);
+    const emailChangeToken = params.get('emailChangeToken') || '';
+    const email = params.get('email') || '';
+
+    if (!emailChangeToken || !email || isConfirmingEmailChange.value) {
+        return;
+    }
+
+    isConfirmingEmailChange.value = true;
+    try {
+        const response = await apiFetch('/auth/email-change-confirm', {
+            method: 'POST',
+            body: JSON.stringify({ email, emailChangeToken })
+        });
+
+        syncResidentAuthUser({ ...(response.user || {}), pendingEmail: '' });
+        profile.email = email;
+        setStatus(response.message || 'Gmail updated successfully.');
+
+        if (globalThis.history?.replaceState) {
+            globalThis.history.replaceState({}, '', globalThis.location.pathname);
+        }
+    } catch (error) {
+        setStatus(error.message || 'Unable to confirm Gmail update.', true);
+    } finally {
+        isConfirmingEmailChange.value = false;
+    }
+};
+
 const handleSubmitReservation = async () => {
     if (isSubmitting.value) return;
+
+    if (reservationRequiresQuantity.value) {
+        const availableQuantity = Number(facilityAvailabilityDetails.value?.availableQuantity);
+
+        if (Number.isFinite(availableQuantity)) {
+            const requestedQuantity = Number(reservationForm.quantity || 0);
+
+            if (availableQuantity <= 0) {
+                setStatus(`No ${selectedReservationItem.value?.availableLabel || 'items'} are available for the selected time.`, true);
+                return;
+            }
+
+            if (requestedQuantity > availableQuantity) {
+                setStatus(`Only ${availableQuantity} ${selectedReservationItem.value?.availableLabel || 'items'} are available for the selected time.`, true);
+                return;
+            }
+        }
+    }
+
     isSubmitting.value = true;
     try {
         const result = await submitReservation(() => loadAll(), loadFacilityAvailability);
@@ -1724,6 +1911,8 @@ const handleLoadFacilityAvailability = async () => {
 onMounted(async () => {
     const allowed = await ensureResident();
     if (!allowed) return;
+    await confirmResidentEmailChangeFromUrl();
+    currentView.value = getStoredPortalView() || 'appointments';
     await loadAll();
     await loadMyDocuments();
 });
