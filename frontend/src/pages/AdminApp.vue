@@ -91,6 +91,18 @@
         <main class="app-main" :class="{ 'notifications-blurred': reportAlertVisible }">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
+                <nav class="mobile-quick-nav" aria-label="Admin quick navigation">
+                    <button :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i></button>
+                    <button :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i></button>
+                    <button :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i></button>
+                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i></button>
+                    <button :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i></button>
+                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i></button>
+                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i></button>
+                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i></button>
+                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i></button>
+                    <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i></button>
+                </nav>
             </header>
             <!-- Dashboard View -->
             <section class="app-view" :class="{ active: currentView === 'dashboard' }">
@@ -922,8 +934,8 @@
                                         @click="openProofPreview(proofPath)"
                                         @keydown.enter.prevent="openProofPreview(proofPath)"
                                         @keydown.space.prevent="openProofPreview(proofPath)">
-                                        <img
-                                            :src="resolveProofImageUrl(proofPath)"
+                                        <img 
+                                            :src="resolveProofImageUrl(proofPath)" 
                                             :alt="getProofImageLabel(proofPath)"
                                             class="proof-preview-image"
                                         >
@@ -1235,25 +1247,7 @@ const showAdminPassword = ref(false);
 const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
-const validAdminViews = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs']);
-const hashView = (() => {
-    try {
-        const matched = globalThis.location.hash.match(/view=([a-z-]+)/i);
-        return matched ? decodeURIComponent(matched[1]) : null;
-    } catch (error) {
-        return null;
-    }
-})();
-const savedAdminView = localStorage.getItem('admin_current_view');
-let initialAdminView;
-if (validAdminViews.has(hashView)) {
-    initialAdminView = hashView;
-} else if (validAdminViews.has(savedAdminView)) {
-    initialAdminView = savedAdminView;
-} else {
-    initialAdminView = 'dashboard';
-}
-const currentView = ref(initialAdminView);
+const currentView = ref('dashboard');
 const selectedDashboardCard = ref('reports');
 const analyticsRange = ref('monthly');
 const activeModal = ref(null);
@@ -1286,27 +1280,6 @@ const clearHoveredTrendIndex = () => {
 const reportAlertVisible = ref(false);
 const reportAlertBusy = ref(false);
 const reportAlertReports = ref([]);
-// Persist view state on change
-watch(currentView, (newView) => {
-    localStorage.setItem('admin_current_view', newView);
-    try {
-        globalThis.history.replaceState(null, '', `#view=${encodeURIComponent(newView)}`);
-    } catch (error) {
-        globalThis.location.hash = `view=${encodeURIComponent(newView)}`;
-    }
-});
-
-const syncViewFromHash = () => {
-    try {
-        const matched = globalThis.location.hash.match(/view=([a-z-]+)/i);
-        const hashValue = matched ? decodeURIComponent(matched[1]) : null;
-        if (hashValue && validAdminViews.has(hashValue) && hashValue !== currentView.value) {
-            currentView.value = hashValue;
-        }
-    } catch (error) {
-        // Ignore malformed hashes.
-    }
-};
 const selectedItem = ref({});
 const editForm = reactive({});
 const formalPurposeInput = ref('');
@@ -3122,11 +3095,6 @@ onBeforeUnmount(() => {
     clearToast();
     clearResidentProofPreview();
     stopNotificationPolling();
-    try {
-        globalThis.removeEventListener('hashchange', syncViewFromHash);
-    } catch (error) {
-        // ignore
-    }
 });
 
 watch(isAuthenticated, async (authed) => {
@@ -3145,11 +3113,6 @@ watch(isAuthenticated, async (authed) => {
 
 onMounted(() => {
     initSession();
-    try {
-        globalThis.addEventListener('hashchange', syncViewFromHash);
-    } catch (error) {
-        // ignore
-    }
 });
 </script>
 

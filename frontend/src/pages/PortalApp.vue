@@ -50,6 +50,14 @@
         <main class="app-main">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = !sidebarOpen"><i class="fa-solid fa-bars"></i></button>
+                <nav class="mobile-quick-nav" aria-label="Resident quick navigation">
+                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i></button>
+                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i></button>
+                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i></button>
+                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i></button>
+                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i></button>
+                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i></button>
+                </nav>
             </header>
             <section class="hero-banner">
                 <div>
@@ -715,7 +723,7 @@ const { getAvailableSlots, requestAppointment } = useAppointments();
 const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest } = useDocuments();
 // Local state
 const sidebarOpen = ref(false);
-const currentView = ref(localStorage.getItem('portal_current_view') || 'profile');
+const currentView = ref('appointments');
 const activeModal = ref(null);
 const itemsPerPage = 5;
 const isSubmitting = ref(false);
@@ -1163,13 +1171,6 @@ const handleSubmitAppointment = async () => {
         isSubmitting.value = false;
     }
 };
-// Persist view state on change
-watch(currentView, (newView) => {
-    localStorage.setItem('portal_current_view', newView);
-});
-
-
-
 // Computed properties
 const viewTitle = computed(() => ({
     profile: 'Manage your personal information',
