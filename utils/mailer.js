@@ -5,7 +5,7 @@ const sgMail = require('@sendgrid/mail');
 const formatLabel = (text) => {
     if (!text) return text;
     return text
-        .replaceAll('_', ' ')
+        .replaceAll('_', ' ')   
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
@@ -71,6 +71,7 @@ const FROM_NAME = 'Barangay Connect';
 const DEFAULT_FROM_EMAIL = 'princejaydelapenaz@gmail.com';
 const DEFAULT_REPLY_TO = 'princejaydelapenaz@gmail.com';
 const path = require('node:path');
+const https = require('node:https');
 
 const parseFromAddress = (value) => {
     const rawValue = String(value || '').trim();
@@ -107,6 +108,7 @@ const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
 const smtpSecure = smtpPort === 465;
 const hasSmtpCredentials = Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS);
 const useSendGrid = Boolean(process.env.SENDGRID_API_KEY) && !hasSmtpCredentials;
+const hasBrevoApi = Boolean(process.env.BREVO_API_KEY);
 
 let smtpAuth = null;
 if (hasSmtpCredentials) {
@@ -178,7 +180,96 @@ const resolveAttachmentPath = (value) => {
     return rawPath;
 };
 
+const normalizeBrevoAttachments = (attachments = []) => {
+    return attachments.map((attachment) => {
+        if (attachment.content) {
+            const contentBuffer = typeof attachment.content === 'string' ? Buffer.from(attachment.content, 'base64') : Buffer.from(attachment.content);
+            return {
+                name: attachment.filename || (attachment.path ? attachment.path.split(/[\\/]/).pop() : 'attachment'),
+                content: contentBuffer.toString('base64')
+            };
+        }
+
+        if (attachment.path) {
+            const attachmentPath = resolveAttachmentPath(attachment.path);
+            const fileData = fs.readFileSync(attachmentPath);
+            return {
+                name: attachment.filename || attachmentPath.split(/[\\/]/).pop(),
+                content: fileData.toString('base64')
+            };
+        }
+
+        return {
+            name: attachment.filename || 'attachment',
+            content: Buffer.from(String(attachment)).toString('base64')
+        };
+    });
+};
+
+const sendViaBrevo = (mailOptions) => {
+    const toList = [];
+    if (Array.isArray(mailOptions.to)) {
+        for (const t of mailOptions.to) {
+            if (typeof t === 'string') toList.push({ email: t });
+            else if (t && t.email) toList.push({ email: t.email, name: t.name });
+        }
+    } else if (typeof mailOptions.to === 'string') {
+        toList.push({ email: mailOptions.to });
+    } else if (mailOptions.to && mailOptions.to.email) {
+        toList.push({ email: mailOptions.to.email, name: mailOptions.to.name });
+    }
+
+    const sender = mailOptions.from && mailOptions.from.email ? { name: mailOptions.from.name, email: mailOptions.from.email } : { name: FROM_NAME, email: FROM_EMAIL };
+    const replyTo = mailOptions.replyTo ? (typeof mailOptions.replyTo === 'string' ? { email: mailOptions.replyTo } : { email: mailOptions.replyTo.email, name: mailOptions.replyTo.name }) : undefined;
+
+    const payload = {
+        sender,
+        to: toList,
+        subject: mailOptions.subject,
+        htmlContent: mailOptions.html,
+        textContent: mailOptions.text,
+        headers: mailOptions.headers
+    };
+
+    if (replyTo) payload.replyTo = replyTo;
+    if (mailOptions.attachments) payload.attachment = normalizeBrevoAttachments(mailOptions.attachments);
+
+    const data = JSON.stringify(payload);
+    const options = {
+        hostname: 'api.brevo.com',
+        path: '/v3/smtp/email',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data),
+            'api-key': process.env.BREVO_API_KEY
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', (chunk) => body += chunk);
+            res.on('end', () => {
+                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    try { resolve(body ? JSON.parse(body) : {}); } catch (e) { resolve(body); }
+                } else {
+                    reject(new Error(`Brevo API error ${res.statusCode}: ${body}`));
+                }
+            });
+        });
+
+        req.on('error', (err) => reject(err));
+        req.write(data);
+        req.end();
+    });
+};
+
 const sendMail = async (mailOptions) => {
+    if (hasBrevoApi) {
+        return sendViaBrevo(mailOptions);
+    }
+
     if (useSendGrid) {
         const sgMessage = {
             to: mailOptions.to,
@@ -229,8 +320,8 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
         };
 
         // Don't crash if email config is missing during dev testing
-        if (!smtpAuth) {
-            console.log('Skipping email send because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -267,8 +358,8 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             `
         };
 
-        if (!smtpAuth) {
-            console.log('Skipping password reset email because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping password reset email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -320,8 +411,8 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             `
         };
 
-        if (!smtpAuth) {
-            console.log('Skipping email send because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -385,8 +476,8 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             `
         };
 
-        if (!smtpAuth) {
-            console.log('Skipping document email send because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping document email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -447,8 +538,8 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             `
         };
 
-        if (!smtpAuth) {
-            console.log('Skipping request status email because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping request status email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -504,8 +595,8 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
         }
         
 
-        if (!smtpAuth) {
-            console.log('Skipping document email send because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping document email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
@@ -539,8 +630,8 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             `
         };
 
-        if (!smtpAuth) {
-            console.log('Skipping custom resident email because no SendGrid API key or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
+            console.log('Skipping custom resident email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
             return;
         }
 
