@@ -2063,6 +2063,14 @@ iframe[src*="recaptcha/api2/bframe"] {
     color: #1a1a1a;
 }
 
+.input-group > label:not(.checkbox-label) {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: nowrap;
+    width: fit-content;
+}
+
 .input-wrapper {
     position: relative;
     display: flex;
@@ -2227,6 +2235,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 }
 
 .required-mark {
+    display: inline;
+    flex-shrink: 0;
     color: #c53a3a;
     font-weight: 800;
 }
