@@ -1659,6 +1659,13 @@ const toFilterDate = (value) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
+const matchesSearch = (item, term, fields) => {
+    const needle = String(term || '').trim().toLowerCase();
+    if (!needle) return true;
+
+    return fields.some((field) => String(field(item) || '').toLowerCase().includes(needle));
+};
+
 const matchesStatusFilter = (value, filterValue) => {
     if (!filterValue || filterValue === 'all') return true;
     return String(value || '').toLowerCase() === String(filterValue || '').toLowerCase();
