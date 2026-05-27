@@ -5,6 +5,7 @@ const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendRequestStatusEmail } = require('../utils/mailer');
+const { logStatusChange } = require('../utils/statusLogger');
 const {
     getAvailableTimeSlots,
     isTimeSlotAvailable,
@@ -54,6 +55,30 @@ const buildAppointmentEmailDetails = (appointment, status) => [
     { label: 'Official Position', value: appointment?.officialId?.position },
     { label: 'Status', value: status }
 ];
+
+const getAppointmentAuditData = (appointment) => ({
+    residentName: getPersonName(appointment?.residentId, 'Resident'),
+    residentId: appointment?.residentId?._id || appointment?.residentId,
+    officialName: appointment?.officialId?.name,
+    officialId: appointment?.officialId?._id || appointment?.officialId,
+    appointmentDate: appointment?.appointmentDate,
+    timeSlot: appointment?.timeSlot,
+    purpose: appointment?.purpose
+});
+
+const logAppointmentStatusChange = async (appointment, previousStatus, newStatus, req, reason = '') => {
+    await logStatusChange(
+        'Appointment',
+        appointment._id,
+        previousStatus,
+        newStatus,
+        req.user,
+        reason || '',
+        req.ip,
+        `Appointment ${newStatus}${reason ? ` (${reason})` : ''}`,
+        getAppointmentAuditData(appointment)
+    );
+};
 
 const notifyAppointmentStatus = async (appointment, status, notes = '') => {
     const recipientEmail = getAppointmentRecipientEmail(appointment);
@@ -515,12 +540,14 @@ const cancelAppointment = asyncHandler(async (req, res) => {
         );
     }
 
+    const previousStatus = appointment.status;
     appointment.status = 'cancelled';
     appointment.cancellationReason = cancellationReason || '';
     appointment.cancelledAt = new Date();
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await logAppointmentStatusChange(appointment, previousStatus, 'cancelled', req, cancellationReason || 'Cancelled by resident');
 
     res.status(200).json({
         success: true,
@@ -647,6 +674,7 @@ const approveAppointment = asyncHandler(async (req, res) => {
         throwSlotAlreadyBooked();
     }
 
+    const previousStatus = appointment.status;
     appointment.status = 'approved';
     appointment.remarks = remarks || '';
     appointment.approvedAt = new Date();
@@ -662,6 +690,7 @@ const approveAppointment = asyncHandler(async (req, res) => {
         throw error;
     }
 
+    await logAppointmentStatusChange(appointment, previousStatus, 'approved', req, remarks || '');
     await notifyAppointmentStatus(appointment, 'approved', remarks || '');
 
     res.status(200).json({
@@ -694,6 +723,7 @@ const rejectAppointment = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Only pending appointments can be rejected');
     }
 
+    const previousStatus = appointment.status;
     appointment.status = 'rejected';
     appointment.rejectionReason = rejectionReason || '';
     appointment.remarks = remarks || '';
@@ -701,6 +731,7 @@ const rejectAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await logAppointmentStatusChange(appointment, previousStatus, 'rejected', req, rejectionReason || remarks || '');
     await notifyAppointmentStatus(appointment, 'rejected', rejectionReason || remarks || '');
 
     res.status(200).json({
@@ -733,12 +764,14 @@ const completeAppointment = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Only approved appointments can be marked as completed');
     }
 
+    const previousStatus = appointment.status;
     appointment.status = 'completed';
     appointment.remarks = remarks || '';
     appointment.completedAt = new Date();
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await logAppointmentStatusChange(appointment, previousStatus, 'completed', req, remarks || '');
     await notifyAppointmentStatus(appointment, 'completed', remarks || '');
 
     res.status(200).json({
@@ -774,6 +807,7 @@ const adminCancelAppointment = asyncHandler(async (req, res) => {
         );
     }
 
+    const previousStatus = appointment.status;
     appointment.status = 'cancelled';
     appointment.cancellationReason = cancellationReason || '';
     appointment.remarks = remarks || '';
@@ -781,6 +815,7 @@ const adminCancelAppointment = asyncHandler(async (req, res) => {
     appointment.updatedAt = new Date();
 
     await appointment.save();
+    await logAppointmentStatusChange(appointment, previousStatus, 'cancelled', req, cancellationReason || remarks || '');
     await notifyAppointmentStatus(appointment, 'cancelled', cancellationReason || remarks || '');
 
     res.status(200).json({
