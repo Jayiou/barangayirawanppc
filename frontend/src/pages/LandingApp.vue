@@ -2894,11 +2894,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     transform: translateX(0) translateY(0);
 }
 
-.landing-officials-section {
+    .landing-officials-section {
     padding: 60px 0;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .officials-sections {
@@ -3108,12 +3108,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
 <style scoped>
 /* VMG Cards */
-.landing-vmg-section {
+    .landing-vmg-section {
     width: 100%;
     max-width: 1520px;
     margin: 0 auto;
     padding: 48px 28px 72px;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 .vmg-grid {
     display: grid;

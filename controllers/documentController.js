@@ -285,6 +285,37 @@ const resolveTemplateForType = (type) => {
   return 'barangay_certificate.html';
 };
 
+const buildDocumentPdfData = async (docReq) => {
+  // Merge resident info, fields, and adminEdits so both admin/requester copies use the same final values.
+  const resident = docReq.resident || docReq.$locals?.legacyResident || {};
+  const merged = normalizeFieldMap(docReq.fields);
+
+  if (docReq.adminEdits) {
+    Object.assign(merged, normalizeFieldMap(docReq.adminEdits));
+  }
+
+  const now = new Date();
+  const residentName = [resident.firstName, resident.middleName, resident.lastName, resident.suffix].filter(Boolean).join(' ').trim();
+
+  const captain = await Official.findOne({ position: 'Barangay Captain', status: 'active' });
+  const secretary = await Official.findOne({ position: 'Barangay Secretary', status: 'active' });
+
+  return {
+    ...merged,
+    // Use form-submitted FULL_NAME if present; fallback to resident profile only when needed.
+    FULL_NAME: merged.FULL_NAME || residentName,
+    AGE: merged.AGE || calculateAge(resident.birthDate),
+    BARANGAY: merged.BARANGAY || 'Irawan',
+    CITY: merged.CITY || 'Puerto Princesa City',
+    PROVINCE: merged.PROVINCE || 'Palawan',
+    DAY: String(now.getDate()),
+    MONTH: now.toLocaleString('en-US', { month: 'long' }),
+    PURPOSE: merged.PURPOSE || docReq.purpose || '',
+    SECRETARY_NAME: secretary?.name || 'Barangay Secretary',
+    CAPTAIN_NAME: captain?.name || 'Punong Barangay'
+  };
+};
+
 const resolveGeneratedDocumentFilePath = (docReq) => {
   const generatedName = docReq?.generatedFileName;
   const generatedUrl = docReq?.generatedFileUrl;
@@ -350,14 +381,14 @@ const savePdfBuffer = async (pdfBuffer, docReq) => {
   return fileUrl;
 };
 
-const sendDocumentEmail = async (docReq, fileUrl) => {
+const sendDocumentEmail = async (docReq, fileUrl, options = {}) => {
   try {
     const residentEmail = docReq.resident?.email || docReq.resident?.userId?.email;
     const name = docReq.resident
       ? `${docReq.resident.firstName || ''} ${docReq.resident.lastName || ''}`.trim()
       : '';
     if (residentEmail) {
-      await sendGeneratedDocumentEmail(residentEmail, name || 'Resident', docReq.type || 'document', fileUrl);
+      await sendGeneratedDocumentEmail(residentEmail, name || 'Resident', docReq.type || 'document', fileUrl, options);
     }
   } catch (emailErr) {
     console.error('Failed to send generated document email:', emailErr.message || emailErr);
@@ -599,36 +630,7 @@ exports.generateDocument = async (req, res, next) => {
       }
     }
 
-    // Merge resident info, fields, and adminEdits
-    const resident = docReq.resident || docReq.$locals?.legacyResident || {};
-    const merged = normalizeFieldMap(docReq.fields);
-
-    // adminEdits is a Map - these override original fields if set by admin
-    if (docReq.adminEdits) {
-      Object.assign(merged, normalizeFieldMap(docReq.adminEdits));
-    }
-    const now = new Date();
-    const residentName = [resident.firstName, resident.middleName, resident.lastName, resident.suffix].filter(Boolean).join(' ').trim();
-
-    // Fetch active officials for signature areas
-    const captain = await Official.findOne({ position: 'Barangay Captain', status: 'active' });
-    const secretary = await Official.findOne({ position: 'Barangay Secretary', status: 'active' });
-
-    // Common placeholders
-    // IMPORTANT: Use form-submitted FULL_NAME, not resident's name if form was filled
-    const data = {
-      ...merged,
-      FULL_NAME: merged.FULL_NAME || residentName,
-      AGE: merged.AGE || calculateAge(resident.birthDate),
-      BARANGAY: merged.BARANGAY || 'Irawan',
-      CITY: merged.CITY || 'Puerto Princesa City',
-      PROVINCE: merged.PROVINCE || 'Palawan',
-      DAY: String(now.getDate()),
-      MONTH: now.toLocaleString('en-US', { month: 'long' }),
-      PURPOSE: merged.PURPOSE || docReq.purpose || '',
-      SECRETARY_NAME: secretary?.name || 'Barangay Secretary',
-      CAPTAIN_NAME: captain?.name || 'Punong Barangay'
-    };
+    const data = await buildDocumentPdfData(docReq);
 
     let templateName = resolveTemplateForType(docReq.type);
 
@@ -645,7 +647,7 @@ exports.generateDocument = async (req, res, next) => {
     // limit concurrent PDF jobs to avoid memory spikes in constrained environments
     await acquirePdfToken();
     try {
-      const pdfBuffer = await createDocumentPdfBuffer({ type: docReq.type, data });
+      const pdfBuffer = await createDocumentPdfBuffer({ type: docReq.type, data, mode: 'admin' });
 
       const fileUrl = await savePdfBuffer(pdfBuffer, docReq);
 
@@ -693,7 +695,17 @@ exports.sendGeneratedDocument = async (req, res, next) => {
       }
     }
 
-    await sendDocumentEmail(docReq, fileUrl);
+    const data = await buildDocumentPdfData(docReq);
+
+    await acquirePdfToken();
+    let requesterPdfBuffer;
+    try {
+      requesterPdfBuffer = await createDocumentPdfBuffer({ type: docReq.type, data, mode: 'requester' });
+    } finally {
+      releasePdfToken();
+    }
+
+    await sendDocumentEmail(docReq, fileUrl, { attachmentBuffer: requesterPdfBuffer });
     docReq.generatedEmailSentAt = new Date();
     await docReq.save();
 

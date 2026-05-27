@@ -570,7 +570,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
     }
 };
 
-const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath) => {
+const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath, options = {}) => {
     try {
         const docTypeFormatted = formatLabel(documentType);
         let htmlBody = `
@@ -607,8 +607,14 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
             html: htmlBody
         };
 
-        // If filePath is remote (presigned URL), include link in email instead of attachment
-        if (typeof filePath === 'string' && (filePath.startsWith('http://') || filePath.startsWith('https://')) ) {
+        if (Buffer.isBuffer(options.attachmentBuffer)) {
+            mailOptions.attachments = [{
+                filename: `${documentType}.pdf`,
+                content: options.attachmentBuffer,
+                contentType: 'application/pdf'
+            }];
+        } else if (typeof filePath === 'string' && (filePath.startsWith('http://') || filePath.startsWith('https://')) ) {
+            // If filePath is remote (presigned URL), include link in email instead of attachment
             mailOptions.text = textBody + `\n\nDownload Link: ${filePath}`;
             mailOptions.html = htmlBody + `\n<p style="margin-top:12px; text-align:center;"><a href="${filePath}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#257f49; color:#fff; padding:10px 14px; border-radius:6px; text-decoration:none;">Download Document</a></p>`;
         } else if (typeof filePath === 'string' && filePath) {

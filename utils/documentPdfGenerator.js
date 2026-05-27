@@ -280,10 +280,41 @@ const drawParagraph = (doc, lines, x, y) => {
   return cursorY;
 };
 
-const drawCertificatePdf = (doc, type, data = {}) => {
+const drawWatermark = (doc, mode = 'admin') => {
+  const normalizedMode = mode === 'requester' ? 'requester' : 'admin';
+
+  if (normalizedMode === 'requester') {
+    const firstLine = 'FOR RESEARCH PURPOSES ONLY';
+    const secondLine = 'NOT VALID FOR OFFICIAL USE';
+    const firstLineY = (PAGE_HEIGHT / 2) - 30;
+    const secondLineY = firstLineY + 42;
+
+    doc.save();
+    doc.opacity(0.11);
+    doc.font('Helvetica-Bold').fillColor('#111827').fontSize(34);
+    doc.text(firstLine, 0, firstLineY, { width: PAGE_WIDTH, align: 'center', lineBreak: false });
+    doc.fontSize(29);
+    doc.text(secondLine, 0, secondLineY, { width: PAGE_WIDTH, align: 'center', lineBreak: false });
+    doc.restore();
+    return;
+  }
+
+  doc.save();
+  doc.opacity(0.1);
+  doc.font('Helvetica-Bold').fillColor('#111827').fontSize(34);
+  doc.text('FOR RESEARCH PURPOSES ONLY', 0, (PAGE_HEIGHT / 2) - 16, {
+    width: PAGE_WIDTH,
+    align: 'center',
+    lineBreak: false
+  });
+  doc.restore();
+};
+
+const drawCertificatePdf = (doc, type, data = {}, options = {}) => {
   const config = resolveTypeConfig(type);
   const now = new Date();
   const centerX = PAGE_WIDTH / 2;
+  const watermarkMode = options.mode === 'requester' ? 'requester' : 'admin';
 
   doc.addPage({ size: 'A4', margin: 0 });
   doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT).fill('#ffffff');
@@ -293,14 +324,7 @@ const drawCertificatePdf = (doc, type, data = {}) => {
   doc.image(ensureImagePath('New irawan logo.png'), centerX - 194, 190, { fit: [388, 388], align: 'center', valign: 'center' });
   doc.restore();
 
-  doc.save();
-  doc.rotate(-32, { origin: [centerX, PAGE_HEIGHT / 2] });
-  doc.opacity(0.07);
-  doc.font('Helvetica-Bold').fontSize(46).fillColor('#111827');
-  for (let y = 140; y < PAGE_HEIGHT + 180; y += 150) {
-    doc.text('FOR RESEARCH PURPOSES ONLY', -80, y, { width: PAGE_WIDTH + 160, align: 'center', lineBreak: false });
-  }
-  doc.restore();
+  drawWatermark(doc, watermarkMode);
 
   doc.image(ensureImagePath('New irawan logo.png'), 68, 52, { fit: [72, 72] });
   doc.image(ensureImagePath('Bagong_Pilipinas_logo.png'), PAGE_WIDTH - 130, 56, { fit: [64, 64] });
@@ -356,7 +380,7 @@ const drawCertificatePdf = (doc, type, data = {}) => {
   doc.restore();
 };
 
-const createDocumentPdfBuffer = async ({ type, data }) => createPdfBuffer((doc) => drawCertificatePdf(doc, type, data));
+const createDocumentPdfBuffer = async ({ type, data, mode }) => createPdfBuffer((doc) => drawCertificatePdf(doc, type, data, { mode }));
 
 module.exports = {
   createDocumentPdfBuffer,
