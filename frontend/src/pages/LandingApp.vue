@@ -1198,6 +1198,36 @@ if (registerForm.agreePrivacy === undefined) {
 }
 const registerHasSuffix = ref(Boolean(registerForm.suffix));
 const registerFieldErrors = reactive({});
+const registerErrorFieldOrder = [
+    'firstName',
+    'lastName',
+    'sex',
+    'birthDate',
+    'contactNumber',
+    'email',
+    'purok',
+    'zone',
+    'username',
+    'password',
+    'confirmPassword',
+    'proofOfResidency',
+    'recaptcha'
+];
+const registerFieldElementIds = {
+    firstName: 'reg-firstname',
+    lastName: 'reg-lastname',
+    sex: 'reg-sex',
+    birthDate: 'reg-birthdate',
+    contactNumber: 'reg-contact',
+    email: 'reg-email',
+    purok: 'reg-purok',
+    zone: 'reg-zone',
+    username: 'reg-username',
+    password: 'reg-password',
+    confirmPassword: 'reg-confirm',
+    proofOfResidency: 'reg-proof',
+    recaptcha: 'g-recaptcha'
+};
 
 const clearRegisterErrors = () => {
     Object.keys(registerFieldErrors).forEach((field) => {
@@ -1210,10 +1240,31 @@ const setRegisterErrors = (errors = {}) => {
     Object.entries(errors || {}).forEach(([field, message]) => {
         if (message) registerFieldErrors[field] = message;
     });
+    if (Object.keys(registerFieldErrors).length) {
+        focusFirstRegisterError();
+    }
 };
 
 const hasRegisterError = (field) => Boolean(registerFieldErrors[field]);
 const registerInputClass = (field) => ['input-group', { 'has-error': hasRegisterError(field) }];
+
+const focusFirstRegisterError = async () => {
+    await nextTick();
+
+    const firstErrorField = registerErrorFieldOrder.find((field) => hasRegisterError(field))
+        || Object.keys(registerFieldErrors)[0];
+
+    if (!firstErrorField) return;
+
+    const target = document.getElementById(registerFieldElementIds[firstErrorField] || '');
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+    if (typeof target.focus === 'function') {
+        target.focus({ preventScroll: true });
+    }
+};
 
 watch(registerHasSuffix, (hasSuffix) => {
     if (!hasSuffix) {
@@ -3076,10 +3127,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 .vmg-card .vmg-card-bg {
     position: absolute;
     inset: 0;
-    background-image: image-set(
-        url('/images/hero-logo-160.jpg') 1x,
-        url('/images/hero-logo-320.jpg') 2x
-    );
+    background-image: url('/images/hero-logo.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 200px 200px;
