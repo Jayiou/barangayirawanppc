@@ -1911,17 +1911,16 @@ textarea { resize: vertical; }
     .resident-shell {
         --resident-sidebar-collapsed: 70px;
         --resident-sidebar-expanded: 238px;
-        grid-template-columns: 1fr;
-        overflow-x: clip;
+        grid-template-columns: var(--resident-sidebar-collapsed) calc(100vw - var(--resident-sidebar-collapsed));
     }
     .resident-shell.sidebar-expanded {
-        grid-template-columns: 1fr;
+        grid-template-columns: var(--resident-sidebar-collapsed) calc(100vw - var(--resident-sidebar-collapsed));
     }
     .resident-shell .app-main {
         padding: 0 12px 12px;
-        width: 100%;
-        max-width: 100%;
-        overflow-x: hidden;
+        width: calc(100vw - var(--resident-sidebar-collapsed));
+        max-width: calc(100vw - var(--resident-sidebar-collapsed));
+        overflow-x: auto;
     }
     .mobile-app-header {
         margin: 0 -18px;
@@ -2492,9 +2491,8 @@ textarea { resize: vertical; }
     position: sticky;
     top: 0;
     z-index: 1101;
-    margin: 0;
-    width: 100%;
-    box-sizing: border-box;
+    margin: 0 -24px;
+    width: calc(100% + 48px);
 }
 
 .resident-shell .sidebar-open-btn {
