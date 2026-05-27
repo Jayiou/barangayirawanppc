@@ -184,49 +184,66 @@ exports.register = asyncHandler(async (req, res) => {
     await verifyRecaptcha(recaptchaToken);
 
     // 2. Validate essential inputs
-    if (!username || !email || !password || !firstName || !lastName || !sex || !birthDate || !contactNumber || !normalizedPurok) {
-        throw createHttpError(400, 'All required fields including Resident Profile are necessary.', { code: 'AUTH_VALIDATION_ERROR' });
+    const missingFields = {};
+    if (!username) missingFields.username = 'Username is required.';
+    if (!email) missingFields.email = 'Email address is required.';
+    if (!password) missingFields.password = 'Password is required.';
+    if (!firstName) missingFields.firstName = 'First name is required.';
+    if (!lastName) missingFields.lastName = 'Last name is required.';
+    if (!sex) missingFields.sex = 'Gender is required.';
+    if (!birthDate) missingFields.birthDate = 'Birth date is required.';
+    if (!contactNumber) missingFields.contactNumber = 'Contact number is required.';
+    if (!normalizedPurok) missingFields.purok = 'Purok is required.';
+    if (Object.keys(missingFields).length) {
+        throw createHttpError(400, 'Please complete the required registration fields.', { code: 'AUTH_VALIDATION_ERROR', fields: missingFields });
     }
 
     if (!normalizedContactNumber) {
-        throw createHttpError(400, 'Contact number must be a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.', { code: 'AUTH_VALIDATION_ERROR' });
+        throw createHttpError(400, 'Contact number must be a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.', { code: 'AUTH_VALIDATION_ERROR', fields: { contactNumber: 'Enter a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.' } });
     }
 
     if (purokZoneError) {
-        throw createHttpError(400, purokZoneError, { code: 'AUTH_VALIDATION_ERROR' });
+        throw createHttpError(400, purokZoneError, { code: 'AUTH_VALIDATION_ERROR', fields: { zone: purokZoneError } });
     }
 
     if (!isValidEmail(email)) {
-        throw createHttpError(400, 'Please provide a valid email address.', { code: 'AUTH_VALIDATION_ERROR' });
+        throw createHttpError(400, 'Please provide a valid email address.', { code: 'AUTH_VALIDATION_ERROR', fields: { email: 'Please provide a valid email address.' } });
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-        throw createHttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`, { code: 'AUTH_VALIDATION_ERROR' });
+        throw createHttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`, { code: 'AUTH_VALIDATION_ERROR', fields: { password: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` } });
     }
 
     if (!STRONG_PASSWORD_REGEX.test(password)) {
-        throw createHttpError(400, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. underscore _).', { code: 'AUTH_VALIDATION_ERROR' });
+        throw createHttpError(400, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. underscore _).', { code: 'AUTH_VALIDATION_ERROR', fields: { password: 'Add an uppercase letter, lowercase letter, number, and special character.' } });
     }
 
     // 3. Age validation
     const age = calculateAge(birthDate);
     if (age < MINIMUM_AGE) {
-        throw createHttpError(403, `You must be at least ${MINIMUM_AGE} years old to register unassisted.`, { code: 'AGE_RESTRICTION' });
+        throw createHttpError(403, `You must be at least ${MINIMUM_AGE} years old to register unassisted.`, { code: 'AGE_RESTRICTION', fields: { birthDate: `Registrant must be at least ${MINIMUM_AGE} years old.` } });
     }
 
     // 4. Check for attached file
     if (!proofOfResidency) {
-        throw createHttpError(400, 'Proof of residency (ID or Document) picture is required.', { code: 'MISSING_FILE' });
+        throw createHttpError(400, 'Proof of residency (ID or Document) picture is required.', { code: 'MISSING_FILE', fields: { proofOfResidency: 'Proof of residency is required.' } });
     }
 
     // 5. Existing user check
     const normalizedEmail = normalizeEmail(email);
-    const existingUser = await User.findOne({ $or: [{ username }, { email: normalizedEmail }] });
-    if (existingUser) {
-        if (existingUser.accountStatus === 'pending_otp') {
-            throw createHttpError(409, 'Email or username exists but is pending OTP verification. Please check your email or request a new OTP.', { code: 'AUTH_CONFLICT_UNVERIFIED' });
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+        if (existingUsername.accountStatus === 'pending_otp') {
+            throw createHttpError(409, 'Username already exists but is pending OTP verification. Please check your email or request a new OTP.', { code: 'AUTH_CONFLICT_UNVERIFIED', fields: { username: 'This username is already pending OTP verification.' } });
         }
-        throw createHttpError(409, 'Username or email already exists.', { code: 'AUTH_CONFLICT' });
+        throw createHttpError(409, 'Username already exists. Please choose another username.', { code: 'AUTH_CONFLICT', fields: { username: 'This username is already taken.' } });
+    }
+    const existingEmail = await User.findOne({ email: normalizedEmail });
+    if (existingEmail) {
+        if (existingEmail.accountStatus === 'pending_otp') {
+            throw createHttpError(409, 'Email already exists but is pending OTP verification. Please check your email or request a new OTP.', { code: 'AUTH_CONFLICT_UNVERIFIED', fields: { email: 'This email is already pending OTP verification.' } });
+        }
+        throw createHttpError(409, 'Email already exists. Please use another email address.', { code: 'AUTH_CONFLICT', fields: { email: 'This email address is already registered.' } });
     }
 
     // 6. OTP generation

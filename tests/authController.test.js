@@ -181,7 +181,10 @@ test('register rejects invalid email addresses', async () => {
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'Please provide a valid email address.'
+        message: 'Please provide a valid email address.',
+        fields: {
+            email: 'Please provide a valid email address.'
+        }
     });
 });
 
@@ -195,7 +198,10 @@ test('register rejects passwords that are too short', async () => {
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'Password must be at least 8 characters long.'
+        message: 'Password must be at least 8 characters long.',
+        fields: {
+            password: 'Password must be at least 8 characters long.'
+        }
     });
 });
 

@@ -37,6 +37,9 @@ const errorHandler = (err, req, res, next) => {
         success: false,
         message: statusCode >= 500 ? 'Something went wrong on the server' : err.message
     };
+    if (statusCode < 500 && err.fields) {
+        response.fields = err.fields;
+    }
 
     res.status(statusCode).json(response);
 };

@@ -4,6 +4,7 @@ class HttpError extends Error {
         this.name = 'HttpError';
         this.statusCode = statusCode;
         this.code = options.code || 'APP_ERROR';
+        this.fields = options.fields || null;
         this.expose = options.expose ?? statusCode < 500;
     }
 }

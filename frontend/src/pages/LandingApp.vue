@@ -544,9 +544,10 @@
                                     <h4>Personal Information</h4>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-firstname">First Name</label>
-                                        <input id="reg-firstname" name="firstName" v-model="registerForm.firstName" type="text" autocomplete="given-name" placeholder="Juan" required>
+                                    <div :class="registerInputClass('firstName')">
+                                        <label for="reg-firstname">First Name <span class="required-mark">*</span></label>
+                                        <input id="reg-firstname" name="firstName" v-model="registerForm.firstName" type="text" autocomplete="given-name" placeholder="Juan" required :aria-invalid="hasRegisterError('firstName')">
+                                        <p v-if="hasRegisterError('firstName')" class="field-error">{{ registerFieldErrors.firstName }}</p>
                                     </div>
                                     <div class="input-group">
                                         <label for="reg-middlename">Middle Name</label>
@@ -554,29 +555,35 @@
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-lastname">Last Name</label>
-                                        <input id="reg-lastname" name="lastName" v-model="registerForm.lastName" type="text" autocomplete="family-name" placeholder="Dela Cruz" required>
+                                    <div :class="registerInputClass('lastName')">
+                                        <label for="reg-lastname">Last Name <span class="required-mark">*</span></label>
+                                        <input id="reg-lastname" name="lastName" v-model="registerForm.lastName" type="text" autocomplete="family-name" placeholder="Dela Cruz" required :aria-invalid="hasRegisterError('lastName')">
+                                        <p v-if="hasRegisterError('lastName')" class="field-error">{{ registerFieldErrors.lastName }}</p>
                                     </div>
                                     <div class="input-group">
-                                        <label for="reg-suffix">Suffix</label>
-                                        <input id="reg-suffix" name="suffix" v-model="registerForm.suffix" type="text" placeholder="Jr., Sr., III">
+                                        <label class="checkbox-label compact-checkbox">
+                                            <input type="checkbox" v-model="registerHasSuffix">
+                                            <span>May suffix?</span>
+                                        </label>
+                                        <input v-if="registerHasSuffix" id="reg-suffix" name="suffix" v-model="registerForm.suffix" type="text" placeholder="Jr., Sr., III">
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-sex">Sex</label>
+                                    <div :class="registerInputClass('sex')">
+                                        <label for="reg-sex">Gender <span class="required-mark">*</span></label>
                                         <div class="custom-select">
-                                            <select id="reg-sex" name="sex" v-model="registerForm.sex" required>
+                                            <select id="reg-sex" name="sex" v-model="registerForm.sex" required :aria-invalid="hasRegisterError('sex')">
                                                 <option value="male">Male</option>
                                                 <option value="female">Female</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
+                                        <p v-if="hasRegisterError('sex')" class="field-error">{{ registerFieldErrors.sex }}</p>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="reg-birthdate">Birth Date</label>
-                                        <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required>
+                                    <div :class="registerInputClass('birthDate')">
+                                        <label for="reg-birthdate">Birth Date <span class="required-mark">*</span></label>
+                                        <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required :aria-invalid="hasRegisterError('birthDate')">
+                                        <p v-if="hasRegisterError('birthDate')" class="field-error">{{ registerFieldErrors.birthDate }}</p>
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
@@ -607,45 +614,49 @@
                                     <h4>Contact and Address</h4>
                                 </div>
                                 <div class="input-group">
-                                    <label for="reg-address">Barangay</label>
+                                    <label for="reg-address">Barangay <span class="required-mark">*</span></label>
                                     <input id="reg-address" name="address" v-model="registerForm.address" type="text" autocomplete="address-line1" readonly required>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-contact">Contact Number</label>
+                                    <div :class="registerInputClass('contactNumber')">
+                                        <label for="reg-contact">Contact Number <span class="required-mark">*</span></label>
                                         <div class="phone-input-wrapper">
                                             <span class="phone-country-badge" aria-hidden="true">
                                                 <span class="phone-country-flag">🇵🇭</span>
                                                 <span>PH</span>
                                             </span>
-                                            <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="+639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" required @focus="ensureRegisterPhonePrefix" @input="formatRegisterPhoneInput">
+                                            <input id="reg-contact" name="contactNumber" v-model="registerForm.contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="+639XXXXXXXXX" pattern="^(09\d{9}|\+639\d{9}|639\d{9})$" maxlength="13" required :aria-invalid="hasRegisterError('contactNumber')" @focus="ensureRegisterPhonePrefix" @input="formatRegisterPhoneInput">
                                         </div>
+                                        <p v-if="hasRegisterError('contactNumber')" class="field-error">{{ registerFieldErrors.contactNumber }}</p>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="reg-email">Email Address</label>
-                                        <input id="reg-email" name="email" v-model="registerForm.email" type="email" autocomplete="email" placeholder="juan@example.com" required>
+                                    <div :class="registerInputClass('email')">
+                                        <label for="reg-email">Email Address <span class="required-mark">*</span></label>
+                                        <input id="reg-email" name="email" v-model="registerForm.email" type="email" autocomplete="email" placeholder="juan@example.com" required :aria-invalid="hasRegisterError('email')">
+                                        <p v-if="hasRegisterError('email')" class="field-error">{{ registerFieldErrors.email }}</p>
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-purok">Purok</label>
+                                    <div :class="registerInputClass('purok')">
+                                        <label for="reg-purok">Purok <span class="required-mark">*</span></label>
                                         <div class="custom-select">
-                                            <select id="reg-purok" name="purok" v-model="registerForm.purok" required>
+                                            <select id="reg-purok" name="purok" v-model="registerForm.purok" required :aria-invalid="hasRegisterError('purok')">
                                                 <option value="" disabled>Select Purok</option>
                                                 <option v-for="purok in purokOptions" :key="purok" :value="purok">{{ purok }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
+                                        <p v-if="hasRegisterError('purok')" class="field-error">{{ registerFieldErrors.purok }}</p>
                                     </div>
-                                    <div v-if="availableZoneOptions.length" class="input-group">
-                                        <label for="reg-zone">Zone</label>
+                                    <div v-if="availableZoneOptions.length" :class="registerInputClass('zone')">
+                                        <label for="reg-zone">Zone <span class="required-mark">*</span></label>
                                         <div class="custom-select">
-                                            <select id="reg-zone" name="zone" v-model="registerForm.zone" required>
+                                            <select id="reg-zone" name="zone" v-model="registerForm.zone" required :aria-invalid="hasRegisterError('zone')">
                                                 <option value="" disabled>Select Zone</option>
                                                 <option v-for="zone in availableZoneOptions" :key="zone" :value="zone">{{ zone }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
+                                        <p v-if="hasRegisterError('zone')" class="field-error">{{ registerFieldErrors.zone }}</p>
                                     </div>
                                 </div>
 
@@ -653,19 +664,20 @@
                                     <span class="eyebrow">Section 3</span>
                                     <h4>Account Information</h4>
                                 </div>
-                                <div class="input-group">
-                                    <label for="reg-username">Username</label>
+                                <div :class="registerInputClass('username')">
+                                    <label for="reg-username">Username <span class="required-mark">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="fa-regular fa-user"></i>
-                                        <input id="reg-username" name="new-username" v-model="registerForm.username" type="text" autocomplete="username" placeholder="Choose a username" required>
+                                        <input id="reg-username" name="new-username" v-model="registerForm.username" type="text" autocomplete="username" placeholder="Choose a username" required :aria-invalid="hasRegisterError('username')">
                                     </div>
+                                    <p v-if="hasRegisterError('username')" class="field-error">{{ registerFieldErrors.username }}</p>
                                 </div>
                                 <div class="two-col-grid">
-                                    <div class="input-group">
-                                        <label for="reg-password">Password</label>
+                                    <div :class="registerInputClass('password')">
+                                        <label for="reg-password">Password <span class="required-mark">*</span></label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
-                                            <input id="reg-password" name="new-password" v-model="registerForm.password" :type="passwordVisibility.register ? 'text' : 'password'" autocomplete="off" placeholder="Min. 8 characters" minlength="8" required>
+                                            <input id="reg-password" name="new-password" v-model="registerForm.password" :type="passwordVisibility.register ? 'text' : 'password'" autocomplete="off" placeholder="Min. 8 characters" minlength="8" required :aria-invalid="hasRegisterError('password')">
                                             <button
                                                 type="button"
                                                 class="password-toggle-btn"
@@ -675,12 +687,13 @@
                                                 <i :class="passwordVisibility.register ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
                                             </button>
                                         </div>
+                                        <p v-if="hasRegisterError('password')" class="field-error">{{ registerFieldErrors.password }}</p>
                                     </div>
-                                    <div class="input-group">
-                                        <label for="reg-confirm">Confirm Password</label>
+                                    <div :class="registerInputClass('confirmPassword')">
+                                        <label for="reg-confirm">Confirm Password <span class="required-mark">*</span></label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
-                                            <input id="reg-confirm" name="confirm-password" v-model="registerForm.confirmPassword" :type="passwordVisibility.registerConfirm ? 'text' : 'password'" autocomplete="off" placeholder="Repeat password" minlength="8" required>
+                                            <input id="reg-confirm" name="confirm-password" v-model="registerForm.confirmPassword" :type="passwordVisibility.registerConfirm ? 'text' : 'password'" autocomplete="off" placeholder="Repeat password" minlength="8" required :aria-invalid="hasRegisterError('confirmPassword')">
                                             <button
                                                 type="button"
                                                 class="password-toggle-btn"
@@ -690,6 +703,7 @@
                                                 <i :class="passwordVisibility.registerConfirm ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
                                             </button>
                                         </div>
+                                        <p v-if="hasRegisterError('confirmPassword')" class="field-error">{{ registerFieldErrors.confirmPassword }}</p>
                                     </div>
                                     <div class="password-rules" aria-live="polite">
                                         <p class="password-rules-title">Password must include:</p>
@@ -709,17 +723,19 @@
                                     <span class="eyebrow">Section 5</span>
                                     <h4>Verification Documents</h4>
                                 </div>
-                                <div class="input-group file-upload-group">
-                                    <label for="reg-proof">Proof of Residency (Valid ID / Doc)</label>
+                                <div :class="['input-group', 'file-upload-group', { 'has-error': hasRegisterError('proofOfResidency') }]">
+                                    <label for="reg-proof">Proof of Residency (Valid ID / Doc) <span class="required-mark">*</span></label>
                                     <div class="file-upload-wrapper">
                                         <input id="reg-proof" name="proofOfResidency" type="file" @change="handleFileUpload" accept="image/*,application/pdf" required class="file-input">
                                         <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
                                         <span class="file-name">{{ proofOfResidencyFile ? proofOfResidencyFile.name : 'No file chosen' }}</span>
                                     </div>
+                                    <p v-if="hasRegisterError('proofOfResidency')" class="field-error">{{ registerFieldErrors.proofOfResidency }}</p>
                                 </div>
 
-                                <div class="recaptcha-shell">
+                                <div :class="['recaptcha-shell', { 'has-error': hasRegisterError('recaptcha') }]">
                                     <div id="g-recaptcha" class="recaptcha-container"></div>
+                                    <p v-if="hasRegisterError('recaptcha')" class="field-error">{{ registerFieldErrors.recaptcha }}</p>
                                 </div>
                                 <div class="legal-text">
                                     Protected by reCAPTCHA and subject to the Google 
@@ -728,8 +744,9 @@
                                 </div>
                                 
                                 <div class="input-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" v-model="registerForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                    <label class="checkbox-label privacy-consent-label">
+                                        <input type="checkbox" v-model="registerForm.agreePrivacy">
+                                        <span>{{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a></span>
                                     </label>
                                 </div>
 
@@ -1182,6 +1199,52 @@ const loadGuestFacilityAvailabilityForTime = async () => {
 if (registerForm.agreePrivacy === undefined) {
     registerForm.agreePrivacy = false;
 }
+const registerHasSuffix = ref(Boolean(registerForm.suffix));
+const registerFieldErrors = reactive({});
+
+const clearRegisterErrors = () => {
+    Object.keys(registerFieldErrors).forEach((field) => {
+        delete registerFieldErrors[field];
+    });
+};
+
+const setRegisterErrors = (errors = {}) => {
+    clearRegisterErrors();
+    Object.entries(errors || {}).forEach(([field, message]) => {
+        if (message) registerFieldErrors[field] = message;
+    });
+};
+
+const hasRegisterError = (field) => Boolean(registerFieldErrors[field]);
+const registerInputClass = (field) => ['input-group', { 'has-error': hasRegisterError(field) }];
+
+watch(registerHasSuffix, (hasSuffix) => {
+    if (!hasSuffix) {
+        registerForm.suffix = '';
+    }
+});
+
+watch(
+    () => ({
+        firstName: registerForm.firstName,
+        lastName: registerForm.lastName,
+        sex: registerForm.sex,
+        birthDate: registerForm.birthDate,
+        contactNumber: registerForm.contactNumber,
+        email: registerForm.email,
+        purok: registerForm.purok,
+        zone: registerForm.zone,
+        username: registerForm.username,
+        password: registerForm.password,
+        confirmPassword: registerForm.confirmPassword,
+        agreePrivacy: registerForm.agreePrivacy,
+        proofOfResidency: proofOfResidencyFile.value
+    }),
+    () => {
+        clearRegisterErrors();
+    },
+    { deep: true }
+);
 const passwordVisibility = reactive({
     login: false,
     register: false,
@@ -1492,11 +1555,13 @@ const isRegisterLoading = ref(false);
 
 const handleRegister = async () => {
     if (isRegisterLoading.value) return;
+    clearRegisterErrors();
     if (!registerForm.agreePrivacy) {
         setStatus('Please accept the Privacy Policy before registering.', true);
         return;
     }
     if (!registerPasswordStrong.value) {
+        setRegisterErrors({ password: 'Complete all password requirements before submitting.' });
         setStatus('Password does not meet all required security rules yet.', true);
         return;
     }
@@ -1512,6 +1577,7 @@ const handleRegister = async () => {
             openModal('otp');
             setStatus(result.message, false);
         } else {
+            setRegisterErrors(result.fieldErrors);
             setStatus(result.message, true);
             resetRecaptcha();
         }
@@ -2160,6 +2226,29 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     box-shadow: 0 0 0 4px rgba(22, 36, 26, 0.08);
 }
 
+.required-mark {
+    color: #c53a3a;
+    font-weight: 800;
+}
+
+.input-group.has-error input,
+.input-group.has-error select,
+.input-group.has-error textarea,
+.input-group.has-error .file-upload-wrapper,
+.recaptcha-shell.has-error .recaptcha-container {
+    border-color: #c53a3a;
+    background: #fff7f7;
+    box-shadow: 0 0 0 4px rgba(197, 58, 58, 0.08);
+}
+
+.field-error {
+    margin: 6px 0 0;
+    color: #b42318;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
 .input-group textarea {
     min-height: 120px;
     resize: vertical;
@@ -2295,6 +2384,23 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     grid-column: 1 / -1;
 }
 
+.compact-checkbox {
+    min-height: 52px;
+    margin-bottom: 6px;
+}
+
+.privacy-consent-label {
+    align-items: flex-start;
+}
+
+.privacy-consent-label span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+    line-height: 1.45;
+}
+
 .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
@@ -2321,14 +2427,14 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 .checkbox-label a {
     color: #16241a;
     font-weight: 600;
-    text-decoration: none;
-    border-bottom: 2px solid transparent;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
     transition: all 0.2s ease;
 }
 
 .checkbox-label a:hover {
     color: #2a4531;
-    border-bottom-color: #2a4531;
 }
 
 /* Primary Form Submit Button */
@@ -2556,6 +2662,25 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
 .privacy-footer .auth-submit-btn {
     flex: 1;
+}
+
+.privacy-overlay {
+    position: fixed;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: min(720px, calc(100vw - 32px));
+    height: auto;
+    max-height: min(82vh, 760px);
+    z-index: 260;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid rgba(22, 36, 26, 0.12);
+    box-shadow: 0 36px 90px rgba(0, 0, 0, 0.34);
+    overflow: hidden;
+}
+
+.privacy-overlay .privacy-content {
+    max-height: calc(min(82vh, 760px) - 154px);
 }
 
 /* Slide Transition Between Forms */
