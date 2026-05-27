@@ -4,7 +4,7 @@ const statusAuditLogSchema = new mongoose.Schema(
     {
         entityType: {
             type: String,
-            enum: ['DocumentRequest', 'FacilityReservation', 'Report', 'Appointment', 'User'],
+            enum: ['DocumentRequest', 'FacilityReservation', 'Report', 'Appointment', 'ManpowerRequest', 'User'],
             required: true
         },
         entityId: {

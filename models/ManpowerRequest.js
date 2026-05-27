@@ -102,6 +102,12 @@ const manpowerRequestSchema = new mongoose.Schema(
             default: ''
         },
 
+        requestedPersonnelCount: {
+            type: Number,
+            required: true,
+            min: 1
+        },
+
         priority: {
             type: String,
             enum: ['low', 'medium', 'high', 'urgent'],

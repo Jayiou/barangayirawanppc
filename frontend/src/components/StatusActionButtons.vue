@@ -101,6 +101,27 @@ const actionDefinitions = {
     cancelled: [],
     completed: [],
     rejected: []
+  },
+  manpowerRequest: {
+    pending: [
+      { label: 'Approve', action: 'approve', icon: 'check', color: 'success' },
+      { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
+    ],
+    approved: [
+      { label: 'Mark Assigned', action: 'assigned', icon: 'user-check', color: 'info' },
+      { label: 'Cancel', action: 'cancel', icon: 'times', color: 'danger', requiresReason: true }
+    ],
+    assigned: [
+      { label: 'In Progress', action: 'progress', icon: 'spinner', color: 'warning' },
+      { label: 'Cancel', action: 'cancel', icon: 'times', color: 'danger', requiresReason: true }
+    ],
+    in_progress: [
+      { label: 'Complete', action: 'complete', icon: 'check-circle', color: 'success' },
+      { label: 'Cancel', action: 'cancel', icon: 'times', color: 'danger', requiresReason: true }
+    ],
+    completed: [],
+    rejected: [],
+    cancelled: []
   }
 };
 

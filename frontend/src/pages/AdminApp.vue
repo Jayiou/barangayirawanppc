@@ -129,6 +129,7 @@
                 <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
 
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
+                <button :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
                 <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
@@ -159,6 +160,7 @@
                     <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
                     <button :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ texts.admin.sidebar.officials }}</span></button>
                     <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>Facility</span></button>
+                    <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.admin.sidebar.manpower" :aria-label="texts.admin.sidebar.manpower" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
                     <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
@@ -513,7 +515,7 @@
                 </div>
             </section>
             <!-- Data Table Generic Loop For Other Views -->
-            <section class="app-view" :class="{ active: ['reservations', 'reports', 'announcements', 'residents', 'documents'].includes(currentView) }">
+            <section class="app-view" :class="{ active: ['reservations', 'manpower', 'reports', 'announcements', 'residents', 'documents'].includes(currentView) }">
                 <div class="portal-grid">
                     <article class="content-card" style="overflow-x: auto;">
                         <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap;">
@@ -564,6 +566,13 @@
                                     <th scope="col">Issue</th>
                                     <th scope="col">Requester / Type</th>
                                     <th scope="col">Priority</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                                <tr v-if="currentView === 'manpower'">
+                                    <th scope="col">Request & Date</th>
+                                    <th scope="col">Requester</th>
+                                    <th scope="col">Personnel</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Actions</th>
                                 </tr>
@@ -618,6 +627,14 @@
                                     <td v-if="currentView === 'reservations'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'reservations'">
                                         <button class="icon-button" @click="openModal('reservation', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                    </td>
+
+                                    <td v-if="currentView === 'manpower'"><strong>{{ item.title }}</strong><br><small>{{ formatDate(item.requestDate) }} {{ item.requestTime || '' }}</small><br><small>{{ normalizeLabel(item.assistanceType) }} · {{ item.requestLocation }}</small></td>
+                                    <td v-if="currentView === 'manpower'">{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }}</small></td>
+                                    <td v-if="currentView === 'manpower'">{{ item.requestedPersonnelCount || 0 }}<br><small>{{ normalizeLabel(item.priority) }}</small></td>
+                                    <td v-if="currentView === 'manpower'"><StatusBadge :status="item.status" /></td>
+                                    <td v-if="currentView === 'manpower'">
+                                        <button class="icon-button" @click="openModal('manpower', item)"><i class="fa-solid fa-eye"></i> View</button>
                                     </td>
 
                                     <td v-if="currentView === 'reports'"><strong>{{ item.title }}</strong><br><small>{{ formatDate(item.incidentDate) }}</small></td>
@@ -1114,13 +1131,13 @@
                     </div>
                 </div>
 
-                <div v-if="['reservation', 'report', 'appointment'].includes(activeModal)">
+                <div v-if="['reservation', 'manpower', 'report', 'appointment'].includes(activeModal)">
                     <h2><i class="fa-solid fa-eye"></i>
-                        {{ activeModal === 'report' ? 'View Report' : activeModal === 'reservation' ? 'View Reservation' : 'View Appointment' }}
+                        {{ activeModal === 'report' ? 'View Report' : activeModal === 'manpower' ? 'View Manpower Request' : activeModal === 'reservation' ? 'View Reservation' : 'View Appointment' }}
                     </h2>
-                    <p class="fine-print">{{ activeModal === 'report' ? 'Review complete report details, then apply a status action.' : activeModal === 'reservation' ? 'Review reservation details and manage the booking.' : 'Review appointment details and manage scheduling.' }}</p>
+                    <p class="fine-print">{{ activeModal === 'report' ? 'Review complete report details, then apply a status action.' : activeModal === 'manpower' ? 'Review manpower request details and update its status.' : activeModal === 'reservation' ? 'Review reservation details and manage the booking.' : 'Review appointment details and manage scheduling.' }}</p>
 
-                    <div v-if="['reservation', 'appointment'].includes(activeModal)" class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0 0 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
+                    <div v-if="['reservation', 'manpower', 'appointment'].includes(activeModal)" class="stack" style="background: linear-gradient(180deg,#fbfffc,#f7fbf8); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent); margin: 15px 0 0 0; box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
                         <p v-for="detail in getRequestDetails(selectedItem)" :key="detail.label" v-show="detail.value">
                             <strong>{{ detail.label }}:</strong> {{ detail.value }}
                         </p>
@@ -1184,7 +1201,7 @@
                         </div>
 
                         <StatusActionButtons
-                            :entityType="activeModal === 'reservation' ? 'facilityReservation' : activeModal === 'appointment' ? 'appointment' : 'report'"
+                            :entityType="activeModal === 'reservation' ? 'facilityReservation' : activeModal === 'appointment' ? 'appointment' : activeModal === 'manpower' ? 'manpowerRequest' : 'report'"
                             :currentStatus="selectedItem.status"
                             :loading="isSubmitting"
                             @action-triggered="handleStatusAction"
@@ -1297,7 +1314,6 @@
                                 <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
                                     <span style="font-weight: 600; color: #333;">Status:</span>
                                     <StatusBadge :status="selectedItem.status" />
-                                    <span style="text-transform: capitalize; color: #2d5f45; font-weight: 700;">{{ selectedItem.status }}</span>
                                 </div>
 
                                 <StatusActionButtons
@@ -1501,7 +1517,7 @@ const {
 } = useAdminAuth();
 
 const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
-const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'reports', 'documents', 'disaster', 'sms-logs', 'profile']);
+const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'manpower', 'reports', 'documents', 'disaster', 'sms-logs', 'profile']);
 
 const texts = {
     admin: {
@@ -1552,6 +1568,7 @@ const texts = {
             appointments: 'Appointments',
             officials: 'Officials',
             facilities: 'Facility Reservations',
+            manpower: 'Manpower',
             reports: 'Incident Reports',
             documents: 'Documents',
             disaster: 'Disaster Management',
@@ -1581,7 +1598,7 @@ const authPanelSubtitle = computed(() => {
     return texts.admin.reset.sub;
 });
 
-const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
+const { residents, documentRequests, reservations, manpowerRequests, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
 const { approveAppointment, rejectAppointment, completeAppointment, adminCancelAppointment } = useAppointments();
 const { residentSearch, filteredResidents, calculateAge, saveResidentStatus } = useResidents(residents);
@@ -1745,7 +1762,7 @@ const requesterFilterOptions = [
     { value: 'guest', label: 'Non-residents' }
 ];
 
-const supportsRequesterTabs = (view) => ['appointments', 'reports', 'reservations'].includes(view);
+const supportsRequesterTabs = (view) => ['appointments', 'reports', 'reservations', 'manpower'].includes(view);
 
 const getRequesterType = (item) => {
     if (item?.requesterType === 'guest') return 'guest';
@@ -1863,6 +1880,7 @@ const showToast = (message, isError = false) => {
 // Computed properties
 const pendingCounts = computed(() => ({
     reserves: reservations.value.filter(r => r.status === 'pending').length,
+    manpower: manpowerRequests.value.filter(r => r.status === 'pending').length,
     reports: reports.value.filter(r => r.status === 'pending' || r.status === 'reviewing').length,
     appointments: appointments.value.filter(r => r.status === 'pending').length,
     accs: residents.value.filter(r => r.userId?.accountStatus === 'pending_approval').length
@@ -1875,6 +1893,7 @@ const viewTitle = computed(() => ({
     appointments: 'Appointments',
     officials: 'Officials Directory',
     reservations: 'Facility Reservations',
+    manpower: 'Manpower Requests',
     reports: 'Incident Reports',
     disaster: 'Disaster Management',
     'sms-logs': 'SMS Logs'
@@ -2619,6 +2638,7 @@ const currentList = computed(() => {
         case 'announcements': return announcements.value;
         case 'residents': return sortNewestRequestsFirst(residents.value);
         case 'reservations': return sortNewestRequestsFirst(reservations.value);
+        case 'manpower': return sortNewestRequestsFirst(manpowerRequests.value);
         case 'reports': return sortNewestRequestsFirst(reports.value);
         case 'documents': return sortDocumentRequestsByLatestActivity(documentRequests.value || []);
         default: return [];
@@ -2671,6 +2691,16 @@ const filteredManagementList = computed(() => {
                 (record) => record.status,
                 (record) => formatDate(record.createdAt)
             ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, managementDateFilter.value) && matchesRequesterFilter(item, managementRequesterFilter.value));
+        case 'manpower':
+            return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
+                (record) => record.title,
+                (record) => normalizeLabel(record.assistanceType),
+                (record) => normalizeLabel(record.priority),
+                (record) => record.requestLocation,
+                (record) => getRequestorName(record),
+                (record) => record.status,
+                (record) => formatDate(record.requestDate)
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.requestDate || item.createdAt, managementDateFilter.value) && matchesRequesterFilter(item, managementRequesterFilter.value));
         case 'documents':
             return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
                 (record) => normalizeLabel(record.type),
@@ -2766,6 +2796,21 @@ const managementFilterConfig = computed(() => {
                     { value: 'resolved', label: 'Resolved' },
                     { value: 'rejected', label: 'Rejected' },
                     { value: 'closed', label: 'Closed' }
+                ]
+            };
+        case 'manpower':
+            return {
+                searchPlaceholder: 'Search manpower requests...',
+                dateLabel: 'Request date',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'assigned', label: 'Assigned' },
+                    { value: 'in_progress', label: 'In progress' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'cancelled', label: 'Cancelled' }
                 ]
             };
         case 'documents':
@@ -3048,6 +3093,28 @@ const getRequestDetails = (item) => {
         ];
     }
 
+    if (activeModal.value === 'manpower') {
+        return [
+            { label: 'Requester', value: getRequestorName(item) },
+            { label: 'Requester Type', value: getRequesterTypeLabel(item) },
+            { label: 'Contact Number', value: item.contactNumber || item.residentId?.contactNumber },
+            { label: 'Email', value: item.email || item.residentId?.email },
+            { label: 'Address', value: item.address || item.residentId?.address },
+            { label: 'Title', value: item.title },
+            { label: 'Assistance Type', value: normalizeLabel(item.assistanceType) },
+            { label: 'Request Date', value: formatDate(item.requestDate) },
+            { label: 'Request Time', value: item.requestTime },
+            { label: 'Estimated Duration', value: item.estimatedDuration },
+            { label: 'Personnel Needed', value: item.requestedPersonnelCount },
+            { label: 'Priority', value: normalizeLabel(item.priority) },
+            { label: 'Location', value: item.requestLocation },
+            { label: 'Description', value: item.description },
+            { label: 'Admin Notes', value: item.adminNotes },
+            { label: 'Completion Notes', value: item.completionNotes },
+            { label: 'Requested On', value: formatDate(item.createdAt) }
+        ];
+    }
+
     if (activeModal.value === 'report') {
         return [
             { label: 'Requester', value: getRequestorName(item) },
@@ -3094,6 +3161,7 @@ const getRequestDetails = (item) => {
 const auditEntityTypeByModal = {
     document: 'DocumentRequest',
     reservation: 'FacilityReservation',
+    manpower: 'ManpowerRequest',
     report: 'Report',
     appointment: 'Appointment'
 };
@@ -3182,6 +3250,7 @@ const setupRecordStatusModal = async (type, item) => {
         let path = '';
         if (type === 'document') path = `/admin/documents/${item._id}`;
         else if (type === 'reservation') path = `/facility-reservations/${item._id}`;
+        else if (type === 'manpower') path = `/manpower-requests/${item._id}`;
         else if (type === 'report') path = `/reports/${item._id}`;
         else if (type === 'appointment') path = `/appointments/${item._id}`;
         else return;
@@ -3725,6 +3794,33 @@ const submitStatusAction = async (reason) => {
 
             selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, 'appointment');
         } else {
+            if (activeModal.value === 'manpower') {
+                const nextStatusByAction = {
+                    approve: 'approved',
+                    reject: 'rejected',
+                    assigned: 'assigned',
+                    progress: 'in_progress',
+                    complete: 'completed',
+                    cancel: 'cancelled'
+                };
+                const nextStatus = nextStatusByAction[action];
+                if (!nextStatus) {
+                    throw new Error(`Unknown action: ${action}`);
+                }
+
+                const response = await apiFetch(`/manpower-requests/${selectedItem.value._id}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: nextStatus, adminNotes: reason || '' })
+                });
+                selectedItem.value = { ...selectedItem.value, ...(response?.data || response) };
+                selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, 'manpower');
+                msg(`Request ${action}ed successfully`);
+                await loadAll();
+                activeModal.value = null;
+                confirmingAction.value = null;
+                return;
+            }
+
             const entityTypeMap = { 'document': 'documents', 'reservation': 'reservations' };
             const entityType = entityTypeMap[activeModal.value] || 'reports';
 

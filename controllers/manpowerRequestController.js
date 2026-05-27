@@ -14,6 +14,7 @@ const requestFields = [
     'requestDate',
     'requestTime',
     'estimatedDuration',
+    'requestedPersonnelCount',
     'priority'
 ];
 
@@ -98,6 +99,14 @@ const buildRequestEmailDetails = (request, status) => [
 ];
 
 const validateRequestData = (payload) => {
+    if (payload.requestedPersonnelCount !== undefined) {
+        const count = Number(payload.requestedPersonnelCount);
+        if (!Number.isInteger(count) || count < 1) {
+            return 'Please provide a valid requestedPersonnelCount';
+        }
+        payload.requestedPersonnelCount = count;
+    }
+
     if (payload.assistanceType !== undefined && !hasText(payload.assistanceType)) {
         return 'Please provide a valid assistanceType';
     }
@@ -144,8 +153,8 @@ exports.createRequest = asyncHandler(async (req, res) => {
     const requestData = pickFields(req.body, requestFields);
     const validationError = validateRequestData(requestData);
 
-    if (!requestData.assistanceType || !requestData.title || !requestData.description || !requestData.requestLocation || !requestData.requestDate) {
-        throw createHttpError(400, 'assistanceType, title, description, requestLocation, and requestDate are required', {
+    if (!requestData.assistanceType || !requestData.title || !requestData.description || !requestData.requestLocation || !requestData.requestDate || requestData.requestedPersonnelCount === undefined) {
+        throw createHttpError(400, 'assistanceType, title, description, requestLocation, requestDate, and requestedPersonnelCount are required', {
             code: 'MANPOWER_VALIDATION_ERROR'
         });
     }
@@ -172,8 +181,8 @@ exports.createPublicRequest = asyncHandler(async (req, res) => {
     const requestData = pickFields(req.body, [...requestFields, ...requesterFields]);
     const validationError = validateRequestData(requestData) || validateGuestRequestData(requestData);
 
-    if (!requestData.assistanceType || !requestData.title || !requestData.description || !requestData.requestLocation || !requestData.requestDate) {
-        throw createHttpError(400, 'assistanceType, title, description, requestLocation, and requestDate are required', {
+    if (!requestData.assistanceType || !requestData.title || !requestData.description || !requestData.requestLocation || !requestData.requestDate || requestData.requestedPersonnelCount === undefined) {
+        throw createHttpError(400, 'assistanceType, title, description, requestLocation, requestDate, and requestedPersonnelCount are required', {
             code: 'MANPOWER_VALIDATION_ERROR'
         });
     }
@@ -293,4 +302,81 @@ exports.updateRequestStatus = asyncHandler(async (req, res) => {
     }
 
     res.json(populatedRequest);
+});
+
+exports.cancelMyRequest = asyncHandler(async (req, res) => {
+    const resident = await Resident.findOne({ userId: req.user.id });
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
+            code: 'RESIDENT_NOT_FOUND'
+        });
+    }
+
+    const request = await ManpowerRequest.findById(req.params.id);
+
+    if (!request) {
+        throw createHttpError(404, 'Manpower request not found', { code: 'MANPOWER_NOT_FOUND' });
+    }
+
+    if (!request.residentId || request.residentId.toString() !== resident._id.toString()) {
+        throw createHttpError(403, 'Access denied', { code: 'MANPOWER_FORBIDDEN' });
+    }
+
+    if (!['pending', 'approved'].includes(request.status)) {
+        throw createHttpError(400, `Cannot cancel manpower request with status: ${request.status}`, {
+            code: 'INVALID_STATUS_TRANSITION'
+        });
+    }
+
+    const previousStatus = request.status;
+    request.status = 'cancelled';
+    request.adminNotes = req.body?.cancellationReason || request.adminNotes || '';
+    await request.save();
+
+    try {
+        await logStatusChange(
+            'ManpowerRequest',
+            request._id,
+            previousStatus,
+            'cancelled',
+            req.user,
+            req.body?.cancellationReason || 'Cancelled by resident',
+            req.ip || req.connection?.remoteAddress || ''
+        );
+    } catch (logError) {
+        console.error('Failed to log status change:', logError);
+    }
+
+    const populatedRequest = await populateRequest(ManpowerRequest.findById(request._id));
+    res.json(populatedRequest);
+});
+
+exports.deleteMyRequest = asyncHandler(async (req, res) => {
+    const resident = await Resident.findOne({ userId: req.user.id });
+
+    if (!resident) {
+        throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
+            code: 'RESIDENT_NOT_FOUND'
+        });
+    }
+
+    const request = await ManpowerRequest.findById(req.params.id);
+
+    if (!request) {
+        throw createHttpError(404, 'Manpower request not found', { code: 'MANPOWER_NOT_FOUND' });
+    }
+
+    if (!request.residentId || request.residentId.toString() !== resident._id.toString()) {
+        throw createHttpError(403, 'Access denied', { code: 'MANPOWER_FORBIDDEN' });
+    }
+
+    if (!['completed', 'rejected', 'cancelled'].includes(request.status)) {
+        throw createHttpError(400, `Cannot delete manpower request with status: ${request.status}`, {
+            code: 'MANPOWER_NOT_TERMINAL'
+        });
+    }
+
+    await ManpowerRequest.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Manpower request deleted successfully' });
 });

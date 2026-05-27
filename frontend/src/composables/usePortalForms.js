@@ -5,6 +5,17 @@ export function usePortalForms() {
     const submissionLock = ref(false);
     
     const reservationForm = reactive({ facilityName: 'barangay_hall', reservationDate: '', startTime: '', endTime: '', quantity: 0, purpose: '', reservationDetails: '' });
+    const manpowerForm = reactive({
+        assistanceType: 'event_security',
+        title: '',
+        description: '',
+        requestLocation: '',
+        requestDate: '',
+        requestTime: '',
+        estimatedDuration: '',
+        requestedPersonnelCount: 1,
+        priority: 'medium'
+    });
     const reportForm = reactive({
         reportType: 'noise_complaint',
         description: '',
@@ -129,8 +140,32 @@ export function usePortalForms() {
         }
     );
 
+    const defaultManpowerForm = {
+        assistanceType: 'event_security',
+        title: '',
+        description: '',
+        requestLocation: '',
+        requestDate: '',
+        requestTime: '',
+        estimatedDuration: '',
+        requestedPersonnelCount: 1,
+        priority: 'medium'
+    };
+
+    const submitManpowerRequest = async (loadManpowerRequests) => submitForm(
+        '/manpower-requests',
+        {
+            ...manpowerForm,
+            requestedPersonnelCount: Number(manpowerForm.requestedPersonnelCount)
+        },
+        'Manpower request submitted.',
+        manpowerForm,
+        defaultManpowerForm,
+        loadManpowerRequests
+    );
+
     return {
-        reservationForm, reportForm, reportProofFiles,
-        submitReservation, submitReport
+        reservationForm, manpowerForm, reportForm, reportProofFiles,
+        submitReservation, submitManpowerRequest, submitReport
     };
 }

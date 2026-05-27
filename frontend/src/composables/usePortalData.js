@@ -10,6 +10,7 @@ export function usePortalData() {
     
     const reservations = ref([]);
     const reports = ref([]);
+    const manpowerRequests = ref([]);
     const disasterAdvisories = ref([]);
     const appointments = ref([]);
     const officials = ref([]);
@@ -68,6 +69,14 @@ export function usePortalData() {
         }
     };
 
+    const loadManpowerRequests = async () => {
+        try {
+            manpowerRequests.value = await apiFetch('/manpower-requests/me');
+        } catch (error) {
+            setStatus(error.message, true);
+        }
+    };
+
     const loadAppointments = async () => { 
         try {
             const data = await apiFetch('/appointments/my-appointments');
@@ -111,6 +120,7 @@ export function usePortalData() {
                 loadProfile(),
                 loadReservations(),
                 loadReports(),
+                loadManpowerRequests(),
                 loadAppointments(),
                 loadOfficials(),
                 loadDisasterAdvisories()
@@ -165,6 +175,7 @@ export function usePortalData() {
         
         reservations,
         reports,
+        manpowerRequests,
         disasterAdvisories,
         appointments,
         officials,
@@ -177,6 +188,7 @@ export function usePortalData() {
         loadDocuments,
         loadReservations,
         loadReports,
+        loadManpowerRequests,
         loadAppointments,
         loadOfficials,
         loadDisasterAdvisories,

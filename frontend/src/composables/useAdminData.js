@@ -5,6 +5,7 @@ export function useAdminData() {
     const residents = ref([]);
     const documentRequests = ref([]);
     const reservations = ref([]);
+    const manpowerRequests = ref([]);
     const reports = ref([]);
     const announcements = ref([]);
     const appointments = ref([]);
@@ -31,6 +32,7 @@ export function useAdminData() {
             const calls = [
                 apiFetch('/residents'),
                 apiFetch('/facility-reservations'),
+                apiFetch('/manpower-requests'),
                 apiFetch('/reports'),
                 apiFetch('/announcements/admin/all').then(res => res.data || res),
                 apiFetch('/appointments/admin/all-appointments').then(res => res.data || res),
@@ -54,11 +56,12 @@ export function useAdminData() {
             residents.value = normalize(results[0]);
             documentRequests.value = normalize(results[1]);
             reservations.value = normalize(results[2]);
-            reports.value = normalize(results[3]);
-            announcements.value = normalize(results[4]);
-            appointments.value = normalize(results[5]);
-            officials.value = normalize(results[6]);
-            disasterIncidents.value = normalize(results[7]);
+            manpowerRequests.value = normalize(results[3]);
+            reports.value = normalize(results[4]);
+            announcements.value = normalize(results[5]);
+            appointments.value = normalize(results[6]);
+            officials.value = normalize(results[7]);
+            disasterIncidents.value = normalize(results[8]);
             isDataLoading.value = false;
             msg('Dashboard ready.', false);
         } catch (error) {
@@ -82,6 +85,7 @@ export function useAdminData() {
         residents,
         documentRequests,
         reservations,
+        manpowerRequests,
         reports,
         announcements,
         appointments,

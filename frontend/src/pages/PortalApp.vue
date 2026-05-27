@@ -28,6 +28,7 @@
 
                 <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">{{ texts.nav.documents }}</span></button>
                 <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">{{ texts.nav.reservations }}</span></button>
+                <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span class="nav-label">{{ texts.nav.manpower }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ texts.nav.reports }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ texts.nav.disaster }}</span></button>
                 <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
@@ -54,6 +55,7 @@
                     <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
                     <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span>{{ texts.nav.documents }}</span></button>
                     <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span>Facility</span></button>
+                    <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ texts.nav.reports }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
                     <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span>{{ texts.nav.profile }}</span></button>
@@ -486,6 +488,64 @@
                 </div>
             </section>
 
+            <!-- Manpower Requests View -->
+            <section class="app-view" :class="{ active: currentView === 'manpower' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <div class="section-head portal-table-head">
+                            <div>
+                                <span class="eyebrow">{{ texts.manpower.eyebrow }}</span>
+                                <h3>{{ texts.manpower.heading }}</h3>
+                            </div>
+                            <button class="primary-button" @click="activeModal = 'manpower'">{{ texts.manpower.requestButton }}</button>
+                        </div>
+                        <input class="portal-search-input" v-model="manpowerSearch" type="search" :placeholder="texts.manpower.searchPlaceholder">
+                        <div class="table-filter-bar portal-record-filters">
+                            <select v-model="manpowerStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <label class="date-filter-field">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <input v-model="manpowerDateFilter" type="date" aria-label="Filter manpower requests by date">
+                            </label>
+                        </div>
+                        <div class="portal-table-wrap">
+                            <table class="data-table portal-record-table">
+                                <thead><tr><th>Date</th><th>Request</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+                                <tbody>
+                                    <tr v-if="!pagedManpowerRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.manpower.empty }}</td></tr>
+                                    <tr v-for="item in pagedManpowerRequests.items" :key="item._id">
+                                        <td>{{ formatDate(item.requestDate) }}<br><small>{{ item.requestTime || 'Time TBD' }}</small></td>
+                                        <td>{{ item.title }}<br><small>{{ normalizeLabel(item.assistanceType) }} | {{ item.requestedPersonnelCount }} personnel</small></td>
+                                        <td>{{ item.requestLocation }}</td>
+                                        <td><StatusBadge :status="item.status" /></td>
+                                        <td><div class="portal-row-actions">
+                                            <button class="ghost-button table-action" @click="openRecordDetail('manpower', item)">View</button>
+                                            <button v-if="canCancelManpowerRequest(item)" class="ghost-button table-action danger" @click="cancelResidentManpowerRequest(item)">Cancel</button>
+                                            <button v-if="canDeleteRecord('manpower', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('manpower', item)">Delete</button>
+                                        </div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="filteredManpowerRequests.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedManpowerRequests.page }} of {{ pagedManpowerRequests.pages }} · {{ filteredManpowerRequests.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedManpowerRequests.page === 1" @click="manpowerPage = Math.max(manpowerPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedManpowerRequests.page >= pagedManpowerRequests.pages" @click="manpowerPage = Math.min(manpowerPage + 1, pagedManpowerRequests.pages)">Next</button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
             <!-- Reports View -->
             <section class="app-view" :class="{ active: currentView === 'reports' }">
                 <div class="portal-grid">
@@ -665,6 +725,45 @@
                         <button type="submit" class="primary-button" :disabled="isSubmitting || !reservationForm.startTime || !reservationForm.endTime || (reservationRequiresQuantity && !reservationForm.quantity)">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
                     <div class="facility-slot-note" v-if="reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
+                </div>
+
+                <div v-if="activeModal === 'manpower'">
+                    <h2>{{ texts.modals.manpowerRequest }}</h2>
+                    <p class="fine-print">Request tanod or barangay manpower support for an event or community activity.</p>
+                    <form class="stack" @submit.prevent="handleSubmitManpowerRequest">
+                        <label>
+                            <span>Assistance Type</span>
+                            <select v-model="manpowerForm.assistanceType" required>
+                                <option value="peacekeeping">Peacekeeping</option>
+                                <option value="traffic_control">Traffic Control</option>
+                                <option value="event_security">Event Security</option>
+                                <option value="community_service">Community Service</option>
+                                <option value="emergency_response">Emergency Response</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </label>
+                        <label><span>Event / Request Title</span><input v-model="manpowerForm.title" type="text" required placeholder="Ex. Fiesta parade security"></label>
+                        <label><span>Location</span><input v-model="manpowerForm.requestLocation" type="text" required placeholder="Street, purok, or venue"></label>
+                        <div class="facility-slot-grid">
+                            <label><span>Date</span><input v-model="manpowerForm.requestDate" type="date" :min="todayDate" required></label>
+                            <label><span>Time</span><input v-model="manpowerForm.requestTime" type="time" required></label>
+                        </div>
+                        <div class="facility-slot-grid">
+                            <label><span>Estimated Duration</span><input v-model="manpowerForm.estimatedDuration" type="text" required placeholder="Ex. 3 hours"></label>
+                            <label><span>Personnel Needed</span><input v-model.number="manpowerForm.requestedPersonnelCount" type="number" min="1" required></label>
+                        </div>
+                        <label>
+                            <span>Priority</span>
+                            <select v-model="manpowerForm.priority" required>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </label>
+                        <label><span>Description / Details</span><textarea v-model="manpowerForm.description" rows="4" required placeholder="Describe the event, expected crowd, route, or duties needed."></textarea></label>
+                        <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Manpower Request' }}</button>
+                    </form>
                 </div>
 
                 <div v-if="activeModal === 'report'">
@@ -862,15 +961,15 @@ import { useDocuments } from '@/composables/useDocuments';
 const { user, initializing, ensureResident, logout } = usePortalAuth();
 
 const PORTAL_VIEW_STORAGE_KEY = 'barangayPortalCurrentView';
-const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'reports', 'disaster', 'profile']);
+const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'manpower', 'reports', 'disaster', 'profile']);
 
 const confirmLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
         logout();
     }
 };
-const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadProfile, loadFacilityAvailability } = usePortalData();
-const { reservationForm, reportForm, reportProofFiles, submitReservation, submitReport } = usePortalForms();
+const { statusMessage, statusError, reservations, reports, manpowerRequests, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadProfile, loadFacilityAvailability } = usePortalData();
+const { reservationForm, manpowerForm, reportForm, reportProofFiles, submitReservation, submitManpowerRequest, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
 const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest, requestDocumentRevision } = useDocuments();
 // Local state
@@ -891,6 +990,11 @@ const reservationSearch = ref('');
 const reservationStatusFilter = ref('all');
 const reservationDateFilter = ref('');
 const reservationPage = ref(1);
+
+const manpowerSearch = ref('');
+const manpowerStatusFilter = ref('all');
+const manpowerDateFilter = ref('');
+const manpowerPage = ref(1);
 
 const reportSearch = ref('');
 const reportStatusFilter = ref('all');
@@ -1427,6 +1531,7 @@ const viewTitle = computed(() => ({
     profile: 'Manage your personal information',
     
     reservations: 'Reserve facilities for events',
+    manpower: 'Request barangay manpower support',
     reports: 'Submit and monitor your reports',
     appointments: 'Schedule meetings with barangay officials',
     disaster: 'View weather and evacuation advisories'
@@ -1446,7 +1551,7 @@ const getInitials = (profile) => {
 
 const translations = {
     en: {
-        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', reports: 'Reports', disaster: 'Disaster Advisories' },
+        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', manpower: 'Manpower', reports: 'Reports', disaster: 'Disaster Advisories' },
         profile: {
             eyebrow: 'My Profile',
             heading: 'My Profile',
@@ -1461,11 +1566,12 @@ const translations = {
         appointments: { eyebrow: 'Appointments', heading: 'My appointments', requestButton: 'Request Appointment', searchPlaceholder: 'Search appointments', empty: 'No appointments found.' },
         documents: { eyebrow: 'Document Requests', heading: 'Request official barangay documents', requestButton: 'Request Document', searchPlaceholder: 'Search requests', empty: 'No document requests yet.' },
         reservations: { eyebrow: 'Facility Reservations', heading: 'My reservations', requestButton: 'Reserve Facility', searchPlaceholder: 'Search reservations', empty: 'No reservations found.' },
+        manpower: { eyebrow: 'Manpower Requests', heading: 'My manpower requests', requestButton: 'Request Manpower', searchPlaceholder: 'Search manpower requests', empty: 'No manpower requests found.' },
         reports: { eyebrow: 'Reports', heading: 'Submit and monitor your reports' },
-        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', documentRequest: 'Request Document' }
+        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', manpowerRequest: 'Request Manpower', documentRequest: 'Request Document' }
     },
     tl: {
-        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', reports: 'Reports', disaster: 'Disaster Advisories' },
+        nav: { profile: 'My Profile', appointments: 'Appointments', documents: 'Documents', reservations: 'Facility Reservations', manpower: 'Manpower', reports: 'Reports', disaster: 'Disaster Advisories' },
         profile: {
             eyebrow: 'My Profile',
             heading: 'Aking Profile',
@@ -1480,8 +1586,9 @@ const translations = {
         appointments: { eyebrow: 'Appointments', heading: 'My appointments', requestButton: 'Request Appointment', searchPlaceholder: 'Search appointments', empty: 'No appointments found.' },
         documents: { eyebrow: 'Document Requests', heading: 'Request official barangay documents', requestButton: 'Request Document', searchPlaceholder: 'Search requests', empty: 'No document requests yet.' },
         reservations: { eyebrow: 'Facility Reservations', heading: 'My reservations', requestButton: 'Reserve Facility', searchPlaceholder: 'Search reservations', empty: 'No reservations found.' },
+        manpower: { eyebrow: 'Manpower Requests', heading: 'My manpower requests', requestButton: 'Request Manpower', searchPlaceholder: 'Search manpower requests', empty: 'No manpower requests found.' },
         reports: { eyebrow: 'Reports', heading: 'Submit and monitor your reports' },
-        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', documentRequest: 'Request Document' }
+        modals: { appointmentRequest: 'Request Appointment', reservationRequest: 'Reserve Facility', manpowerRequest: 'Request Manpower', documentRequest: 'Request Document' }
     }
 };
 
@@ -1563,6 +1670,18 @@ const filteredReservations = computed(() => sortNewestRequestsFirst(reservations
 
 const pagedReservations = computed(() => paginateTable(filteredReservations.value, reservationPage.value));
 
+const filteredManpowerRequests = computed(() => sortNewestRequestsFirst(manpowerRequests.value.filter((item) => matchesSearch(item, manpowerSearch.value, [
+    (record) => record.title,
+    (record) => normalizeLabel(record.assistanceType),
+    (record) => normalizeLabel(record.priority),
+    (record) => record.requestLocation,
+    (record) => record.description,
+    (record) => record.status,
+    (record) => formatDate(record.requestDate)
+]) && matchesStatusFilter(item.status, manpowerStatusFilter.value) && matchesDateFilter(item.requestDate || item.createdAt, manpowerDateFilter.value))));
+
+const pagedManpowerRequests = computed(() => paginateTable(filteredManpowerRequests.value, manpowerPage.value));
+
 const filteredReports = computed(() => sortNewestRequestsFirst(reports.value.filter((item) => matchesSearch(item, reportSearch.value, [
     (record) => record.title,
     (record) => normalizeLabel(record.reportType),
@@ -1626,6 +1745,7 @@ const formatTimeRange = (startTime, endTime) => {
 const deleteConfig = {
     appointment: { path: (id) => `/appointments/${id}`, terminal: ['rejected', 'cancelled', 'completed', 'expired'], label: 'appointment' },
     reservation: { path: (id) => `/facility-reservations/${id}`, terminal: ['rejected', 'completed', 'cancelled'], label: 'reservation' },
+    manpower: { path: (id) => `/manpower-requests/${id}`, terminal: ['rejected', 'completed', 'cancelled'], label: 'manpower request' },
     report: { path: (id) => `/reports/${id}`, terminal: ['resolved', 'rejected', 'closed'], label: 'report' },
     document: { path: (id) => `/documents/${id}`, terminal: ['pending'], label: 'document request' }
 };
@@ -1634,10 +1754,12 @@ const isDocumentRevisionRequested = (item) => String(item?.status || '').toLower
 const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(item?.status);
 const canEditRecord = (type, item) => type === 'document' && item?.status === 'pending';
 const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
+const canCancelManpowerRequest = (item) => ['pending', 'approved'].includes(item?.status);
 
 const auditEntityTypeByRecordType = {
     document: 'DocumentRequest',
     reservation: 'FacilityReservation',
+    manpower: 'ManpowerRequest',
     report: 'Report',
     appointment: 'Appointment'
 };
@@ -1694,6 +1816,20 @@ const cancelResidentAppointment = async (item) => {
     }
 };
 
+const cancelResidentManpowerRequest = async (item) => {
+    if (!confirm('Cancel this manpower request?')) return;
+    try {
+        await apiFetch(`/manpower-requests/${item._id}/cancel`, {
+            method: 'PATCH',
+            body: JSON.stringify({ cancellationReason: 'Cancelled by resident' })
+        });
+        setStatus('Manpower request cancelled.');
+        await loadAll();
+    } catch (error) {
+        setStatus(error.message, true);
+    }
+};
+
 const deleteResidentRecord = async (type, item) => {
     const config = deleteConfig[type];
     if (!config || !item?._id) return;
@@ -1725,6 +1861,7 @@ const recordDetailTitle = computed(() => {
         appointment: 'Appointment Details',
         document: 'Document Request Details',
         reservation: 'Reservation Details',
+        manpower: 'Manpower Request Details',
         report: 'Report Details'
     }[recordDetail.value.type];
 });
@@ -1757,6 +1894,19 @@ const recordDetailFields = computed(() => {
             ['Details', item.reservationDetails],
             ['Status', normalizeLabel(item.status)],
             ['Admin Notes', item.adminNotes]
+        ],
+        manpower: [
+            ['Title', item.title],
+            ['Assistance Type', normalizeLabel(item.assistanceType)],
+            ['Schedule', `${formatDate(item.requestDate)} | ${item.requestTime || 'Time TBD'}`],
+            ['Estimated Duration', item.estimatedDuration],
+            ['Personnel Needed', item.requestedPersonnelCount],
+            ['Priority', normalizeLabel(item.priority)],
+            ['Location', item.requestLocation],
+            ['Description', item.description],
+            ['Status', normalizeLabel(item.status)],
+            ['Admin Notes', item.adminNotes],
+            ['Completion Notes', item.completionNotes]
         ],
         report: [
             ['Title', item.title],
@@ -2167,6 +2317,28 @@ const handleSubmitReservation = async () => {
     isSubmitting.value = true;
     try {
         const result = await submitReservation(() => loadAll(), loadFacilityAvailability);
+        if (result.success) {
+            setStatus(result.message);
+            closeModal();
+        } else {
+            setStatus(result.message, true);
+        }
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const handleSubmitManpowerRequest = async () => {
+    if (isSubmitting.value) return;
+
+    if (Number(manpowerForm.requestedPersonnelCount || 0) < 1) {
+        setStatus('Please enter at least 1 personnel needed.', true);
+        return;
+    }
+
+    isSubmitting.value = true;
+    try {
+        const result = await submitManpowerRequest(() => loadAll());
         if (result.success) {
             setStatus(result.message);
             closeModal();
