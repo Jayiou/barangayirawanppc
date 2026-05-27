@@ -1,6 +1,5 @@
 const fs = require('node:fs');
 const nodemailer = require('nodemailer');
-const sgMail = require('@sendgrid/mail');
 
 const formatLabel = (text) => {
     if (!text) return text;
@@ -98,23 +97,20 @@ const FROM_EMAIL = configuredFrom.email || DEFAULT_FROM_EMAIL;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || configuredFrom.email || DEFAULT_REPLY_TO;
 
 const hasValidFromDomain = !FROM_EMAIL.endsWith('.local') && !FROM_EMAIL.endsWith('.localhost');
-if (process.env.SENDGRID_API_KEY && !hasValidFromDomain) {
-    console.warn('Warning: SENDGRID_API_KEY is configured but EMAIL_FROM is not set to a real verified sender address. Set EMAIL_FROM to a valid, verified domain to improve deliverability.');
+if (process.env.BREVO_API_KEY && !hasValidFromDomain) {
+    console.warn('Warning: BREVO_API_KEY is configured but EMAIL_FROM is not set to a real verified sender address. Set EMAIL_FROM to a valid, verified domain to improve deliverability.');
 }
 
-// Build transporter dynamically: prefer SMTP when Brevo/other SMTP credentials are configured, fallback to SendGrid API key
+// Build transporter dynamically: prefer SMTP when Brevo/other SMTP credentials are configured.
 const smtpHost = process.env.EMAIL_HOST || 'smtp.sendgrid.net';
 const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
 const smtpSecure = smtpPort === 465;
 const hasSmtpCredentials = Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS);
-const useSendGrid = Boolean(process.env.SENDGRID_API_KEY) && !hasSmtpCredentials;
 const hasBrevoApi = Boolean(process.env.BREVO_API_KEY);
 
 let smtpAuth = null;
 if (hasSmtpCredentials) {
     smtpAuth = { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS };
-} else if (process.env.SENDGRID_API_KEY) {
-    smtpAuth = { user: 'apikey', pass: process.env.SENDGRID_API_KEY };
 }
 
 const transporter = nodemailer.createTransport({
@@ -124,37 +120,6 @@ const transporter = nodemailer.createTransport({
     requireTLS: true,
     auth: smtpAuth
 });
-
-if (process.env.SENDGRID_API_KEY) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
-
-const normalizeSendGridAttachments = (attachments = []) => {
-    return attachments.map((attachment) => {
-        if (attachment.content) {
-            return {
-                ...attachment,
-                content: typeof attachment.content === 'string' ? attachment.content : attachment.content.toString('base64')
-            };
-        }
-
-        if (attachment.path) {
-            const attachmentPath = resolveAttachmentPath(attachment.path);
-            const fileData = fs.readFileSync(attachmentPath);
-            return {
-                filename: attachment.filename || attachmentPath.split(/[\\/]/).pop(),
-                type: attachment.contentType || 'application/octet-stream',
-                content: fileData.toString('base64'),
-                disposition: attachment.contentDisposition || 'attachment'
-            };
-        }
-
-        return {
-            filename: attachment.filename || 'attachment',
-            content: String(attachment)
-        };
-    });
-};
 
 const resolveAttachmentPath = (value) => {
     const rawPath = String(value || '').trim();
@@ -178,6 +143,52 @@ const resolveAttachmentPath = (value) => {
     }
 
     return rawPath;
+};
+
+const normalizeBrevoRecipients = (value) => {
+    const recipients = [];
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            if (typeof item === 'string') {
+                recipients.push({ email: item });
+            } else if (item?.email) {
+                recipients.push({ email: item.email, name: item.name });
+            }
+        }
+
+        return recipients;
+    }
+
+    if (typeof value === 'string') {
+        recipients.push({ email: value });
+        return recipients;
+    }
+
+    if (value?.email) {
+        recipients.push({ email: value.email, name: value.name });
+    }
+
+    return recipients;
+};
+
+const normalizeBrevoSender = (value) => {
+    if (value?.email) {
+        return { name: value.name, email: value.email };
+    }
+
+    return { name: FROM_NAME, email: FROM_EMAIL };
+};
+
+const normalizeBrevoReplyTo = (value) => {
+    if (!value) return undefined;
+    if (typeof value === 'string') return { email: value };
+
+    if (value?.email) {
+        return { email: value.email, name: value.name };
+    }
+
+    return undefined;
 };
 
 const normalizeBrevoAttachments = (attachments = []) => {
@@ -207,20 +218,9 @@ const normalizeBrevoAttachments = (attachments = []) => {
 };
 
 const sendViaBrevo = (mailOptions) => {
-    const toList = [];
-    if (Array.isArray(mailOptions.to)) {
-        for (const t of mailOptions.to) {
-            if (typeof t === 'string') toList.push({ email: t });
-            else if (t && t.email) toList.push({ email: t.email, name: t.name });
-        }
-    } else if (typeof mailOptions.to === 'string') {
-        toList.push({ email: mailOptions.to });
-    } else if (mailOptions.to && mailOptions.to.email) {
-        toList.push({ email: mailOptions.to.email, name: mailOptions.to.name });
-    }
-
-    const sender = mailOptions.from && mailOptions.from.email ? { name: mailOptions.from.name, email: mailOptions.from.email } : { name: FROM_NAME, email: FROM_EMAIL };
-    const replyTo = mailOptions.replyTo ? (typeof mailOptions.replyTo === 'string' ? { email: mailOptions.replyTo } : { email: mailOptions.replyTo.email, name: mailOptions.replyTo.name }) : undefined;
+    const toList = normalizeBrevoRecipients(mailOptions.to);
+    const sender = normalizeBrevoSender(mailOptions.from);
+    const replyTo = normalizeBrevoReplyTo(mailOptions.replyTo);
 
     const payload = {
         sender,
@@ -270,21 +270,6 @@ const sendMail = async (mailOptions) => {
         return sendViaBrevo(mailOptions);
     }
 
-    if (useSendGrid) {
-        const sgMessage = {
-            to: mailOptions.to,
-            from: mailOptions.from,
-            subject: mailOptions.subject,
-            text: mailOptions.text,
-            html: mailOptions.html,
-            replyTo: mailOptions.replyTo,
-            headers: mailOptions.headers,
-            attachments: mailOptions.attachments ? normalizeSendGridAttachments(mailOptions.attachments) : undefined
-        };
-
-        return sgMail.send(sgMessage);
-    }
-
     return transporter.sendMail(mailOptions);
 };
 
@@ -320,8 +305,8 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
         };
 
         // Don't crash if email config is missing during dev testing
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -358,8 +343,8 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             `
         };
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping password reset email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping password reset email because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -411,8 +396,8 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             `
         };
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -476,8 +461,8 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             `
         };
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping document email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping document email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -538,8 +523,8 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             `
         };
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping request status email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping request status email because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -595,8 +580,8 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
         }
         
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping document email send because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping document email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
@@ -630,8 +615,8 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             `
         };
 
-        if (!(hasSmtpCredentials || process.env.SENDGRID_API_KEY || hasBrevoApi)) {
-            console.log('Skipping custom resident email because no SendGrid API key, Brevo API key, or SMTP credentials are configured');
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping custom resident email because no Brevo API key or SMTP credentials are configured');
             return;
         }
 
