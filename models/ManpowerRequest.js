@@ -141,7 +141,41 @@ const manpowerRequestSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ''
-        }
+        },
+
+        statusHistory: [
+            {
+                previousStatus: {
+                    type: String,
+                    trim: true,
+                    default: ''
+                },
+                newStatus: {
+                    type: String,
+                    trim: true,
+                    default: ''
+                },
+                reason: {
+                    type: String,
+                    trim: true,
+                    default: ''
+                },
+                changedBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User',
+                    default: null
+                },
+                changedByName: {
+                    type: String,
+                    trim: true,
+                    default: ''
+                },
+                createdAt: {
+                    type: Date,
+                    default: Date.now
+                }
+            }
+        ]
     },
     {
         timestamps: true

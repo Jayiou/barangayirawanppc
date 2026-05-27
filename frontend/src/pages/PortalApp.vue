@@ -1950,6 +1950,34 @@ const recordTimeline = computed(() => {
             });
         });
 
+    if (type === 'manpower') {
+        const existingStatusLabels = new Set(entries.map((entry) => String(entry.label || '').toLowerCase()));
+
+        (Array.isArray(item.statusHistory) ? item.statusHistory : [])
+            .slice()
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            .forEach((entry, index) => {
+                const label = normalizeLabel(entry.newStatus || 'Status updated');
+                const key = String(label || '').toLowerCase();
+                if (existingStatusLabels.has(key)) return;
+                existingStatusLabels.add(key);
+                entries.push({
+                    label,
+                    value: formatDateTime(entry.createdAt || item.updatedAt),
+                    note: entry.reason || `Status changed from ${normalizeLabel(entry.previousStatus)} to ${label}`
+                });
+            });
+
+        const currentStatus = String(item.status || '').toLowerCase();
+        if (currentStatus && currentStatus !== 'pending' && !existingStatusLabels.has(normalizeLabel(currentStatus).toLowerCase())) {
+            entries.push({
+                label: normalizeLabel(currentStatus),
+                value: formatDateTime(item.updatedAt || item.createdAt),
+                note: 'Latest manpower status'
+            });
+        }
+    }
+
     if (type === 'document' && item.generatedAt) {
         entries.push({
             label: 'Generated',

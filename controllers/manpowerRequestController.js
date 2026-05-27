@@ -149,6 +149,15 @@ const populateRequest = (query) => query.populate({
     }
 });
 
+const buildStatusHistoryEntry = (previousStatus, newStatus, req, reason = '') => ({
+    previousStatus,
+    newStatus,
+    reason: normalizeText(reason),
+    changedBy: req.user?._id || req.user?.id || null,
+    changedByName: req.user?.username || req.user?.email || 'System',
+    createdAt: new Date()
+});
+
 exports.createRequest = asyncHandler(async (req, res) => {
     const requestData = pickFields(req.body, requestFields);
     const validationError = validateRequestData(requestData);
@@ -263,9 +272,14 @@ exports.updateRequestStatus = asyncHandler(async (req, res) => {
 
     const previousStatus = request.status;
 
+    const statusHistoryEntry = buildStatusHistoryEntry(previousStatus, statusData.status, req, statusData.adminNotes || '');
+
     const updatedRequest = await ManpowerRequest.findByIdAndUpdate(
         req.params.id,
-        statusData,
+        {
+            $set: statusData,
+            $push: { statusHistory: statusHistoryEntry }
+        },
         { new: true, runValidators: true }
     );
 
@@ -332,6 +346,8 @@ exports.cancelMyRequest = asyncHandler(async (req, res) => {
     const previousStatus = request.status;
     request.status = 'cancelled';
     request.adminNotes = req.body?.cancellationReason || request.adminNotes || '';
+    request.statusHistory = Array.isArray(request.statusHistory) ? request.statusHistory : [];
+    request.statusHistory.push(buildStatusHistoryEntry(previousStatus, 'cancelled', req, req.body?.cancellationReason || 'Cancelled by resident'));
     await request.save();
 
     try {

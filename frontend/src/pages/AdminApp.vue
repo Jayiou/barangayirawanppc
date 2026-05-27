@@ -1762,7 +1762,7 @@ const requesterFilterOptions = [
     { value: 'guest', label: 'Non-residents' }
 ];
 
-const supportsRequesterTabs = (view) => ['appointments', 'reports', 'reservations', 'manpower'].includes(view);
+const supportsRequesterTabs = (view) => ['appointments', 'reports', 'reservations'].includes(view);
 
 const getRequesterType = (item) => {
     if (item?.requesterType === 'guest') return 'guest';
@@ -3195,6 +3195,37 @@ const recordAuditTrail = (item, type = 'document') => {
                 note: entry.reason || entry.actionDescription || ''
             });
         });
+
+    if (type === 'manpower') {
+        const existingStatusLabels = new Set(entries.map((entry) => String(entry.label || '').toLowerCase()));
+
+        (Array.isArray(item.statusHistory) ? item.statusHistory : [])
+            .slice()
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            .forEach((entry, index) => {
+                const label = normalizeLabel(entry.newStatus || 'Status updated');
+                const key = String(label || '').toLowerCase();
+                if (existingStatusLabels.has(key)) return;
+                existingStatusLabels.add(key);
+                entries.push({
+                    key: entry._id || `manpower-status-${index}`,
+                    label,
+                    time: formatDateTime(entry.createdAt || item.updatedAt),
+                    note: entry.reason || `Status changed from ${normalizeLabel(entry.previousStatus)} to ${label}`
+                });
+            });
+
+        const currentStatus = String(item.status || '').toLowerCase();
+        const currentLabel = normalizeLabel(currentStatus);
+        if (currentStatus && currentStatus !== 'pending' && !existingStatusLabels.has(currentLabel.toLowerCase())) {
+            entries.push({
+                key: `current-${item._id}-${currentStatus}`,
+                label: currentLabel,
+                time: formatDateTime(item.updatedAt || item.createdAt),
+                note: 'Latest manpower status'
+            });
+        }
+    }
 
     if (type === 'document' && item.generatedAt) {
         entries.push({

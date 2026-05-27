@@ -300,6 +300,7 @@ test('updateRequestStatus updates manpower request with valid transition', async
     await manpowerRequestController.updateRequestStatus(req, res);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(updatedPayload.status, 'approved');
+    assert.equal(updatedPayload.$set.status, 'approved');
+    assert.equal(updatedPayload.$push.statusHistory.newStatus, 'approved');
     assert.equal(res.body.status, 'approved');
 });
