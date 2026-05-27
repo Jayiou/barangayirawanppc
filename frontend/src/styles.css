@@ -1937,22 +1937,35 @@ textarea { resize: vertical; }
     .resident-shell.sidebar-expanded .logout-btn {
         width: 100%;
     }
-    .portal-record-filters {
+    .table-filter-bar.portal-record-filters {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 8px;
-        padding: 8px;
+        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+        gap: 6px;
+        padding: 6px;
+        align-items: center;
+        flex-wrap: nowrap;
     }
-    .portal-record-filters select,
-    .portal-record-filters .date-filter-field {
+    .table-filter-bar.portal-record-filters select,
+    .table-filter-bar.portal-record-filters .date-filter-field {
         min-width: 0;
         width: 100%;
         flex: none;
     }
-    .portal-record-filters input[type="date"] {
+    .table-filter-bar.portal-record-filters select,
+    .table-filter-bar.portal-record-filters input[type="date"] {
+        min-height: 36px;
+        padding: 8px 7px;
+        border-radius: 8px;
+        font-size: 0.76rem;
+    }
+    .table-filter-bar.portal-record-filters .date-filter-field i {
+        left: 8px;
+        font-size: 0.78rem;
+    }
+    .table-filter-bar.portal-record-filters input[type="date"] {
         min-width: 0;
         width: 100%;
-        font-size: 0.84rem;
+        padding-left: 27px;
     }
     .portal-detail-grid { grid-template-columns: 1fr; }
     .portal-modal-actions {
