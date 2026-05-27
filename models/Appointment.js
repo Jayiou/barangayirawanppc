@@ -1,5 +1,40 @@
 const mongoose = require('../config/mongoose');
 
+const ACTIVE_SLOT_STATUSES = ['pending', 'approved', 'completed'];
+
+const formatDateKey = (date) => {
+    const value = new Date(date);
+    if (Number.isNaN(value.getTime())) {
+        return '';
+    }
+
+    return (
+        value.getFullYear() +
+        '-' +
+        String(value.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(value.getDate()).padStart(2, '0')
+    );
+};
+
+const buildAppointmentSlotKey = (appointment) => {
+    if (
+        !appointment.officialId ||
+        !appointment.appointmentDate ||
+        !appointment.timeSlot?.startTime ||
+        !appointment.timeSlot?.endTime
+    ) {
+        return undefined;
+    }
+
+    return [
+        appointment.officialId.toString(),
+        formatDateKey(appointment.appointmentDate),
+        appointment.timeSlot.startTime,
+        appointment.timeSlot.endTime
+    ].join('|');
+};
+
 const appointmentSchema = new mongoose.Schema(
     {
         residentId: {
@@ -40,6 +75,11 @@ const appointmentSchema = new mongoose.Schema(
             type: String,
             enum: ['pending', 'approved', 'rejected', 'cancelled', 'completed', 'expired'],
             default: 'pending'
+        },
+        slotKey: {
+            type: String,
+            trim: true,
+            select: false
         },
         remarks: {
             type: String,
@@ -90,10 +130,28 @@ const appointmentSchema = new mongoose.Schema(
     }
 );
 
+appointmentSchema.pre('validate', function setSlotKey() {
+    if (ACTIVE_SLOT_STATUSES.includes(this.status)) {
+        this.slotKey = buildAppointmentSlotKey(this);
+    } else {
+        this.slotKey = undefined;
+    }
+});
+
 // Index for finding resident's active appointments
 appointmentSchema.index({ residentId: 1, status: 1 });
 appointmentSchema.index({ officialId: 1, appointmentDate: 1, 'timeSlot.startTime': 1 });
 appointmentSchema.index({ appointmentDate: 1 });
 appointmentSchema.index({ createdAt: 1 });
+appointmentSchema.index(
+    { slotKey: 1 },
+    {
+        unique: true,
+        sparse: true,
+        name: 'unique_active_appointment_slot'
+    }
+);
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
+module.exports.buildAppointmentSlotKey = buildAppointmentSlotKey;
+module.exports.ACTIVE_SLOT_STATUSES = ACTIVE_SLOT_STATUSES;

@@ -69,6 +69,34 @@ const notifyAppointmentStatus = async (appointment, status, notes = '') => {
     );
 };
 
+const isDuplicateSlotError = (error) => (
+    error?.code === 11000
+    && (
+        error?.keyPattern?.slotKey
+        || error?.keyValue?.slotKey
+        || error?.message?.includes('unique_active_appointment_slot')
+    )
+);
+
+const getOfficialIdValue = (officialId) => officialId?._id || officialId;
+
+const getAppointmentDayRange = (appointmentDate) => {
+    const start = new Date(appointmentDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+
+    return { start, end };
+};
+
+const throwSlotAlreadyBooked = () => {
+    throw createHttpError(
+        409,
+        'This appointment slot was just booked by another request. Please choose another time slot.'
+    );
+};
+
 // ============================================
 // ADMIN - OFFICIAL MANAGEMENT
 // ============================================
@@ -368,6 +396,14 @@ const requestAppointment = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Appointment date must be at least 1 day in the future');
     }
 
+    const isSupportedTimeSlot = DEFAULT_TIME_SLOTS.some((slot) => (
+        slot.startTime === startTime && slot.endTime === endTime
+    ));
+
+    if (!isSupportedTimeSlot) {
+        throw createHttpError(400, 'Please choose one of the available appointment time slots');
+    }
+
     // Check if time slot is available
     const availability = await isTimeSlotAvailable(officialId, appointmentDate, startTime, endTime);
     if (!availability.available) {
@@ -388,7 +424,15 @@ const requestAppointment = asyncHandler(async (req, res) => {
         status: 'pending'
     });
 
-    await appointment.save();
+    try {
+        await appointment.save();
+    } catch (error) {
+        if (isDuplicateSlotError(error)) {
+            throwSlotAlreadyBooked();
+        }
+
+        throw error;
+    }
 
     res.status(201).json({
         success: true,
@@ -586,12 +630,38 @@ const approveAppointment = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Only pending appointments can be approved');
     }
 
+    const { start, end } = getAppointmentDayRange(appointment.appointmentDate);
+    const approvedSlotConflict = await Appointment.findOne({
+        _id: { $ne: appointment._id },
+        officialId: getOfficialIdValue(appointment.officialId),
+        appointmentDate: {
+            $gte: start,
+            $lte: end
+        },
+        'timeSlot.startTime': { $lt: appointment.timeSlot.endTime },
+        'timeSlot.endTime': { $gt: appointment.timeSlot.startTime },
+        status: { $in: ['approved', 'completed'] }
+    });
+
+    if (approvedSlotConflict) {
+        throwSlotAlreadyBooked();
+    }
+
     appointment.status = 'approved';
     appointment.remarks = remarks || '';
     appointment.approvedAt = new Date();
     appointment.updatedAt = new Date();
 
-    await appointment.save();
+    try {
+        await appointment.save();
+    } catch (error) {
+        if (isDuplicateSlotError(error)) {
+            throwSlotAlreadyBooked();
+        }
+
+        throw error;
+    }
+
     await notifyAppointmentStatus(appointment, 'approved', remarks || '');
 
     res.status(200).json({
