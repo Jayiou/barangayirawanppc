@@ -516,19 +516,18 @@
             <section class="app-view" :class="{ active: ['reservations', 'reports', 'announcements', 'residents', 'documents'].includes(currentView) }">
                 <div class="portal-grid">
                     <article class="content-card" style="overflow-x: auto;">
-                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap;">
                             <div>
                                 <span class="eyebrow">{{ viewTitle }}</span>
                                 <h3>Manage {{ currentView }} records</h3>
                             </div>
-                            <div class="toolbar" style="margin: 0; display: flex; gap: 10px; align-items: center;">
-                                <span class="search-icon" v-if="currentView === 'residents'"><i class="fa-solid fa-search"></i></span>
-                                <input v-if="currentView === 'residents'" v-model="residentSearch" type="search" placeholder="Search residents..." style="padding-left: 30px;">
-
-                                
-                                
-
-                                <button v-if="currentView === 'announcements'" class="primary-button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> Add Announcement</button>
+                            <div class="table-toolbar" style="margin: 0; justify-content: flex-end;">
+                                <input v-model="managementSearch" type="search" :placeholder="managementFilterConfig.searchPlaceholder">
+                                <select v-model="managementStatusFilter">
+                                    <option v-for="option in managementFilterConfig.statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                                </select>
+                                <input v-model="managementDateFilter" type="date" :aria-label="`Filter ${currentView} by ${managementFilterConfig.dateLabel.toLowerCase()}`">
+                                <button v-if="currentView === 'announcements'" class="primary-button" type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> Add Announcement</button>
                             </div>
                         </div>
 
@@ -574,7 +573,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="isDataLoading && (!currentList || currentList.length === 0)">
+                                <template v-if="isDataLoading && (!filteredManagementList || filteredManagementList.length === 0)">
                                     <tr v-for="i in 5" :key="'skel-main-' + i" class="table-row">
                                         <td colspan="5">
                                             <div style="display: flex; gap: 20px; align-items: center;">
@@ -586,7 +585,7 @@
                                         </td>
                                     </tr>
                                 </template>
-                                <tr v-for="item in currentList" :key="item._id" class="table-row hoverable">
+                                <tr v-for="item in pagedManagementList.items" :key="item._id" class="table-row hoverable">
                                     <td v-if="currentView === 'residents'">
                                         <div class="table-avatar resident-table-avatar" :style="item.profileImage ? { backgroundImage: `url(${item.profileImage})` } : {}">
                                             <span v-if="!item.profileImage">{{ getResidentInitials(item) }}</span>
@@ -634,11 +633,18 @@
                                         <button class="icon-button" @click="openModal('announcement', item)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                                     </td>
                                 </tr>
-                                <tr v-if="currentList.length === 0">
+                                <tr v-if="filteredManagementList.length === 0">
                                     <td colspan="6" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> No records found.</td>
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
+                        <div v-if="filteredManagementList.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedManagementList.page }} of {{ pagedManagementList.pages }} · {{ filteredManagementList.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedManagementList.page === 1" @click="managementPage = Math.max(managementPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedManagementList.page >= pagedManagementList.pages" @click="managementPage = Math.min(managementPage + 1, pagedManagementList.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -792,7 +798,7 @@
                                             </td>
                                         </tr>
                                     </template>
-                                    <tr v-for="item in appointments" :key="item._id" class="table-row hoverable">
+                                    <tr v-for="item in pagedAppointmentRows.items" :key="item._id" class="table-row hoverable">
                                         <td><strong>{{ item.officialId?.name }}</strong><br><small>{{ item.officialId?.position }}</small></td>
                                         <td>{{ item.residentId?.firstName }} {{ item.residentId?.lastName }}</td>
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'N/A' }} - {{ item.timeSlot?.endTime || 'N/A' }}</small></td>
@@ -806,6 +812,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div v-if="appointmentRows.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedAppointmentRows.page }} of {{ pagedAppointmentRows.pages }} · {{ appointmentRows.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedAppointmentRows.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointmentRows.page >= pagedAppointmentRows.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointmentRows.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -847,7 +860,7 @@
                                             </td>
                                         </tr>
                                     </template>
-                                    <tr v-for="item in officials" :key="item._id" class="table-row hoverable">
+                                    <tr v-for="item in pagedOfficialRows.items" :key="item._id" class="table-row hoverable">
                                         <td>
                                             <div class="table-avatar" :style="item.picture ? { backgroundImage: `url(${item.picture})` } : {}">
                                                 <span v-if="!item.picture">{{ item.name?.split(' ').map(part => part.charAt(0)).join('').slice(0,2).toUpperCase() }}</span>
@@ -866,6 +879,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div v-if="officialRows.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedOfficialRows.page }} of {{ pagedOfficialRows.pages }} · {{ officialRows.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedOfficialRows.page === 1" @click="officialPage = Math.max(officialPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedOfficialRows.page >= pagedOfficialRows.pages" @click="officialPage = Math.min(officialPage + 1, pagedOfficialRows.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -1150,6 +1170,18 @@
                                 </p>
                             </div>
 
+                            <div class="document-audit-panel">
+                                <h3>Audit Trail</h3>
+                                <div v-if="documentAuditTrail(selectedItem).length" class="document-audit-list">
+                                    <div v-for="entry in documentAuditTrail(selectedItem)" :key="entry.key" class="document-audit-item">
+                                        <strong>{{ entry.label }}</strong>
+                                        <span>{{ entry.time }}</span>
+                                        <small v-if="entry.note">{{ entry.note }}</small>
+                                    </div>
+                                </div>
+                                <p v-else class="fine-print">No audit trail yet.</p>
+                            </div>
+
                             <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
                                 <strong style="display: block; margin-bottom: 10px;">Proof Images</strong>
                                 <div class="proof-preview-grid">
@@ -1200,8 +1232,13 @@
                                 This document request has been rejected.
                             </div>
 
-                            <div v-if="isDocumentReady(selectedItem) || isDocumentCompleted(selectedItem)" style="padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#f7fbf9; color:#2d5f45;">
-                                PDF has already been generated and marked ready.
+                            <div v-if="hasGeneratedDocument(selectedItem)" style="padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#f7fbf9; color:#2d5f45;">
+                                PDF has already been generated.
+                                <button type="button" class="primary-button" @click="sendGeneratedDocumentToRequester(selectedItem)" :disabled="documentEmailLoading" style="width: 100%; margin-top: 10px;">
+                                    <i :class="documentEmailLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-envelope'"></i>
+                                    {{ documentEmailLoading ? 'Sending...' : 'Send to Requester' }}
+                                </button>
+                                <p class="fine-print" style="margin: 8px 0 0;">Soft copy only. The email marks it as not valid for official use.</p>
                             </div>
 
                             <!-- Status display and action buttons -->
@@ -1367,7 +1404,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import StatusActionButtons from '@/components/StatusActionButtons.vue';
 import StatusActionModal from '@/components/StatusActionModal.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
-import { apiFetch, formatDate, getAuth } from '@/shared/client';
+import { apiFetch, formatDate, formatDateTime, getAuth } from '@/shared/client';
 import { useAdminAuth } from '@/composables/useAdminAuth';
 import { useAdminData } from '@/composables/useAdminData';
 import { useAnnouncements } from '@/composables/useAnnouncements';
@@ -1517,6 +1554,20 @@ const officialPictureFile = ref(null);
 const officialPicturePreview = ref('');
 const isSubmitting = ref(false);
 const previewLoading = ref(false);
+const documentEmailLoading = ref(false);
+const TABLE_PAGE_SIZE = 10;
+const managementSearch = ref('');
+const managementStatusFilter = ref('all');
+const managementDateFilter = ref('');
+const managementPage = ref(1);
+const appointmentSearch = ref('');
+const appointmentStatusFilter = ref('all');
+const appointmentDateFilter = ref('');
+const appointmentPage = ref(1);
+const officialSearch = ref('');
+const officialStatusFilter = ref('all');
+const officialPage = ref(1);
+const smsSearch = ref('');
 const recordPreview = reactive({
     open: false,
     type: '',
@@ -1579,7 +1630,6 @@ const smsLogsLoading = ref(false);
 const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
-const filteredSMSLogs = computed(() => smsLogs.value);
 const residentTab = ref('personal');
 const residentAccountStatus = computed(() => selectedItem.value?.userId?.accountStatus || editForm.status || 'pending_approval');
 const canApproveRejectResident = computed(() => !['approved', 'rejected'].includes(residentAccountStatus.value));
@@ -1599,6 +1649,39 @@ const createFloodProneAreaRow = (entry = {}) => ({
     purok: entry.purok || '',
     zone: entry.zone || ''
 });
+
+const toFilterDate = (value) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const matchesStatusFilter = (value, filterValue) => {
+    if (!filterValue || filterValue === 'all') return true;
+    return String(value || '').toLowerCase() === String(filterValue || '').toLowerCase();
+};
+
+const matchesDateFilter = (value, filterValue) => {
+    if (!filterValue) return true;
+    return toFilterDate(value) === filterValue;
+};
+
+const paginateTable = (records, page) => {
+    const total = records.length;
+    const pages = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
+    const safePage = Math.min(Math.max(Number(page) || 1, 1), pages);
+    const start = (safePage - 1) * TABLE_PAGE_SIZE;
+
+    return {
+        items: records.slice(start, start + TABLE_PAGE_SIZE),
+        page: safePage,
+        pages,
+        total
+    };
+};
 
 const parseFloodProneAreaEntry = (value) => {
     const text = String(value || '').trim();
@@ -2433,11 +2516,176 @@ const markDisasterAdvisoryStatus = async (advisory, status) => {
 const currentList = computed(() => {
     switch (currentView.value) {
         case 'announcements': return announcements.value;
-        case 'residents': return filteredResidents.value;
+        case 'residents': return residents.value;
         case 'reservations': return [...reservations.value].sort((a, b) => new Date(b.reservationDate) - new Date(a.reservationDate));
         case 'reports': return [...reports.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         case 'documents': return [...(documentRequests.value || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         default: return [];
+    }
+});
+
+const filteredManagementList = computed(() => {
+    const searchTerm = String(managementSearch.value || '').trim().toLowerCase();
+
+    switch (currentView.value) {
+        case 'announcements':
+            return currentList.value.filter((item) => {
+                const status = item.isActive === false ? 'inactive' : 'active';
+                return matchesSearch(item, searchTerm, [
+                    (record) => record.title,
+                    (record) => record.content,
+                    (record) => status,
+                    (record) => formatDate(record.startDate),
+                    (record) => formatDate(record.endDate)
+                ]) && matchesStatusFilter(status, managementStatusFilter.value) && matchesDateFilter(item.startDate || item.createdAt, managementDateFilter.value);
+            });
+        case 'residents':
+            return currentList.value.filter((item) => {
+                const accountStatus = item.userId?.accountStatus || 'pending_approval';
+                return matchesSearch(item, searchTerm, [
+                    (record) => record.firstName,
+                    (record) => record.middleName,
+                    (record) => record.lastName,
+                    (record) => record.address,
+                    (record) => record.contactNumber,
+                    (record) => record.email,
+                    (record) => accountStatus
+                ]) && matchesStatusFilter(accountStatus, managementStatusFilter.value) && matchesDateFilter(item.createdAt || item.userId?.createdAt, managementDateFilter.value);
+            });
+        case 'reservations':
+            return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
+                (record) => normalizeLabel(record.facilityName),
+                (record) => getRequestorName(record),
+                (record) => record.purpose,
+                (record) => record.status,
+                (record) => formatDate(record.reservationDate)
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, managementDateFilter.value));
+        case 'reports':
+            return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
+                (record) => record.title,
+                (record) => normalizeLabel(record.reportType),
+                (record) => normalizeLabel(record.priority),
+                (record) => record.locationText,
+                (record) => getRequestorName(record),
+                (record) => record.status,
+                (record) => formatDate(record.createdAt)
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, managementDateFilter.value));
+        case 'documents':
+            return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
+                (record) => normalizeLabel(record.type),
+                (record) => record.purpose,
+                (record) => getDocumentRequesterName(record),
+                (record) => record.status,
+                (record) => formatDate(record.createdAt)
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.createdAt, managementDateFilter.value));
+        default:
+            return [];
+    }
+});
+
+const pagedManagementList = computed(() => paginateTable(filteredManagementList.value, managementPage.value));
+
+const appointmentRows = computed(() => appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
+    (record) => record.officialId?.name,
+    (record) => record.officialId?.position,
+    (record) => record.residentId ? `${record.residentId.firstName || ''} ${record.residentId.lastName || ''}`.trim() : '',
+    (record) => record.purpose,
+    (record) => record.status,
+    (record) => formatDate(record.appointmentDate)
+]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value)));
+
+const pagedAppointmentRows = computed(() => paginateTable(appointmentRows.value, appointmentPage.value));
+
+const officialRows = computed(() => officials.value.filter((item) => matchesSearch(item, officialSearch.value, [
+    (record) => record.name,
+    (record) => record.position,
+    (record) => record.email,
+    (record) => record.contactNumber,
+    (record) => record.status
+]) && matchesStatusFilter(item.status || 'active', officialStatusFilter.value)));
+
+const pagedOfficialRows = computed(() => paginateTable(officialRows.value, officialPage.value));
+
+const filteredSMSLogs = computed(() => smsLogs.value.filter((log) => matchesSearch(log, smsSearch.value, [
+    (record) => record.phoneNumber,
+    (record) => record.messageType,
+    (record) => record.messageContent,
+    (record) => formatDate(record.createdAt)
+]) && matchesStatusFilter(log.messageType, smsFilterType.value)));
+
+const managementFilterConfig = computed(() => {
+    switch (currentView.value) {
+        case 'announcements':
+            return {
+                searchPlaceholder: 'Search announcements...',
+                dateLabel: 'Start date',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' }
+                ]
+            };
+        case 'residents':
+            return {
+                searchPlaceholder: 'Search residents...',
+                dateLabel: 'Registered date',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending_approval', label: 'Pending approval' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'suspended', label: 'Suspended' },
+                    { value: 'archived', label: 'Archived' }
+                ]
+            };
+        case 'reservations':
+            return {
+                searchPlaceholder: 'Search reservations...',
+                dateLabel: 'Reservation date',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'rescheduled', label: 'Rescheduled' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'cancelled', label: 'Cancelled' }
+                ]
+            };
+        case 'reports':
+            return {
+                searchPlaceholder: 'Search reports...',
+                dateLabel: 'Report date',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'reviewing', label: 'Reviewing' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'resolved', label: 'Resolved' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'closed', label: 'Closed' }
+                ]
+            };
+        case 'documents':
+            return {
+                searchPlaceholder: 'Search document requests...',
+                dateLabel: 'Date submitted',
+                statusOptions: [
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'processing', label: 'Processing' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'ready_for_pickup', label: 'Ready for pickup' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'rejected', label: 'Rejected' }
+                ]
+            };
+        default:
+            return {
+                searchPlaceholder: 'Search records...',
+                dateLabel: 'Date',
+                statusOptions: [{ value: 'all', label: 'All statuses' }]
+            };
     }
 });
 
@@ -2498,6 +2746,7 @@ const isDocumentProcessing = (item) => normalizeStatus(item) === 'processing';
 const isDocumentRejected = (item) => normalizeStatus(item) === 'rejected';
 const isDocumentReady = (item) => normalizeStatus(item) === 'ready_for_pickup';
 const isDocumentCompleted = (item) => normalizeStatus(item) === 'completed';
+const hasGeneratedDocument = (item) => Boolean(item?.generatedAt || item?.generatedFileUrl || item?.generatedFileName);
 const mergeDocumentResponse = (current, data = {}) => ({
     ...current,
     ...data,
@@ -2674,7 +2923,7 @@ const getRequestDetails = (item) => {
             { label: 'Document Type', value: (item.documentType || item.type)?.replaceAll('_', ' ') },
             { label: 'Original Purpose', value: item.purpose },
             { label: 'Request Details', value: item.requestDetails },
-            { label: 'Requested On', value: formatDate(item.createdAt) }
+            { label: 'Requested On', value: formatDateTime(item.createdAt) }
         ];
     }
 
@@ -2737,6 +2986,64 @@ const getRequestDetails = (item) => {
     return [];
 };
 
+const documentAuditTrail = (item) => {
+    if (!item?._id) return [];
+
+    const entries = [];
+    if (item.createdAt) {
+        entries.push({
+            key: `requested-${item._id}`,
+            label: 'Requested',
+            time: formatDateTime(item.createdAt),
+            note: `${normalizeLabel(item.type)} request submitted`
+        });
+    }
+
+    const statusEntries = Array.isArray(item.auditTrail) ? item.auditTrail : [];
+    statusEntries
+        .slice()
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .forEach((entry, index) => {
+            entries.push({
+                key: entry._id || `status-${index}`,
+                label: normalizeLabel(entry.newStatus || 'Status updated'),
+                time: formatDateTime(entry.createdAt),
+                note: entry.reason || entry.actionDescription || ''
+            });
+        });
+
+    if (item.generatedAt) {
+        entries.push({
+            key: `generated-${item._id}`,
+            label: 'Generated',
+            time: formatDateTime(item.generatedAt),
+            note: 'PDF copy generated'
+        });
+    }
+
+    if (item.generatedEmailSentAt) {
+        entries.push({
+            key: `sent-${item._id}`,
+            label: 'Sent to requester',
+            time: formatDateTime(item.generatedEmailSentAt),
+            note: 'Soft copy emailed to requester'
+        });
+    }
+
+    return entries;
+};
+
+const loadDocumentAuditTrail = async (item) => {
+    if (!item?._id) return [];
+    try {
+        const response = await apiFetch(`/status-audit/history/DocumentRequest/${item._id}`);
+        return response?.data || [];
+    } catch (error) {
+        showToast(error.message || 'Failed to load audit trail.', true);
+        return [];
+    }
+};
+
 // Modal and form handlers
 const setupResidentModal = (item) => {
     editForm.status = item.userId?.accountStatus || 'pending_approval';
@@ -2750,7 +3057,8 @@ const setupRecordStatusModal = async (type, item) => {
 
     try {
         let path = '';
-        if (type === 'reservation') path = `/facility-reservations/${item._id}`;
+        if (type === 'document') path = `/admin/documents/${item._id}`;
+        else if (type === 'reservation') path = `/facility-reservations/${item._id}`;
         else if (type === 'report') path = `/reports/${item._id}`;
         else if (type === 'appointment') path = `/appointments/${item._id}`;
         else return;
@@ -2758,6 +3066,9 @@ const setupRecordStatusModal = async (type, item) => {
         const full = await apiFetch(path);
         if (full) {
             selectedItem.value = { ...(full.data || full) };
+            if (type === 'document') {
+                selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
+            }
         }
     } catch (err) {
         showToast(err.message || 'Failed to load details.', true);
@@ -2996,6 +3307,7 @@ const generateAndSavePdf = async (item) => {
                     if (!win) showToast('Popup blocked. Please allow popups to open the generated PDF.', true);
                     else showToast('Opening previously generated PDF.');
                     await loadAll();
+                    selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
                     return;
                 }
             } catch (err) {
@@ -3022,8 +3334,9 @@ const generateAndSavePdf = async (item) => {
             selectedItem.value = mergeDocumentResponse(selectedItem.value, { ...(data.data || {}), status: data.data?.status || 'ready_for_pickup' });
             const win = window.open(data.fileUrl, '_blank');
             if (!win) showToast('Popup blocked. Please allow popups to open the generated PDF.', true);
-            else showToast('PDF generated and saved. Resident notified (if email present).');
+            else showToast('PDF generated and saved.');
             await loadAll();
+            selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
         } else {
             showToast('Failed to generate PDF.', true);
         }
@@ -3031,6 +3344,26 @@ const generateAndSavePdf = async (item) => {
         showToast(err.message || 'Failed to generate PDF.', true);
     } finally {
         previewLoading.value = false;
+    }
+};
+
+const sendGeneratedDocumentToRequester = async (item) => {
+    if (!item?._id || documentEmailLoading.value) return;
+    if (!(item.generatedFileUrl || item.generatedFileName)) {
+        showToast('Generate the PDF before sending it to the requester.', true);
+        return;
+    }
+
+    documentEmailLoading.value = true;
+    try {
+        const response = await apiFetch(`/admin/documents/${item._id}/send-generated`, { method: 'POST' });
+        selectedItem.value = mergeDocumentResponse(selectedItem.value, response?.data || {});
+        selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
+        showToast(response?.message || 'Generated document sent to requester.');
+    } catch (error) {
+        showToast(error.message || 'Failed to send generated document.', true);
+    } finally {
+        documentEmailLoading.value = false;
     }
 };
 
@@ -3295,6 +3628,7 @@ const submitStatusAction = async (reason) => {
 
             if (activeModal.value === 'document') {
                 selectedItem.value = mergeDocumentResponse(selectedItem.value, response?.data || {});
+                selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
             }
         }
 

@@ -14,5 +14,6 @@ router.put('/:id/approve', documentController.approveRequest);
 router.put('/:id/reject', documentController.rejectRequest);
 router.get('/:id/generate', documentController.generateDocument);
 router.post('/:id/generate', documentController.generateDocument);
+router.post('/:id/send-generated', documentController.sendGeneratedDocument);
 
 module.exports = router;

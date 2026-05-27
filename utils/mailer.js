@@ -579,6 +579,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
                     <p>Hello <strong>${name}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid #257f49; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">Your requested <strong>${docTypeFormatted}</strong> is now ready!</p>
+                        <p style="margin: 12px 0 0; font-size: 14px; color: #8a1f11; font-weight: bold;">NOT VALID FOR OFFICIAL USE. This soft copy is for request tracking and reference only.</p>
                     </div>
                     <p><strong>Document Details:</strong></p>
                     <ul style="line-height: 1.8;">
@@ -594,7 +595,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath)
                 </div>
             `;
 
-        const textBody = `Hello ${name},\n\nYour requested ${docTypeFormatted} is now ready!\n\nDocument Details:\n- Document Type: ${docTypeFormatted}\n- Issued by: Barangay Irawan, Puerto Princesa City\n- Date Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\nIf you have any questions or concerns about your document, please don't hesitate to contact the Barangay Hall.\n\nThank you,\nBarangay Administration`;
+        const textBody = `Hello ${name},\n\nYour requested ${docTypeFormatted} is now ready!\n\nNOT VALID FOR OFFICIAL USE. This soft copy is for request tracking and reference only.\n\nDocument Details:\n- Document Type: ${docTypeFormatted}\n- Issued by: Barangay Irawan, Puerto Princesa City\n- Date Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\nIf you have any questions or concerns about your document, please don't hesitate to contact the Barangay Hall.\n\nThank you,\nBarangay Administration`;
 
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },

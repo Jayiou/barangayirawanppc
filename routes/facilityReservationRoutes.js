@@ -17,6 +17,7 @@ const {
 router.post('/', authMiddleware, roleMiddleware('resident'), createFacilityReservation);
 router.post('/public', publicFacilityLimiter, createPublicFacilityReservation);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyFacilityReservations);
+router.get('/availability/public', getFacilityAvailability);
 router.get('/availability', authMiddleware, getFacilityAvailability);
 router.get('/:id', authMiddleware, getFacilityReservationById);
 router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyFacilityReservation);

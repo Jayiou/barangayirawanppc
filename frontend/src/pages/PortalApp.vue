@@ -318,14 +318,25 @@
                             <button class="primary-button" @click="activeModal = 'appointment'">{{ texts.appointments.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="appointmentSearch" type="search" :placeholder="texts.appointments.searchPlaceholder">
+                        <div class="table-filter-bar">
+                            <select v-model="appointmentStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                        </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
                                     <tr><th>Date</th><th>Official</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!filteredAppointments.length"><td colspan="5" class="portal-empty-cell">{{ texts.appointments.empty }}</td></tr>
-                                    <tr v-for="item in filteredAppointments" :key="item._id">
+                                    <tr v-if="!pagedAppointments.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.appointments.empty }}</td></tr>
+                                    <tr v-for="item in pagedAppointments.items" :key="item._id">
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
                                         <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
                                         <td>{{ item.purpose }}</td>
@@ -338,6 +349,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div v-if="filteredAppointments.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedAppointments.page }} of {{ pagedAppointments.pages }} · {{ filteredAppointments.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedAppointments.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointments.page >= pagedAppointments.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointments.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -355,14 +373,26 @@
                             <button class="primary-button" @click="openDocumentRequestModal()">{{ texts.documents.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="texts.documents.searchPlaceholder">
+                        <div class="table-filter-bar">
+                            <select v-model="documentStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="approved">Approved</option>
+                                <option value="ready_for_pickup">Ready for pickup</option>
+                                <option value="completed">Completed</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <input v-model="documentDateFilter" type="date" aria-label="Filter documents by date">
+                        </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
                                     <tr><th>Date</th><th>Type</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!filteredDocumentRequests.length"><td colspan="5" class="portal-empty-cell">{{ texts.documents.empty }}</td></tr>
-                                    <tr v-for="item in filteredDocumentRequests" :key="item._id">
+                                    <tr v-if="!pagedDocumentRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.documents.empty }}</td></tr>
+                                    <tr v-for="item in pagedDocumentRequests.items" :key="item._id">
                                         <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ normalizeLabel(item.type) }}</td>
                                         <td>{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
@@ -375,6 +405,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div v-if="filteredDocumentRequests.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedDocumentRequests.page }} of {{ pagedDocumentRequests.pages }} · {{ filteredDocumentRequests.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedDocumentRequests.page === 1" @click="documentPage = Math.max(documentPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedDocumentRequests.page >= pagedDocumentRequests.pages" @click="documentPage = Math.min(documentPage + 1, pagedDocumentRequests.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -392,12 +429,24 @@
                             <button class="primary-button" @click="activeModal = 'reservation'">{{ texts.reservations.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="reservationSearch" type="search" :placeholder="texts.reservations.searchPlaceholder">
+                        <div class="table-filter-bar">
+                            <select v-model="reservationStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="rescheduled">Rescheduled</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <input v-model="reservationDateFilter" type="date" aria-label="Filter reservations by date">
+                        </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead><tr><th>Date</th><th>Facility</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!filteredReservations.length"><td colspan="5" class="portal-empty-cell">{{ texts.reservations.empty }}</td></tr>
-                                    <tr v-for="item in filteredReservations" :key="item._id">
+                                    <tr v-if="!pagedReservations.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.reservations.empty }}</td></tr>
+                                    <tr v-for="item in pagedReservations.items" :key="item._id">
                                         <td>
                                             {{ formatDate(item.reservationDate) }}<br>
                                             <small>{{ item.startTime }}-{{ item.endTime }}</small><br>
@@ -417,6 +466,13 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div v-if="filteredReservations.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedReservations.page }} of {{ pagedReservations.pages }} · {{ filteredReservations.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedReservations.page === 1" @click="reservationPage = Math.max(reservationPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedReservations.page >= pagedReservations.pages" @click="reservationPage = Math.min(reservationPage + 1, pagedReservations.pages)">Next</button>
+                            </div>
+                        </div>
                     </article>
                 </div>
             </section>
@@ -433,12 +489,24 @@
                             <button class="primary-button" @click="activeModal = 'report'">Submit New Report</button>
                         </div>
                         <input class="portal-search-input" v-model="reportSearch" type="search" placeholder="Search reports">
+                        <div class="table-filter-bar">
+                            <select v-model="reportStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="reviewing">Reviewing</option>
+                                <option value="approved">Approved</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <input v-model="reportDateFilter" type="date" aria-label="Filter reports by date">
+                        </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead><tr><th>Date</th><th>Report</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!filteredReports.length"><td colspan="5" class="portal-empty-cell">No reports found.</td></tr>
-                                    <tr v-for="item in filteredReports" :key="item._id">
+                                    <tr v-if="!pagedReports.items.length"><td colspan="5" class="portal-empty-cell">No reports found.</td></tr>
+                                    <tr v-for="item in pagedReports.items" :key="item._id">
                                         <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ item.title }}<br><small>{{ normalizeLabel(item.reportType) }} | {{ normalizeLabel(item.priority) }}</small></td>
                                         <td>{{ item.locationText }}</td>
@@ -450,6 +518,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div v-if="filteredReports.length > 0" class="table-pagination">
+                            <span class="pagination-meta">Page {{ pagedReports.page }} of {{ pagedReports.pages }} · {{ filteredReports.length }} records</span>
+                            <div class="pagination-actions">
+                                <button class="pagination-button" type="button" :disabled="pagedReports.page === 1" @click="reportPage = Math.max(reportPage - 1, 1)">Prev</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedReports.page >= pagedReports.pages" @click="reportPage = Math.min(reportPage + 1, pagedReports.pages)">Next</button>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -676,6 +751,7 @@
                     <div v-for="entry in recordTimeline" :key="entry.label + entry.value" class="portal-timeline-item">
                         <strong>{{ entry.label }}</strong>
                         <span>{{ entry.value }}</span>
+                        <small v-if="entry.note">{{ entry.note }}</small>
                     </div>
                 </div>
                 <div class="portal-modal-actions">
@@ -743,7 +819,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import BrandMark from '@/components/BrandMark.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
-import { apiFetch, formatDate, getAuth, setAuth } from '@/shared/client';
+import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
@@ -768,6 +844,7 @@ const { reservationForm, reportForm, reportProofFiles, submitReservation, submit
 const { getAvailableSlots, requestAppointment } = useAppointments();
 const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest } = useDocuments();
 // Local state
+const TABLE_PAGE_SIZE = 10;
 const sidebarOpen = ref(false);
 const currentView = ref('appointments');
 const activeModal = ref(null);
@@ -776,10 +853,24 @@ const isSubmitting = ref(false);
 const isChangingPassword = ref(false);
 const isEditingProfile = ref(false);
 const appointmentSearch = ref('');
+const appointmentStatusFilter = ref('all');
+const appointmentDateFilter = ref('');
+const appointmentPage = ref(1);
 
 const reservationSearch = ref('');
+const reservationStatusFilter = ref('all');
+const reservationDateFilter = ref('');
+const reservationPage = ref(1);
+
 const reportSearch = ref('');
+const reportStatusFilter = ref('all');
+const reportDateFilter = ref('');
+const reportPage = ref(1);
+
 const documentSearch = ref('');
+const documentStatusFilter = ref('all');
+const documentDateFilter = ref('');
+const documentPage = ref(1);
 const recordDetail = ref(null);
 
 const calculateResidentAge = (birthDate) => {
@@ -1132,14 +1223,6 @@ watch(() => profile.purok, () => {
     }
 });
 
-const filteredDocumentRequests = computed(() => {
-    const needle = String(documentSearch.value || '').trim().toLowerCase();
-    return (documentRequests.value || []).filter((item) => {
-        if (!needle) return true;
-        return (item.type || '').toLowerCase().includes(needle) || (item.purpose || '').toLowerCase().includes(needle) || (item.status || '').toLowerCase().includes(needle);
-    });
-});
-
 const handleSubmitDocument = async () => {
     if (isSubmitting.value) return;
     isSubmitting.value = true;
@@ -1340,13 +1423,48 @@ const matchesSearch = (item, term, fields) => {
     return fields.some((field) => String(field(item) || '').toLowerCase().includes(needle));
 };
 
+const toFilterDate = (value) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const matchesStatusFilter = (recordStatus, filterStatus) => {
+    if (!filterStatus || filterStatus === 'all') return true;
+    return String(recordStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase();
+};
+
+const matchesDateFilter = (recordDate, filterDate) => {
+    if (!filterDate) return true;
+    return toFilterDate(recordDate) === filterDate;
+};
+
+const paginateTable = (records, page) => {
+    const total = records.length;
+    const pages = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
+    const currentPage = Math.min(Math.max(Number(page) || 1, 1), pages);
+    const start = (currentPage - 1) * TABLE_PAGE_SIZE;
+
+    return {
+        items: records.slice(start, start + TABLE_PAGE_SIZE),
+        page: currentPage,
+        pages,
+        total
+    };
+};
+
 const filteredAppointments = computed(() => appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
     (record) => record.officialId?.name,
     (record) => record.officialId?.position,
     (record) => record.purpose,
     (record) => record.status,
     (record) => formatDate(record.appointmentDate)
-])));
+]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value)));
+
+const pagedAppointments = computed(() => paginateTable(filteredAppointments.value, appointmentPage.value));
 
 
 
@@ -1355,7 +1473,9 @@ const filteredReservations = computed(() => reservations.value.filter((item) => 
     (record) => record.purpose,
     (record) => record.status,
     (record) => formatDate(record.reservationDate)
-])));
+]) && matchesStatusFilter(item.status, reservationStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, reservationDateFilter.value)));
+
+const pagedReservations = computed(() => paginateTable(filteredReservations.value, reservationPage.value));
 
 const filteredReports = computed(() => reports.value.filter((item) => matchesSearch(item, reportSearch.value, [
     (record) => record.title,
@@ -1364,7 +1484,19 @@ const filteredReports = computed(() => reports.value.filter((item) => matchesSea
     (record) => record.locationText,
     (record) => record.status,
     (record) => formatDate(record.createdAt)
-])));
+]) && matchesStatusFilter(item.status, reportStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, reportDateFilter.value)));
+
+const pagedReports = computed(() => paginateTable(filteredReports.value, reportPage.value));
+
+const filteredDocumentRequests = computed(() => documentRequests.value.filter((item) => matchesSearch(item, documentSearch.value, [
+    (record) => normalizeLabel(record.type),
+    (record) => record.purpose,
+    (record) => record.status,
+    (record) => getDocumentRequesterName(record),
+    (record) => formatDate(record.createdAt)
+]) && matchesStatusFilter(item.status, documentStatusFilter.value) && matchesDateFilter(item.createdAt, documentDateFilter.value)));
+
+const pagedDocumentRequests = computed(() => paginateTable(filteredDocumentRequests.value, documentPage.value));
 
 const reportTypeOptions = REPORT_TYPE_OPTIONS;
 
@@ -1416,8 +1548,32 @@ const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(it
 const canEditRecord = (type, item) => type === 'document' && item?.status === 'pending';
 const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
 
-const openRecordDetail = (type, item) => {
-    recordDetail.value = { type, item };
+const loadDocumentAuditTrail = async (item) => {
+    if (!item?._id) return [];
+    try {
+        const response = await apiFetch(`/status-audit/history/DocumentRequest/${item._id}`);
+        return response?.data || [];
+    } catch (error) {
+        setStatus(error.message || 'Failed to load document audit trail.', true);
+        return [];
+    }
+};
+
+const openRecordDetail = async (type, item) => {
+    if (type !== 'document') {
+        recordDetail.value = { type, item };
+        return;
+    }
+
+    try {
+        const response = await apiFetch(`/documents/${item._id}`);
+        const fullItem = response?.data || response || item;
+        fullItem.auditTrail = await loadDocumentAuditTrail(fullItem);
+        recordDetail.value = { type, item: fullItem };
+    } catch (error) {
+        setStatus(error.message || 'Failed to load document request details.', true);
+        recordDetail.value = { type, item };
+    }
 };
 
 const cancelResidentAppointment = async (item) => {
@@ -1485,7 +1641,7 @@ const recordDetailFields = computed(() => {
             ['Document Type', normalizeLabel(item.type)],
             ['Purpose', item.purpose || item.fields?.PURPOSE],
             ['Status', normalizeLabel(item.status)],
-            ['Submitted', formatDate(item.createdAt)]
+            ['Requested On', formatDateTime(item.createdAt)]
         ],
         reservation: [
             ['Facility', normalizeLabel(item.facilityName)],
@@ -1514,6 +1670,47 @@ const recordDetailFields = computed(() => {
 const recordTimeline = computed(() => {
     const item = recordDetail.value?.item;
     if (!item) return [];
+
+    if (recordDetail.value?.type === 'document') {
+        const entries = [];
+        if (item.createdAt) {
+            entries.push({
+                label: 'Requested',
+                value: formatDateTime(item.createdAt),
+                note: `${normalizeLabel(item.type)} request submitted`
+            });
+        }
+
+        (Array.isArray(item.auditTrail) ? item.auditTrail : [])
+            .slice()
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            .forEach((entry) => {
+                entries.push({
+                    label: normalizeLabel(entry.newStatus || 'Status updated'),
+                    value: formatDateTime(entry.createdAt),
+                    note: entry.reason || entry.actionDescription || ''
+                });
+            });
+
+        if (item.generatedAt) {
+            entries.push({
+                label: 'Generated',
+                value: formatDateTime(item.generatedAt),
+                note: 'PDF copy generated'
+            });
+        }
+
+        if (item.generatedEmailSentAt) {
+            entries.push({
+                label: 'Sent to requester',
+                value: formatDateTime(item.generatedEmailSentAt),
+                note: 'Soft copy emailed to requester'
+            });
+        }
+
+        return entries;
+    }
+
     return [
         ['Submitted', item.createdAt],
         ['Approved', item.approvedAt],

@@ -23,7 +23,7 @@ const TYPE_CONFIG = {
       [
         [
           { type: 'text', value: 'This is to certify that ' },
-          { type: 'field', key: 'FULL_NAME', width: 138 },
+          { type: 'field', key: 'FULL_NAME', width: 190 },
           { type: 'text', value: ', ' },
           { type: 'field', key: 'AGE', width: 34 },
           { type: 'text', value: ' years of age, Filipino, and a resident of' }
@@ -61,7 +61,7 @@ const TYPE_CONFIG = {
       [
         [
           { type: 'text', value: 'This is to certify that ' },
-          { type: 'field', key: 'FULL_NAME', width: 138 },
+          { type: 'field', key: 'FULL_NAME', width: 190 },
           { type: 'text', value: ', Filipino, ' },
           { type: 'field', key: 'AGE', width: 34 },
           { type: 'text', value: ' years of age, and a resident of Barangay Irawan, Puerto Princesa City, Palawan,' }
@@ -104,7 +104,7 @@ const TYPE_CONFIG = {
       [
         [
           { type: 'text', value: 'This is to certify that ' },
-          { type: 'field', key: 'FULL_NAME', width: 138 },
+          { type: 'field', key: 'FULL_NAME', width: 190 },
           { type: 'text', value: ', ' },
           { type: 'field', key: 'AGE', width: 34 },
           { type: 'text', value: ' years of age, Filipino, and a resident of Barangay Irawan, Puerto Princesa City, Palawan,' }
@@ -293,6 +293,15 @@ const drawCertificatePdf = (doc, type, data = {}) => {
   doc.image(ensureImagePath('New irawan logo.png'), centerX - 194, 190, { fit: [388, 388], align: 'center', valign: 'center' });
   doc.restore();
 
+  doc.save();
+  doc.rotate(-32, { origin: [centerX, PAGE_HEIGHT / 2] });
+  doc.opacity(0.07);
+  doc.font('Helvetica-Bold').fontSize(46).fillColor('#111827');
+  for (let y = 140; y < PAGE_HEIGHT + 180; y += 150) {
+    doc.text('FOR RESEARCH PURPOSES ONLY', -80, y, { width: PAGE_WIDTH + 160, align: 'center', lineBreak: false });
+  }
+  doc.restore();
+
   doc.image(ensureImagePath('New irawan logo.png'), 68, 52, { fit: [72, 72] });
   doc.image(ensureImagePath('Bagong_Pilipinas_logo.png'), PAGE_WIDTH - 130, 56, { fit: [64, 64] });
 
@@ -328,11 +337,6 @@ const drawCertificatePdf = (doc, type, data = {}) => {
     ))), LEFT_MARGIN, bodyY);
     bodyY += 12;
   });
-
-  doc.save();
-  doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827');
-  doc.text('FOR RESEARCH PURPOSES ONLY', 0, PAGE_HEIGHT - 24, { width: PAGE_WIDTH, align: 'center' });
-  doc.restore();
 
   const secretaryY = 688;
   const captainY = 734;

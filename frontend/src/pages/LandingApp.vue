@@ -1161,7 +1161,7 @@ const loadGuestFacilityAvailability = async () => {
             facilityName: guestReservationForm.facilityName,
             date: guestReservationForm.reservationDate
         }).toString();
-        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability?' + query);
+        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability/public?' + query);
     } catch (error) {
         guestFacilityAvailability.value = null;
         setStatus(error.message || 'Failed to load facility schedule.', true);
@@ -1183,7 +1183,7 @@ const loadGuestFacilityAvailabilityForTime = async () => {
             ...(guestReservationForm.startTime ? { startTime: guestReservationForm.startTime } : {}),
             ...(guestReservationForm.endTime ? { endTime: guestReservationForm.endTime } : {})
         }).toString();
-        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability?' + query);
+        guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability/public?' + query);
     } catch (error) {
         guestFacilityAvailability.value = null;
         setStatus(error.message || 'Failed to load facility schedule.', true);
@@ -1823,6 +1823,7 @@ const handleGuestReservationRequest = async () => {
 const services = computed(() => [
     { icon: '📄', title: 'Document Requests', copy: 'Request barangay certificates, clearances, and indigency documents through your resident portal.' },
     { icon: '🗓', title: texts.value.landing.nav.appointments + ' & ' + texts.value.landing.nav.facilities, copy: 'Schedule barangay appointments and reserve community facilities for approved events.', action: 'guest-facility-request' },
+    { icon: '🚩', title: 'Incident Report', copy: 'Non-residents can report incidents or community concerns and receive updates by email.', action: 'guest-report-request' },
     { icon: '🔔', title: texts.value.landing.sections.announcementsTitle, copy: texts.value.landing.sections.announcementsCopy },
     { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.sections.officialsCopy },
     { icon: '📍', title: texts.value.landing.nav.location, copy: 'Find Barangay Irawan Hall and open the map for quick directions.' },

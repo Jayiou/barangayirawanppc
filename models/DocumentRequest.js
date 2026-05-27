@@ -11,6 +11,7 @@ const DocumentRequestSchema = new mongoose.Schema({
   generatedFileName: { type: String, trim: true, default: '' },
   generatedFileUrl: { type: String, trim: true, default: '' },
   generatedAt: { type: Date },
+  generatedEmailSentAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

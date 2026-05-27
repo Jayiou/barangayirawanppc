@@ -352,7 +352,7 @@ const savePdfBuffer = async (pdfBuffer, docReq) => {
 
 const sendDocumentEmail = async (docReq, fileUrl) => {
   try {
-    const residentEmail = docReq.resident?.email;
+    const residentEmail = docReq.resident?.email || docReq.resident?.userId?.email;
     const name = docReq.resident
       ? `${docReq.resident.firstName || ''} ${docReq.resident.lastName || ''}`.trim()
       : '';
@@ -361,6 +361,7 @@ const sendDocumentEmail = async (docReq, fileUrl) => {
     }
   } catch (emailErr) {
     console.error('Failed to send generated document email:', emailErr.message || emailErr);
+    throw emailErr;
   }
 };
 
@@ -559,7 +560,10 @@ exports.rejectRequest = async (req, res, next) => {
 exports.generateDocument = async (req, res, next) => {
   try {
     const reqId = req.params.id;
-    const docReq = await DocumentRequest.findById(reqId).populate('resident');
+    const docReq = await DocumentRequest.findById(reqId).populate({
+      path: 'resident',
+      populate: { path: 'userId', select: 'email username' }
+    });
     if (!docReq) return res.status(404).json({ success: false, message: 'Not found' });
     await attachLegacyResidentFallbacks(docReq);
     if (docReq.status !== 'processing') {
@@ -649,12 +653,55 @@ exports.generateDocument = async (req, res, next) => {
       docReq.generatedFileUrl = fileUrl;
       await docReq.save();
 
-      await sendDocumentEmail(docReq, fileUrl);
-
       return res.json({ success: true, fileUrl: resolveDocumentGeneratedFileUrl(req, docReq), data: docReq });
     } finally {
       releasePdfToken();
     }
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.sendGeneratedDocument = async (req, res, next) => {
+  try {
+    const reqId = req.params.id;
+    const docReq = await DocumentRequest.findById(reqId).populate({
+      path: 'resident',
+      select: residentPopulateFields,
+      populate: { path: 'userId', select: 'email username' }
+    });
+
+    if (!docReq) return res.status(404).json({ success: false, message: 'Not found' });
+    await attachLegacyResidentFallbacks(docReq);
+
+    if (!docReq.generatedAt || (!docReq.generatedFileUrl && !docReq.generatedFileName)) {
+      return res.status(400).json({ success: false, message: 'Generate the PDF before sending it to the requester.' });
+    }
+
+    const recipientEmail = docReq.resident?.email || docReq.resident?.userId?.email;
+    if (!recipientEmail) {
+      return res.status(400).json({ success: false, message: 'Requester email is not available.' });
+    }
+
+    let fileUrl = resolveDocumentGeneratedFileUrl(req, docReq);
+    if (process.env.S3_BUCKET && docReq.generatedFileName) {
+      try {
+        const { getPresignedUrl } = require('../utils/s3');
+        fileUrl = await getPresignedUrl(docReq.generatedFileName);
+      } catch (error) {
+        console.error('Failed to generate presigned URL for email:', error.message || error);
+      }
+    }
+
+    await sendDocumentEmail(docReq, fileUrl);
+    docReq.generatedEmailSentAt = new Date();
+    await docReq.save();
+
+    res.json({
+      success: true,
+      message: `Generated document sent to ${recipientEmail}.`,
+      data: serializeDocumentRequestForResponse(req, docReq)
+    });
   } catch (err) {
     next(err);
   }
