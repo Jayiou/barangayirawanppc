@@ -22,6 +22,7 @@ const originals = {
     sign: jwt.sign,
     sendOtpEmail: mailer.sendOtpEmail,
     sendPasswordResetEmail: mailer.sendPasswordResetEmail,
+    sendAdminEmailChangeVerificationEmail: mailer.sendAdminEmailChangeVerificationEmail,
     nodeEnv: process.env.NODE_ENV,
     skipRecaptcha: process.env.SKIP_RECAPTCHA
 };
@@ -39,6 +40,7 @@ test.afterEach(() => {
     jwt.sign = originals.sign;
     mailer.sendOtpEmail = originals.sendOtpEmail;
     mailer.sendPasswordResetEmail = originals.sendPasswordResetEmail;
+    mailer.sendAdminEmailChangeVerificationEmail = originals.sendAdminEmailChangeVerificationEmail;
     process.env.NODE_ENV = originals.nodeEnv;
     process.env.SKIP_RECAPTCHA = originals.skipRecaptcha;
 });
@@ -443,6 +445,94 @@ test('resetPassword updates the password and clears reset state', async () => {
     assert.equal(user.failedLoginAttempts, 0);
     assert.equal(user.lockedUntil, null);
     assert.equal(user.saved, true);
+});
+
+test('requestAdminEmailChange verifies password and sends a confirmation link', async () => {
+    const req = {
+        user: { id: 'admin-123' },
+        body: {
+            currentPassword: 'Admin_12345',
+            newEmail: 'new-admin@example.com',
+            appUrl: 'http://192.168.1.2:5000'
+        },
+        headers: {
+            origin: 'http://localhost:5173'
+        },
+        protocol: 'http',
+        get: () => 'localhost:5000'
+    };
+    const res = createMockResponse();
+    let savedUser;
+
+    User.findById = async () => ({
+        _id: 'admin-123',
+        role: 'admin',
+        username: 'admin',
+        email: 'admin@barangay.com',
+        password: 'hashed-old',
+        async save() {
+            savedUser = this;
+        }
+    });
+    User.findOne = async () => null;
+    bcrypt.compare = async (value, hash) => value === 'Admin_12345' && hash === 'hashed-old';
+    mailer.sendAdminEmailChangeVerificationEmail = async (toEmail, name, link) => {
+        assert.equal(toEmail, 'new-admin@example.com');
+        assert.equal(name, 'admin');
+        assert.match(link, /^http:\/\/192\.168\.1\.2:5000\/admin\?emailChangeToken=/);
+    };
+
+    await authController.requestAdminEmailChange(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.message, 'A confirmation link has been sent to the new email address.');
+    assert.equal(res.body.pendingEmail, 'new-admin@example.com');
+    assert.equal(savedUser.pendingEmail, 'new-admin@example.com');
+    assert.ok(savedUser.emailChangeToken);
+    assert.ok(savedUser.emailChangeExpires instanceof Date);
+});
+
+test('confirmAdminEmailChange updates the email after token verification', async () => {
+    const token = 'email-change-token-123';
+    const hashedToken = require('node:crypto').createHash('sha256').update(token).digest('hex');
+    const req = {
+        body: {
+            email: 'new-admin@example.com',
+            emailChangeToken: token
+        }
+    };
+    const res = createMockResponse();
+    let savedUser;
+
+    User.findOne = async (query) => {
+        assert.equal(query.email, undefined);
+        assert.equal(query.pendingEmail, 'new-admin@example.com');
+        assert.equal(query.emailChangeToken, hashedToken);
+        assert.equal(query.role, 'admin');
+        return {
+            _id: 'admin-123',
+            username: 'admin',
+            email: 'old-admin@example.com',
+            pendingEmail: 'new-admin@example.com',
+            emailChangeToken: hashedToken,
+            emailChangeExpires: new Date(Date.now() + 60 * 1000),
+            role: 'admin',
+            isActive: true,
+            async save() {
+                savedUser = this;
+            }
+        };
+    };
+
+    await authController.confirmAdminEmailChange(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.message, 'Admin email updated successfully.');
+    assert.equal(res.body.user.email, 'new-admin@example.com');
+    assert.equal(savedUser.email, 'new-admin@example.com');
+    assert.equal(savedUser.pendingEmail, undefined);
+    assert.equal(savedUser.emailChangeToken, undefined);
+    assert.equal(savedUser.emailChangeExpires, undefined);
 });
 
 test('verifyOtp compares hashed OTP values and clears them after success', async () => {

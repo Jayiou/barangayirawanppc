@@ -9,8 +9,8 @@
             <BrandMark initials="BC" eyebrow="Barangay Admin" title="Barangay Connect" style="margin-bottom: 2rem;" />
             <form class="stack" @submit.prevent="handleAuthSubmit" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="section-head" style="text-align: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ authView === 'login' ? texts.admin.login.heading : authView === 'forgot' ? texts.admin.forgot.heading : texts.admin.reset.heading }}</h3>
-                    <p class="fine-print" style="margin-top: 0.5rem;">{{ authView === 'login' ? texts.admin.login.sub : authView === 'forgot' ? texts.admin.forgot.sub : texts.admin.reset.sub }}</p>
+                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ authPanelTitle }}</h3>
+                    <p class="fine-print" style="margin-top: 0.5rem;">{{ authPanelSubtitle }}</p>
                 </div>
                 <template v-if="authView === 'login'">
                     <label>
@@ -43,6 +43,16 @@
                     <p class="fine-print" style="margin: 0;">{{ texts.admin.forgot.helper }}</p>
                     <button type="submit" class="primary-button" :disabled="forgotPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="forgotPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i> {{ forgotPasswordLoading ? texts.admin.forgot.sending : texts.admin.forgot.send }}</button>
                     <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.forgot.back }}</button>
+                </template>
+
+                <template v-else-if="authView === 'email-confirm'">
+                    <p class="fine-print" style="margin: 0;">{{ texts.admin.emailConfirm.helper }}</p>
+                    <label>
+                        <span>{{ texts.admin.emailConfirm.email }}</span>
+                        <input v-model="emailChangeConfirmForm.email" type="email" readonly>
+                    </label>
+                    <button type="submit" class="primary-button" :disabled="emailChangeConfirmLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="emailChangeConfirmLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-envelope-circle-check'"></i> {{ emailChangeConfirmLoading ? texts.admin.emailConfirm.verifying : texts.admin.emailConfirm.confirm }}</button>
+                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.emailConfirm.back }}</button>
                 </template>
 
                 <template v-else>
@@ -113,6 +123,7 @@
             <!-- Sidebar Navigation -->
                 <nav class="sidebar-nav">
                 <button :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
+                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ texts.admin.sidebar.profile }}</button>
                 <button :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
                 <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
                 <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
@@ -142,16 +153,17 @@
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
                 <nav class="mobile-quick-nav" aria-label="Admin quick navigation">
-                    <button :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i></button>
-                    <button :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i></button>
-                    <button :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i></button>
-                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i></button>
-                    <button :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i></button>
-                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i></button>
-                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i></button>
-                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i></button>
-                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i></button>
-                    <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i></button>
+                    <button :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ texts.admin.sidebar.dashboard }}</span></button>
+                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
+                    <button :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ texts.admin.sidebar.announcements }}</span></button>
+                    <button :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ texts.admin.sidebar.residents }}</span></button>
+                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>{{ texts.admin.sidebar.appointments }}</span></button>
+                    <button :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ texts.admin.sidebar.officials }}</span></button>
+                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>{{ texts.admin.sidebar.facilities }}</span></button>
+                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
+                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
+                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>{{ texts.admin.sidebar.disaster }}</span></button>
+                    <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
                 </nav>
             </header>
             <!-- Dashboard View -->
@@ -629,6 +641,71 @@
                         </table>
                         </div>
                     </article>
+                </div>
+            </section>
+
+            <!-- Profile View -->
+            <section class="app-view" :class="{ active: currentView === 'profile' }">
+                <div class="ops-dashboard-shell">
+                    <div class="ops-dashboard-header">
+                        <div>
+                            <span class="eyebrow">Account Settings</span>
+                            <h1>Admin Profile</h1>
+                        </div>
+                    </div>
+
+                    <div class="ops-dashboard-layout">
+                        <section class="ops-left-section">
+                            <article class="ops-mini-panel">
+                                <div class="ops-panel-heading">
+                                    <h3>Recovery Email</h3>
+                                    <span>Username remains the login key</span>
+                                </div>
+
+                                <div class="stack" style="gap: 0.85rem;">
+                                    <label>
+                                        <span>Username</span>
+                                        <input :value="user?.username || ''" type="text" readonly>
+                                    </label>
+                                    <label>
+                                        <span>Current Recovery Email</span>
+                                        <input :value="user?.email || ''" type="email" readonly>
+                                    </label>
+                                    <label v-if="user?.pendingEmail">
+                                        <span>Pending Email</span>
+                                        <input :value="user.pendingEmail" type="email" readonly>
+                                    </label>
+                                    <label>
+                                        <span>New Recovery Email</span>
+                                        <input v-model="profileForm.newEmail" type="email" autocomplete="email" placeholder="admin@example.com">
+                                    </label>
+                                    <label>
+                                        <span>Current Password</span>
+                                        <input v-model="profileForm.currentPassword" type="password" autocomplete="current-password" placeholder="Enter current password">
+                                    </label>
+                                    <button type="button" class="primary-button" :disabled="profileLoading" @click="requestAdminEmailChange" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px;">
+                                        <i :class="profileLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                        {{ profileLoading ? 'Sending verification...' : 'Send Verification Link' }}
+                                    </button>
+                                    <p class="fine-print" style="margin: 0;">{{ texts.admin.profile.helper }}</p>
+                                </div>
+                            </article>
+                        </section>
+
+                        <section class="ops-analytics-panel">
+                            <div class="ops-analytics-top">
+                                <div>
+                                    <span class="ops-kicker">Security flow</span>
+                                    <h2>Email change verification</h2>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-empty-state" style="min-height: 0; padding-top: 0;">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <p>{{ texts.admin.profile.flow }}</p>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </section>
 
@@ -1258,17 +1335,28 @@ const {
     loginForm,
     forgotPasswordForm,
     resetPasswordForm,
+    profileForm,
+    emailChangeConfirmForm,
     loginStatus,
+    profileStatus,
     loginError,
+    profileError,
     loginLoading,
     forgotPasswordLoading,
     resetPasswordLoading,
+    profileLoading,
+    emailChangeConfirmLoading,
     initializing,
     setAuthView,
+    setProfileStatus,
     hydrateAdminResetFromUrl,
+    hydrateAdminEmailChangeFromUrl,
     loginAdmin,
     requestAdminPasswordReset,
     submitAdminPasswordReset,
+    requestAdminEmailChange,
+    confirmAdminEmailChange,
+    syncAdminProfileFormFromUser,
     logout,
     initSession
 } = useAdminAuth();
@@ -1284,6 +1372,13 @@ const texts = {
             signingIn: 'Signing in...',
             login: 'Log In',
             forgot: 'Forgot password?'
+        },
+        emailConfirm: {
+            helper: 'Please confirm the new email address from your inbox.',
+            email: 'New Email',
+            confirm: 'Confirm Email Update',
+            verifying: 'Confirming...',
+            back: 'Back to Login'
         },
         forgot: {
             heading: 'Recover Admin Access',
@@ -1304,8 +1399,13 @@ const texts = {
             saving: 'Updating...',
             requestNew: 'Request a new reset link'
         },
+        profile: {
+            helper: 'Use this email for password recovery and admin notices. Changing it requires your current password and verification from the new inbox.',
+            flow: 'Recovery still uses your email, but login continues to use your username. The new email only becomes active after the confirmation link is opened.'
+        },
         sidebar: {
             dashboard: 'Dashboard',
+            profile: 'Profile',
             announcements: 'Announcements',
             residents: 'Residents',
             appointments: 'Appointments',
@@ -1325,6 +1425,20 @@ const confirmLogout = () => {
         logout();
     }
 };
+
+const authPanelTitle = computed(() => {
+    if (authView.value === 'login') return texts.admin.login.heading;
+    if (authView.value === 'forgot') return texts.admin.forgot.heading;
+    if (authView.value === 'email-confirm') return 'Confirm Admin Email';
+    return texts.admin.reset.heading;
+});
+
+const authPanelSubtitle = computed(() => {
+    if (authView.value === 'login') return texts.admin.login.sub;
+    if (authView.value === 'forgot') return texts.admin.forgot.sub;
+    if (authView.value === 'email-confirm') return 'Complete the email update request';
+    return texts.admin.reset.sub;
+});
 
 const { residents, documentRequests, reservations, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
 const { announcementForm, announcementImageFile, nextDisplayOrder, nextDisplayOrderLoading, fetchNextDisplayOrder, saveAnnouncement, deleteAnnouncement, onImageUpload: onAnnouncementImageUpload } = useAnnouncements();
@@ -3162,6 +3276,14 @@ watch(loginStatus, (message) => {
     showToast(message, loginError.value);
 });
 
+watch(profileStatus, (message) => {
+    if (!message) {
+        return;
+    }
+
+    showToast(message, profileError.value);
+});
+
 watch(dashboardStatus, (message) => {
     if (!message || !dashboardError.value) {
         return;
@@ -3204,11 +3326,20 @@ watch(isAuthenticated, async (authed) => {
 }, { immediate: true });
 
 onMounted(() => {
+    const hasEmailChange = hydrateAdminEmailChangeFromUrl();
     hydrateAdminResetFromUrl();
+    if (hasEmailChange) {
+        confirmAdminEmailChange();
+    }
     initSession();
 });
 
 const handleAuthSubmit = async () => {
+    if (authView.value === 'email-confirm') {
+        await confirmAdminEmailChange();
+        return;
+    }
+
     if (authView.value === 'forgot') {
         await requestAdminPasswordReset();
         return;

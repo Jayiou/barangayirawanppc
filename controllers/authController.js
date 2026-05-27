@@ -47,6 +47,7 @@ const generateOtp = () => crypto.randomInt(100000, 999999).toString();
 const generateResetToken = () => crypto.randomBytes(32).toString('hex');
 
 const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+const hashEmailChangeToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const toBoolean = (value) => {
     if (typeof value === 'boolean') return value;
     return String(value).toLowerCase() === 'true';
@@ -117,8 +118,11 @@ const getSafeRedirectPath = (pathValue) => {
 };
 
 const createOtpExpiry = () => new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+const createEmailChangeExpiry = () => new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000);
 
 const hashOtp = (otpCode) => bcrypt.hash(otpCode, 10);
+
+const generateEmailChangeToken = () => crypto.randomBytes(32).toString('hex');
 
 const compareOtp = (otpCode, otpHash) => {
     if (!otpHash) {
@@ -622,4 +626,93 @@ exports.getMe = asyncHandler(async (req, res) => {
     }
 
     res.json(user);
+});
+
+exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    const currentPassword = String(req.body?.currentPassword || '').trim();
+    const newEmail = normalizeEmail(req.body?.newEmail);
+
+    if (!userId || !currentPassword || !newEmail) {
+        throw createHttpError(400, 'Current password and new email are required.', { code: 'ADMIN_EMAIL_CHANGE_VALIDATION_ERROR' });
+    }
+
+    if (!isValidEmail(newEmail)) {
+        throw createHttpError(400, 'Please provide a valid email address.', { code: 'ADMIN_EMAIL_CHANGE_VALIDATION_ERROR' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'admin') {
+        throw createHttpError(403, 'Access denied', { code: 'AUTH_FORBIDDEN' });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+        throw createHttpError(400, 'Current password is incorrect.', { code: 'PASSWORD_CHANGE_INVALID_CURRENT_PASSWORD' });
+    }
+
+    if (normalizeEmail(user.email) === newEmail) {
+        throw createHttpError(400, 'The new email must be different from the current email.', { code: 'ADMIN_EMAIL_CHANGE_NOOP' });
+    }
+
+    const existingUser = await User.findOne({ email: newEmail, _id: { $ne: user._id } });
+    if (existingUser) {
+        throw createHttpError(409, 'That email is already in use.', { code: 'ADMIN_EMAIL_CHANGE_CONFLICT' });
+    }
+
+    const emailChangeToken = generateEmailChangeToken();
+    user.pendingEmail = newEmail;
+    user.emailChangeToken = hashEmailChangeToken(emailChangeToken);
+    user.emailChangeExpires = createEmailChangeExpiry();
+    await user.save();
+
+    try {
+        const confirmationLink = `${getAppOrigin(req)}${getSafeRedirectPath(req.body?.redirectPath || '/admin')}?emailChangeToken=${encodeURIComponent(emailChangeToken)}&email=${encodeURIComponent(newEmail)}&redirect=email-change`;
+        await mailer.sendAdminEmailChangeVerificationEmail(newEmail, user.username, confirmationLink);
+    } catch (mailError) {
+        console.error('Admin email change verification email could not be sent:', mailError);
+    }
+
+    res.json({
+        message: 'A confirmation link has been sent to the new email address.',
+        pendingEmail: newEmail
+    });
+});
+
+exports.confirmAdminEmailChange = asyncHandler(async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    const emailChangeToken = String(req.body?.emailChangeToken || '').trim();
+
+    if (!email || !emailChangeToken) {
+        throw createHttpError(400, 'Email and confirmation token are required.', { code: 'ADMIN_EMAIL_CONFIRMATION_VALIDATION_ERROR' });
+    }
+
+    const hashedToken = hashEmailChangeToken(emailChangeToken);
+    const user = await User.findOne({
+        pendingEmail: email,
+        emailChangeToken: hashedToken,
+        emailChangeExpires: { $gt: new Date() },
+        role: 'admin'
+    });
+
+    if (!user) {
+        throw createHttpError(400, 'Email confirmation link is invalid or expired.', { code: 'ADMIN_EMAIL_CONFIRMATION_INVALID' });
+    }
+
+    user.email = email;
+    user.pendingEmail = undefined;
+    user.emailChangeToken = undefined;
+    user.emailChangeExpires = undefined;
+    await user.save();
+
+    res.json({
+        message: 'Admin email updated successfully.',
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive
+        }
+    });
 });

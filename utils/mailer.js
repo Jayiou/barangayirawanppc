@@ -355,6 +355,41 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
     }
 };
 
+const sendAdminEmailChangeVerificationEmail = async (toEmail, name, confirmationLink) => {
+    try {
+        const mailOptions = {
+            from: { name: FROM_NAME, email: FROM_EMAIL },
+            to: toEmail,
+            subject: 'Confirm your new Barangay Connect admin email',
+            replyTo: REPLY_TO,
+            headers: defaultMailHeaders,
+            text: `Hello ${name},\n\nWe received a request to change the admin recovery email on your Barangay Connect account. Please confirm the new email address by opening this link:\n\n${confirmationLink}\n\nIf you did not request this, you can ignore this message.`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
+                    <p>Hello <strong>${name}</strong>,</p>
+                    <p>We received a request to change the admin recovery email for your account. Confirm the new email address by clicking the button below:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${confirmationLink}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #235b82; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: bold; word-break: break-word;">Confirm New Email</a>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin: 20px 0; text-align: center; word-break: break-all;">Or copy and paste this link in your browser: <br /><a href="${confirmationLink}" style="color: #235b82; text-decoration: underline; word-break: break-all;">${confirmationLink}</a></p>
+                    <p>If you did not request this, you can ignore this email and your current admin email will remain unchanged.</p>
+                </div>
+            `
+        };
+
+        if (!(hasSmtpCredentials || hasBrevoApi)) {
+            console.log('Skipping admin email-change verification email because no Brevo API key or SMTP credentials are configured');
+            return;
+        }
+
+        await sendMail(mailOptions);
+        console.log(`Admin email-change verification email sent to ${toEmail}`);
+    } catch (error) {
+        console.error('Error sending Admin Email Change Verification Email:', error);
+    }
+};
+
 const sendStatusUpdateEmail = async (toEmail, name, status) => {
     try {
         const isApproved = status === 'approved';
@@ -630,6 +665,7 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
 module.exports = {
     sendOtpEmail,
     sendPasswordResetEmail,
+    sendAdminEmailChangeVerificationEmail,
     sendStatusUpdateEmail,
     sendDocumentStatusEmail,
     sendRequestStatusEmail,

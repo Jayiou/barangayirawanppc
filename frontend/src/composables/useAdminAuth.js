@@ -8,12 +8,18 @@ export function useAdminAuth() {
     const loginForm = reactive({ username: '', password: '' });
     const forgotPasswordForm = reactive({ email: '' });
     const resetPasswordForm = reactive({ email: '', resetToken: '', password: '', confirmPassword: '' });
+    const profileForm = reactive({ newEmail: '', currentPassword: '' });
+    const emailChangeConfirmForm = reactive({ email: '', emailChangeToken: '' });
     const loginStatus = ref('');
+    const profileStatus = ref('');
     const loginError = ref(false);
+    const profileError = ref(false);
     const initializing = ref(true);
     const loginLoading = ref(false);
     const forgotPasswordLoading = ref(false);
     const resetPasswordLoading = ref(false);
+    const profileLoading = ref(false);
+    const emailChangeConfirmLoading = ref(false);
 
     const setAuthView = (view) => {
         authView.value = view;
@@ -21,10 +27,24 @@ export function useAdminAuth() {
         loginError.value = false;
     };
 
+    const setProfileStatus = (message = '', isError = false) => {
+        profileStatus.value = message;
+        profileError.value = isError;
+    };
+
     const clearResetUrl = () => {
         if (!globalThis.history?.replaceState) return;
         const url = new URL(globalThis.location.href);
         url.searchParams.delete('resetToken');
+        url.searchParams.delete('email');
+        url.searchParams.delete('redirect');
+        globalThis.history.replaceState({}, '', url.pathname + url.search);
+    };
+
+    const clearEmailChangeUrl = () => {
+        if (!globalThis.history?.replaceState) return;
+        const url = new URL(globalThis.location.href);
+        url.searchParams.delete('emailChangeToken');
         url.searchParams.delete('email');
         url.searchParams.delete('redirect');
         globalThis.history.replaceState({}, '', url.pathname + url.search);
@@ -43,6 +63,23 @@ export function useAdminAuth() {
         resetPasswordForm.email = email;
         authView.value = 'reset';
         loginStatus.value = 'Reset link verified. Enter your new password.';
+        loginError.value = false;
+        return true;
+    };
+
+    const hydrateAdminEmailChangeFromUrl = () => {
+        const params = new URLSearchParams(globalThis.location.search);
+        const emailChangeToken = params.get('emailChangeToken') || '';
+        const email = params.get('email') || '';
+
+        if (!emailChangeToken || !email) {
+            return false;
+        }
+
+        emailChangeConfirmForm.emailChangeToken = emailChangeToken;
+        emailChangeConfirmForm.email = email;
+        authView.value = 'email-confirm';
+        loginStatus.value = 'Confirming your new admin email...';
         loginError.value = false;
         return true;
     };
@@ -76,6 +113,7 @@ export function useAdminAuth() {
             setAuth(response.token, response.user);
             user.value = response.user;
             isAuthenticated.value = true;
+            syncAdminProfileFormFromUser();
             loginStatus.value = 'Login successful!';
             loginError.value = false;
         } catch (error) {
@@ -171,13 +209,95 @@ export function useAdminAuth() {
         }
     };
 
+    const requestAdminEmailChange = async () => {
+        if (profileLoading.value) return;
+
+        if (!profileForm.newEmail || !profileForm.currentPassword) {
+            setProfileStatus('Current password and new email are required.', true);
+            return;
+        }
+
+        profileLoading.value = true;
+        try {
+            const response = await apiFetch('/auth/admin/email-change-request', {
+                method: 'POST',
+                body: JSON.stringify({
+                    currentPassword: profileForm.currentPassword,
+                    newEmail: profileForm.newEmail,
+                    appUrl: globalThis.location?.origin || '',
+                    redirectPath: '/admin'
+                })
+            });
+
+            profileForm.currentPassword = '';
+            profileForm.newEmail = '';
+            if (user.value) {
+                user.value = { ...user.value, pendingEmail: response.pendingEmail || user.value.pendingEmail || '' };
+                const auth = getAuth();
+                if (auth.token) {
+                    setAuth(auth.token, user.value);
+                }
+            }
+            setProfileStatus(response.message || 'A confirmation link has been sent to the new email address.', false);
+        } catch (error) {
+            setProfileStatus(error?.message || 'Unable to update admin email right now. Please try again.', true);
+        } finally {
+            profileLoading.value = false;
+        }
+    };
+
+    const confirmAdminEmailChange = async () => {
+        if (emailChangeConfirmLoading.value) return;
+
+        if (!emailChangeConfirmForm.email || !emailChangeConfirmForm.emailChangeToken) {
+            loginStatus.value = 'The email confirmation link is missing required information.';
+            loginError.value = true;
+            return;
+        }
+
+        emailChangeConfirmLoading.value = true;
+        try {
+            const response = await apiFetch('/auth/admin/email-change-confirm', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: emailChangeConfirmForm.email,
+                    emailChangeToken: emailChangeConfirmForm.emailChangeToken
+                })
+            });
+
+            clearEmailChangeUrl();
+            emailChangeConfirmForm.email = '';
+            emailChangeConfirmForm.emailChangeToken = '';
+            if (response.user && user.value) {
+                user.value = { ...user.value, ...response.user, pendingEmail: '' };
+                const auth = getAuth();
+                if (auth.token) {
+                    setAuth(auth.token, user.value);
+                }
+            }
+            authView.value = 'login';
+            loginStatus.value = response.message || 'Admin email updated successfully.';
+            loginError.value = false;
+        } catch (error) {
+            loginStatus.value = error?.message || 'Unable to confirm the new email right now.';
+            loginError.value = true;
+        } finally {
+            emailChangeConfirmLoading.value = false;
+        }
+    };
+
     const logout = () => {
         clearAuth();
         isAuthenticated.value = false;
         user.value = null;
         loginStatus.value = '';
+        profileStatus.value = '';
         loginForm.username = '';
         loginForm.password = '';
+        profileForm.newEmail = '';
+        profileForm.currentPassword = '';
+        emailChangeConfirmForm.email = '';
+        emailChangeConfirmForm.emailChangeToken = '';
     };
 
     const initSession = async () => {
@@ -192,6 +312,7 @@ export function useAdminAuth() {
             if (me.role === 'admin') {
                 user.value = me;
                 isAuthenticated.value = true;
+                syncAdminProfileFormFromUser();
             } else {
                 clearAuth();
                 isAuthenticated.value = false;
@@ -205,6 +326,16 @@ export function useAdminAuth() {
         }
     };
 
+    const syncAdminProfileFormFromUser = () => {
+        profileForm.newEmail = '';
+        profileForm.currentPassword = '';
+        setProfileStatus('');
+
+        if (user.value?.pendingEmail) {
+            setProfileStatus(`Pending confirmation: ${user.value.pendingEmail}`);
+        }
+    };
+
     return {
         isAuthenticated,
         user,
@@ -212,17 +343,28 @@ export function useAdminAuth() {
         loginForm,
         forgotPasswordForm,
         resetPasswordForm,
+        profileForm,
+        emailChangeConfirmForm,
         loginStatus,
+        profileStatus,
         loginError,
+        profileError,
         loginLoading,
         forgotPasswordLoading,
         resetPasswordLoading,
+        profileLoading,
+        emailChangeConfirmLoading,
         initializing,
         setAuthView,
+        setProfileStatus,
         hydrateAdminResetFromUrl,
+        hydrateAdminEmailChangeFromUrl,
         loginAdmin,
         requestAdminPasswordReset,
         submitAdminPasswordReset,
+        requestAdminEmailChange,
+        confirmAdminEmailChange,
+        syncAdminProfileFormFromUser,
         logout,
         initSession
     };

@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const { createRateLimiter } = require('../middleware/rateLimitMiddleware');
 
-const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword } = require('../controllers/authController');
+const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword, requestAdminEmailChange, confirmAdminEmailChange } = require('../controllers/authController');
 
 const registerLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
@@ -40,6 +41,8 @@ router.post('/login', loginLimiter, login);
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPassword);
 router.post('/change-password', authMiddleware, passwordResetLimiter, changePassword);
+router.post('/admin/email-change-request', authMiddleware, roleMiddleware('admin'), passwordResetLimiter, requestAdminEmailChange);
+router.post('/admin/email-change-confirm', passwordResetLimiter, confirmAdminEmailChange);
 router.get('/me', authMiddleware, getMe);
 
 module.exports = router;
