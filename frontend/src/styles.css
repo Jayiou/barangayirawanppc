@@ -1665,6 +1665,8 @@ textarea { resize: vertical; }
 .mobile-app-header {
     display: none;
     padding: 0;
+    margin: -24px -24px 0;
+    width: calc(100% + 48px);
     border-bottom: 1px solid rgba(22, 36, 26, 0.12);
     align-items: center;
     justify-content: flex-start;
@@ -1818,6 +1820,10 @@ textarea { resize: vertical; }
         width: calc(100vw - var(--resident-sidebar-collapsed));
         max-width: calc(100vw - var(--resident-sidebar-collapsed));
         overflow-x: hidden;
+    }
+    .mobile-app-header {
+        margin: -18px -18px 0;
+        width: calc(100% + 36px);
     }
     .resident-shell .app-sidebar { padding: 14px 8px; }
     .resident-shell.sidebar-expanded .app-sidebar { padding: 16px 12px; }
@@ -2249,6 +2255,8 @@ textarea { resize: vertical; }
     position: sticky;
     top: 0;
     z-index: 1101;
+    margin: -24px -24px 0;
+    width: calc(100% + 48px);
 }
 
 .resident-shell .sidebar-open-btn {
