@@ -68,26 +68,51 @@ const buildDetailsHtml = (details) => {
 };
 
 const FROM_NAME = 'Barangay Connect';
-const FROM_EMAIL = 'princejaydelapenaz@gmail.com';
-const EMAIL_REPLY_TO = 'princejaydelapenaz@gmail.com';
+const DEFAULT_FROM_EMAIL = 'princejaydelapenaz@gmail.com';
+const DEFAULT_REPLY_TO = 'princejaydelapenaz@gmail.com';
 const path = require('node:path');
+
+const parseFromAddress = (value) => {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+        return { name: FROM_NAME, email: DEFAULT_FROM_EMAIL };
+    }
+
+    const match = /^(.+?)<([^<>\s]+@[^<>\s]+)>$/.exec(rawValue);
+    if (match) {
+        return {
+            name: match[1].trim().replace(/\s+$/g, '') || FROM_NAME,
+            email: match[2].trim()
+        };
+    }
+
+    return {
+        name: FROM_NAME,
+        email: rawValue
+    };
+};
+
+const configuredFrom = parseFromAddress(process.env.EMAIL_FROM);
+const FROM_EMAIL = configuredFrom.email || DEFAULT_FROM_EMAIL;
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || configuredFrom.email || DEFAULT_REPLY_TO;
 
 const hasValidFromDomain = !FROM_EMAIL.endsWith('.local') && !FROM_EMAIL.endsWith('.localhost');
 if (process.env.SENDGRID_API_KEY && !hasValidFromDomain) {
     console.warn('Warning: SENDGRID_API_KEY is configured but EMAIL_FROM is not set to a real verified sender address. Set EMAIL_FROM to a valid, verified domain to improve deliverability.');
 }
 
-// Build transporter dynamically: prefer SendGrid API key (SMTP relay), fallback to EMAIL_USER/EMAIL_PASS
+// Build transporter dynamically: prefer SMTP when Brevo/other SMTP credentials are configured, fallback to SendGrid API key
 const smtpHost = process.env.EMAIL_HOST || 'smtp.sendgrid.net';
 const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
 const smtpSecure = smtpPort === 465;
-const useSendGrid = Boolean(process.env.SENDGRID_API_KEY);
+const hasSmtpCredentials = Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const useSendGrid = Boolean(process.env.SENDGRID_API_KEY) && !hasSmtpCredentials;
 
 let smtpAuth = null;
-if (process.env.SENDGRID_API_KEY) {
-    smtpAuth = { user: 'apikey', pass: process.env.SENDGRID_API_KEY };
-} else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+if (hasSmtpCredentials) {
     smtpAuth = { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS };
+} else if (process.env.SENDGRID_API_KEY) {
+    smtpAuth = { user: 'apikey', pass: process.env.SENDGRID_API_KEY };
 }
 
 const transporter = nodemailer.createTransport({
@@ -174,7 +199,7 @@ const sendMail = async (mailOptions) => {
 
 // Default headers and reply-to for better deliverability when domain setup is limited.
 const LIST_UNSUBSCRIBE = process.env.EMAIL_LIST_UNSUBSCRIBE || FROM_EMAIL;
-const REPLY_TO = process.env.EMAIL_REPLY_TO || FROM_EMAIL;
+const REPLY_TO = EMAIL_REPLY_TO;
 const defaultMailHeaders = {
     'List-Unsubscribe': `<mailto:${LIST_UNSUBSCRIBE}>`,
     'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
