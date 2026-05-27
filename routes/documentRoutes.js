@@ -12,6 +12,9 @@ router.get('/my', auth, documentController.getResidentRequests);
 // Resident updates one of their pending requests
 router.put('/:id', auth, documentController.updateRequest);
 
+// Resident requests a revision for a sent document
+router.post('/:id/revision-request', auth, documentController.requestRevision);
+
 // Resident deletes one of their requests
 router.delete('/:id', auth, documentController.deleteRequest);
 

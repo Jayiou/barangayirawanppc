@@ -404,7 +404,7 @@
                                         <td>{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
+                                                                    <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
                                             <button v-if="canEditRecord('document', item)" class="ghost-button table-action" @click="openDocumentRequestEditor(item)">Edit</button>
                                             <button v-if="canDeleteRecord('document', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('document', item)">Delete</button>
                                         </div></td>
@@ -766,6 +766,24 @@
                         <small v-if="entry.note">{{ entry.note }}</small>
                     </div>
                 </div>
+                <div v-if="recordDetail.type === 'document' && recordDetail.item?.generatedEmailSentAt" style="display:grid; gap:12px; margin-top: 16px; padding: 14px; border: 1px solid rgba(27, 115, 71, 0.18); border-radius: 10px; background: #f8fcfa;">
+                    <div>
+                        <h3 style="margin:0 0 6px;">Revision Request Form</h3>
+                        <p class="fine-print" style="margin:0;">If you need changes, send a revision note to the admin here.</p>
+                    </div>
+                    <div v-if="isDocumentRevisionRequested(recordDetail.item)" style="padding: 10px 12px; border-radius: 8px; background: #fff7f7; color: #7a1d1d; border: 1px solid #f1caca;">
+                        Revision request already sent. Waiting for admin action.
+                    </div>
+                    <template v-else>
+                        <label>
+                            <span>Revision note</span>
+                            <textarea v-model="revisionRequestNote" rows="4" placeholder="Tell the admin what needs to be changed."></textarea>
+                        </label>
+                        <button type="button" class="primary-button" :disabled="isRevisionRequesting" @click="submitDocumentRevisionRequest">
+                            {{ isRevisionRequesting ? 'Sending...' : 'Send Revision Request' }}
+                        </button>
+                    </template>
+                </div>
                 <div class="portal-modal-actions">
                     <button v-if="canEditRecord(recordDetail.type, recordDetail.item)" class="ghost-button" @click="openDocumentRequestEditor(recordDetail.item)">Edit</button>
                     <button v-if="canDeleteRecord(recordDetail.type, recordDetail.item)" class="ghost-button danger" @click="deleteResidentRecord(recordDetail.type, recordDetail.item)">Delete</button>
@@ -854,7 +872,7 @@ const confirmLogout = () => {
 const { statusMessage, statusError, reservations, reports, appointments, officials, disasterAdvisories, facilityAvailability, facilityAvailabilityDetails, profile, setStatus, loadAll, saveProfile, loadProfile, loadFacilityAvailability } = usePortalData();
 const { reservationForm, reportForm, reportProofFiles, submitReservation, submitReport } = usePortalForms();
 const { getAvailableSlots, requestAppointment } = useAppointments();
-const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest } = useDocuments();
+const { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest, requestDocumentRevision } = useDocuments();
 // Local state
 const TABLE_PAGE_SIZE = 10;
 const sidebarOpen = ref(false);
@@ -884,6 +902,8 @@ const documentStatusFilter = ref('all');
 const documentDateFilter = ref('');
 const documentPage = ref(1);
 const recordDetail = ref(null);
+const revisionRequestNote = ref('');
+const isRevisionRequesting = ref(false);
 
 const calculateResidentAge = (birthDate) => {
     if (!birthDate) return '';
@@ -1263,6 +1283,44 @@ const handleSubmitDocument = async () => {
     }
 };
 
+const submitDocumentRevisionRequest = async () => {
+    const item = recordDetail.value?.item;
+    if (!item?._id || isRevisionRequesting.value) return;
+
+    if (!String(revisionRequestNote.value || '').trim()) {
+        setStatus('Please enter a revision note before sending.', true);
+        return;
+    }
+
+    isRevisionRequesting.value = true;
+    try {
+        const result = await requestDocumentRevision(item._id, revisionRequestNote.value.trim());
+        if (result.success) {
+            setStatus('Revision request sent to the admin.');
+            const refreshed = {
+                ...recordDetail.value.item,
+                status: 'revision_requested',
+                requesterRevisionNote: revisionRequestNote.value.trim(),
+                revisionRequestedAt: new Date().toISOString()
+            };
+            const auditTrail = await loadDocumentAuditTrail(refreshed);
+            recordDetail.value = {
+                ...recordDetail.value,
+                item: { ...refreshed, auditTrail }
+            };
+            revisionRequestNote.value = '';
+            await loadMyDocuments();
+            await loadAll();
+        } else {
+            setStatus(result.message || 'Failed to send revision request.', true);
+        }
+    } catch (error) {
+        setStatus(error.message || 'Failed to send revision request.', true);
+    } finally {
+        isRevisionRequesting.value = false;
+    }
+};
+
 const setResidentView = (view) => {
     currentView.value = view;
     setStoredPortalView(view);
@@ -1460,6 +1518,15 @@ const getCreatedTime = (record) => {
 };
 
 const sortNewestRequestsFirst = (records) => [...records].sort((left, right) => getCreatedTime(right) - getCreatedTime(left));
+const getDocumentLatestActivityTime = (record) => {
+    const candidates = [record?.updatedAt, record?.revisionRequestedAt, record?.generatedEmailSentAt, record?.generatedAt, record?.createdAt]
+        .map((value) => new Date(value || 0).getTime())
+        .filter((value) => !Number.isNaN(value));
+
+    return candidates.length ? Math.max(...candidates) : 0;
+};
+
+const sortDocumentRequestsByLatestActivity = (records) => [...records].sort((left, right) => getDocumentLatestActivityTime(right) - getDocumentLatestActivityTime(left));
 
 const paginateTable = (records, page) => {
     const total = records.length;
@@ -1507,7 +1574,7 @@ const filteredReports = computed(() => sortNewestRequestsFirst(reports.value.fil
 
 const pagedReports = computed(() => paginateTable(filteredReports.value, reportPage.value));
 
-const filteredDocumentRequests = computed(() => sortNewestRequestsFirst(documentRequests.value.filter((item) => matchesSearch(item, documentSearch.value, [
+const filteredDocumentRequests = computed(() => sortDocumentRequestsByLatestActivity(documentRequests.value.filter((item) => matchesSearch(item, documentSearch.value, [
     (record) => normalizeLabel(record.type),
     (record) => record.purpose,
     (record) => record.status,
@@ -1567,20 +1634,35 @@ const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(it
 const canEditRecord = (type, item) => type === 'document' && item?.status === 'pending';
 const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
 
-const loadDocumentAuditTrail = async (item) => {
+const auditEntityTypeByRecordType = {
+    document: 'DocumentRequest',
+    reservation: 'FacilityReservation',
+    report: 'Report',
+    appointment: 'Appointment'
+};
+
+const getAuditEntityType = (type) => auditEntityTypeByRecordType[type] || '';
+
+const loadRecordAuditTrail = async (type, item) => {
     if (!item?._id) return [];
+    const entityType = getAuditEntityType(type);
+    if (!entityType) return [];
+
     try {
-        const response = await apiFetch(`/status-audit/history/DocumentRequest/${item._id}`);
+        const response = await apiFetch(`/status-audit/history/${entityType}/${item._id}`);
         return response?.data || [];
     } catch (error) {
-        setStatus(error.message || 'Failed to load document audit trail.', true);
+        setStatus(error.message || 'Failed to load audit trail.', true);
         return [];
     }
 };
 
+const loadDocumentAuditTrail = (item) => loadRecordAuditTrail('document', item);
+
 const openRecordDetail = async (type, item) => {
     if (type !== 'document') {
-        recordDetail.value = { type, item };
+        const itemWithAudit = { ...item, auditTrail: await loadRecordAuditTrail(type, item) };
+        recordDetail.value = { type, item: itemWithAudit };
         return;
     }
 
@@ -1589,9 +1671,11 @@ const openRecordDetail = async (type, item) => {
         const fullItem = response?.data || response || item;
         fullItem.auditTrail = await loadDocumentAuditTrail(fullItem);
         recordDetail.value = { type, item: fullItem };
+        revisionRequestNote.value = fullItem.requesterRevisionNote || '';
     } catch (error) {
         setStatus(error.message || 'Failed to load document request details.', true);
         recordDetail.value = { type, item };
+        revisionRequestNote.value = item?.requesterRevisionNote || '';
     }
 };
 
@@ -1660,6 +1744,8 @@ const recordDetailFields = computed(() => {
             ['Document Type', normalizeLabel(item.type)],
             ['Purpose', item.purpose || item.fields?.PURPOSE],
             ['Status', normalizeLabel(item.status)],
+            ['Revision Note', item.requesterRevisionNote],
+            ['Revision Requested On', item.revisionRequestedAt ? formatDateTime(item.revisionRequestedAt) : ''],
             ['Requested On', formatDateTime(item.createdAt)]
         ],
         reservation: [
@@ -1690,43 +1776,46 @@ const recordTimeline = computed(() => {
     const item = recordDetail.value?.item;
     if (!item) return [];
 
-    if (recordDetail.value?.type === 'document') {
-        const entries = [];
-        if (item.createdAt) {
+    const type = recordDetail.value?.type;
+    const entries = [];
+    if (item.createdAt) {
+        entries.push({
+            label: type === 'report' ? 'Submitted' : 'Requested',
+            value: formatDateTime(item.createdAt),
+            note: type === 'document'
+                ? `${normalizeLabel(item.type)} request submitted`
+                : `${normalizeLabel(type)} record created`
+        });
+    }
+
+    (Array.isArray(item.auditTrail) ? item.auditTrail : [])
+        .slice()
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .forEach((entry) => {
             entries.push({
-                label: 'Requested',
-                value: formatDateTime(item.createdAt),
-                note: `${normalizeLabel(item.type)} request submitted`
+                label: normalizeLabel(entry.newStatus || 'Status updated'),
+                value: formatDateTime(entry.createdAt),
+                note: entry.reason || entry.actionDescription || ''
             });
-        }
+        });
 
-        (Array.isArray(item.auditTrail) ? item.auditTrail : [])
-            .slice()
-            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-            .forEach((entry) => {
-                entries.push({
-                    label: normalizeLabel(entry.newStatus || 'Status updated'),
-                    value: formatDateTime(entry.createdAt),
-                    note: entry.reason || entry.actionDescription || ''
-                });
-            });
+    if (type === 'document' && item.generatedAt) {
+        entries.push({
+            label: 'Generated',
+            value: formatDateTime(item.generatedAt),
+            note: 'PDF copy generated'
+        });
+    }
 
-        if (item.generatedAt) {
-            entries.push({
-                label: 'Generated',
-                value: formatDateTime(item.generatedAt),
-                note: 'PDF copy generated'
-            });
-        }
+    if (type === 'document' && item.generatedEmailSentAt) {
+        entries.push({
+            label: 'Sent to requester',
+            value: formatDateTime(item.generatedEmailSentAt),
+            note: 'Soft copy emailed to requester'
+        });
+    }
 
-        if (item.generatedEmailSentAt) {
-            entries.push({
-                label: 'Sent to requester',
-                value: formatDateTime(item.generatedEmailSentAt),
-                note: 'Soft copy emailed to requester'
-            });
-        }
-
+    if (entries.length > 1 || type === 'document') {
         return entries;
     }
 

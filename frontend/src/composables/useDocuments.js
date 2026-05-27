@@ -44,5 +44,18 @@ export function useDocuments() {
         }
     };
 
-    return { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest };
+    const requestDocumentRevision = async (id, note) => {
+        try {
+            await apiFetch(`/documents/${id}/revision-request`, {
+                method: 'POST',
+                body: JSON.stringify({ note })
+            });
+            await loadMyDocuments();
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    };
+
+    return { documentRequests, loadMyDocuments, createDocumentRequest, editDocumentRequest, deleteDocumentRequest, requestDocumentRevision };
 }

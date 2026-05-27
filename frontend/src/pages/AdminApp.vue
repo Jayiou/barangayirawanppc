@@ -1190,6 +1190,18 @@
                             @action-triggered="handleStatusAction"
                         />
                     </div>
+
+                    <div class="document-audit-panel">
+                        <h3>Audit Trail</h3>
+                        <div v-if="recordAuditTrail(selectedItem, activeModal).length" class="document-audit-list">
+                            <div v-for="entry in recordAuditTrail(selectedItem, activeModal)" :key="entry.key" class="document-audit-item">
+                                <strong>{{ entry.label }}</strong>
+                                <span>{{ entry.time }}</span>
+                                <small v-if="entry.note">{{ entry.note }}</small>
+                            </div>
+                        </div>
+                        <p v-else class="fine-print">No audit trail yet.</p>
+                    </div>
                 </div>
 
                 <div v-if="activeModal === 'document'">
@@ -1207,8 +1219,8 @@
 
                             <div class="document-audit-panel">
                                 <h3>Audit Trail</h3>
-                                <div v-if="documentAuditTrail(selectedItem).length" class="document-audit-list">
-                                    <div v-for="entry in documentAuditTrail(selectedItem)" :key="entry.key" class="document-audit-item">
+                                <div v-if="recordAuditTrail(selectedItem, 'document').length" class="document-audit-list">
+                                    <div v-for="entry in recordAuditTrail(selectedItem, 'document')" :key="entry.key" class="document-audit-item">
                                         <strong>{{ entry.label }}</strong>
                                         <span>{{ entry.time }}</span>
                                         <small v-if="entry.note">{{ entry.note }}</small>
@@ -1237,8 +1249,12 @@
 
                         <!-- Right Pane: Management & Status -->
                         <div style="display: grid; gap: 12px;">
-                            <div v-if="isDocumentProcessing(selectedItem)" style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#fbfffc,#f3f8f6); box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
+                            <div v-if="isDocumentEditable(selectedItem)" style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#fbfffc,#f3f8f6); box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
                                 <h3 style="margin:0 0 12px 0; color: #0f3f33;">Document Management</h3>
+                                <div v-if="selectedItem.status === 'revision_requested' && selectedItem.requesterRevisionNote" style="margin-bottom: 12px; padding: 12px; border-radius: 8px; background: #fff7f7; border: 1px solid #f1caca; color: #7a1d1d;">
+                                    <strong style="display:block; margin-bottom:4px;">Requester note</strong>
+                                    <div style="white-space: pre-wrap;">{{ selectedItem.requesterRevisionNote }}</div>
+                                </div>
                                 <div class="stack" style="gap: 12px;">
                                     <label><span>Formal Purpose (admin)</span><input v-model="formalPurposeInput" type="text" style="width: 100%;"></label>
 
@@ -2589,6 +2605,14 @@ const getCreatedTime = (record) => {
 };
 
 const sortNewestRequestsFirst = (records) => [...records].sort((left, right) => getCreatedTime(right) - getCreatedTime(left));
+const getDocumentLatestActivityTime = (record) => {
+    const candidates = [record?.updatedAt, record?.revisionRequestedAt, record?.generatedEmailSentAt, record?.generatedAt, record?.createdAt]
+        .map((value) => new Date(value || 0).getTime())
+        .filter((value) => !Number.isNaN(value));
+
+    return candidates.length ? Math.max(...candidates) : 0;
+};
+const sortDocumentRequestsByLatestActivity = (records) => [...records].sort((left, right) => getDocumentLatestActivityTime(right) - getDocumentLatestActivityTime(left));
 
 const currentList = computed(() => {
     switch (currentView.value) {
@@ -2596,7 +2620,7 @@ const currentList = computed(() => {
         case 'residents': return sortNewestRequestsFirst(residents.value);
         case 'reservations': return sortNewestRequestsFirst(reservations.value);
         case 'reports': return sortNewestRequestsFirst(reports.value);
-        case 'documents': return sortNewestRequestsFirst(documentRequests.value || []);
+        case 'documents': return sortDocumentRequestsByLatestActivity(documentRequests.value || []);
         default: return [];
     }
 });
@@ -2821,6 +2845,7 @@ const normalizeStatus = (item) => String(item?.status || '').toLowerCase();
 const isDocumentApproved = (item) => normalizeStatus(item) === 'approved';
 const isDocumentPending = (item) => normalizeStatus(item) === 'pending';
 const isDocumentProcessing = (item) => normalizeStatus(item) === 'processing';
+const isDocumentEditable = (item) => ['processing', 'revision_requested'].includes(normalizeStatus(item));
 const isDocumentRejected = (item) => normalizeStatus(item) === 'rejected';
 const isDocumentReady = (item) => normalizeStatus(item) === 'ready_for_pickup';
 const isDocumentCompleted = (item) => normalizeStatus(item) === 'completed';
@@ -3000,6 +3025,8 @@ const getRequestDetails = (item) => {
             { label: 'Birth Date', value: item.resident?.birthDate ? formatDate(item.resident.birthDate) : item.residentId?.birthDate ? formatDate(item.residentId.birthDate) : 'N/A' },
             { label: 'Document Type', value: (item.documentType || item.type)?.replaceAll('_', ' ') },
             { label: 'Original Purpose', value: item.purpose },
+            { label: 'Requester Revision Note', value: item.requesterRevisionNote },
+            { label: 'Revision Requested On', value: item.revisionRequestedAt ? formatDateTime(item.revisionRequestedAt) : '' },
             { label: 'Request Details', value: item.requestDetails },
             { label: 'Requested On', value: formatDateTime(item.createdAt) }
         ];
@@ -3064,16 +3091,27 @@ const getRequestDetails = (item) => {
     return [];
 };
 
-const documentAuditTrail = (item) => {
+const auditEntityTypeByModal = {
+    document: 'DocumentRequest',
+    reservation: 'FacilityReservation',
+    report: 'Report',
+    appointment: 'Appointment'
+};
+
+const getAuditEntityType = (type) => auditEntityTypeByModal[type] || '';
+
+const recordAuditTrail = (item, type = 'document') => {
     if (!item?._id) return [];
 
     const entries = [];
     if (item.createdAt) {
         entries.push({
             key: `requested-${item._id}`,
-            label: 'Requested',
+            label: type === 'report' ? 'Submitted' : 'Requested',
             time: formatDateTime(item.createdAt),
-            note: `${normalizeLabel(item.type)} request submitted`
+            note: type === 'document'
+                ? `${normalizeLabel(item.type)} request submitted`
+                : `${normalizeLabel(type)} record created`
         });
     }
 
@@ -3090,7 +3128,7 @@ const documentAuditTrail = (item) => {
             });
         });
 
-    if (item.generatedAt) {
+    if (type === 'document' && item.generatedAt) {
         entries.push({
             key: `generated-${item._id}`,
             label: 'Generated',
@@ -3099,7 +3137,7 @@ const documentAuditTrail = (item) => {
         });
     }
 
-    if (item.generatedEmailSentAt) {
+    if (type === 'document' && item.generatedEmailSentAt) {
         entries.push({
             key: `sent-${item._id}`,
             label: 'Sent to requester',
@@ -3111,16 +3149,23 @@ const documentAuditTrail = (item) => {
     return entries;
 };
 
-const loadDocumentAuditTrail = async (item) => {
+const documentAuditTrail = (item) => recordAuditTrail(item, 'document');
+
+const loadStatusAuditTrail = async (item, type = 'document') => {
     if (!item?._id) return [];
+    const entityType = getAuditEntityType(type);
+    if (!entityType) return [];
+
     try {
-        const response = await apiFetch(`/status-audit/history/DocumentRequest/${item._id}`);
+        const response = await apiFetch(`/status-audit/history/${entityType}/${item._id}`);
         return response?.data || [];
     } catch (error) {
         showToast(error.message || 'Failed to load audit trail.', true);
         return [];
     }
 };
+
+const loadDocumentAuditTrail = (item) => loadStatusAuditTrail(item, 'document');
 
 // Modal and form handlers
 const setupResidentModal = (item) => {
@@ -3144,9 +3189,7 @@ const setupRecordStatusModal = async (type, item) => {
         const full = await apiFetch(path);
         if (full) {
             selectedItem.value = { ...(full.data || full) };
-            if (type === 'document') {
-                selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
-            }
+            selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, type);
         }
     } catch (err) {
         showToast(err.message || 'Failed to load details.', true);
@@ -3258,8 +3301,8 @@ const handleSave = async () => {
 
 const saveDocumentEdits = async () => {
     if (!selectedItem.value?._id) return;
-    if (!isDocumentProcessing(selectedItem.value)) {
-        showToast('Move the document request to processing before saving document edits.', true);
+    if (!isDocumentEditable(selectedItem.value)) {
+        showToast('Move the document request to processing or revision_requested before saving document edits.', true);
         return;
     }
     if (isSubmitting.value) return;
@@ -3317,8 +3360,8 @@ const rejectDocument = async (item) => {
 
 const generatePreview = async (item) => {
     if (!item?._id) return;
-    if (!isDocumentProcessing(item)) {
-        showToast('Move the document request to processing before generating a preview.', true);
+    if (!isDocumentEditable(item)) {
+        showToast('Move the document request to processing or revision_requested before generating a preview.', true);
         return;
     }
     try {
@@ -3351,8 +3394,8 @@ const generatePreview = async (item) => {
 
 const generateAndSavePdf = async (item) => {
     if (!item?._id) return;
-    if (!isDocumentProcessing(item)) {
-        showToast('Move the document request to processing before generating a PDF.', true);
+    if (!isDocumentEditable(item)) {
+        showToast('Move the document request to processing or revision_requested before generating a PDF.', true);
         return;
     }
     try {
@@ -3679,6 +3722,8 @@ const submitStatusAction = async (reason) => {
             else if (action === 'complete') await completeAppointment(selectedItem.value._id, reason);
             else if (action === 'cancel') await adminCancelAppointment(selectedItem.value._id, reason);
             else throw new Error(`Unknown action: ${action}`);
+
+            selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, 'appointment');
         } else {
             const entityTypeMap = { 'document': 'documents', 'reservation': 'reservations' };
             const entityType = entityTypeMap[activeModal.value] || 'reports';
@@ -3706,7 +3751,10 @@ const submitStatusAction = async (reason) => {
 
             if (activeModal.value === 'document') {
                 selectedItem.value = mergeDocumentResponse(selectedItem.value, response?.data || {});
-                selectedItem.value.auditTrail = await loadDocumentAuditTrail(selectedItem.value);
+                selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, 'document');
+            } else {
+                selectedItem.value = { ...selectedItem.value, ...(response?.data || {}) };
+                selectedItem.value.auditTrail = await loadStatusAuditTrail(selectedItem.value, activeModal.value);
             }
         }
 

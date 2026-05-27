@@ -5,6 +5,7 @@ const { pathToFileURL } = require('node:url');
 const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
 const { sendDocumentStatusEmail, sendGeneratedDocumentEmail } = require('../utils/mailer');
 const { createDocumentPdfBuffer } = require('../utils/documentPdfGenerator');
+const StatusAuditLog = require('../models/StatusAuditLog');
 const DocumentRequest = require('../models/DocumentRequest');
 const Resident = require('../models/Resident');
 const Official = require('../models/Official');
@@ -428,7 +429,7 @@ exports.getResidentRequests = async (req, res, next) => {
       residentIds.push(req.user._id);
     }
 
-    const list = await DocumentRequest.find({ resident: { $in: residentIds } }).sort({ createdAt: -1 });
+    const list = await DocumentRequest.find({ resident: { $in: residentIds } }).sort({ updatedAt: -1, createdAt: -1 });
     res.json({ success: true, data: list });
   } catch (err) {
     next(err);
@@ -520,14 +521,68 @@ exports.getRequestById = async (req, res, next) => {
   }
 };
 
+exports.requestRevision = async (req, res, next) => {
+  try {
+    const reqId = req.params.id;
+    const revisionNote = String(req.body?.note || req.body?.requesterRevisionNote || '').trim();
+    const doc = await DocumentRequest.findById(reqId).populate({
+      path: 'resident',
+      populate: { path: 'userId', select: 'email username' }
+    });
+
+    if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+    await attachLegacyResidentFallbacks(doc);
+
+    const resident = doc.resident || doc.$locals?.legacyResident || null;
+    const requesterUserId = resident?.userId?._id || resident?.userId || req.user?._id;
+    if (!requesterUserId || String(requesterUserId) !== String(req.user?._id)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (!doc.generatedEmailSentAt) {
+      return res.status(400).json({ success: false, message: 'Revision requests are available after the soft copy has been sent.' });
+    }
+
+    if (!revisionNote) {
+      return res.status(400).json({ success: false, message: 'Revision note is required.' });
+    }
+
+    const previousStatus = doc.status;
+    doc.status = 'revision_requested';
+    doc.requesterRevisionNote = revisionNote;
+    doc.revisionRequestedAt = new Date();
+    await doc.save();
+
+    await StatusAuditLog.create({
+      entityType: 'DocumentRequest',
+      entityId: doc._id,
+      previousStatus,
+      newStatus: 'revision_requested',
+      changedBy: req.user._id,
+      changedByName: req.user.username || req.user.email || 'Requester',
+      reason: revisionNote,
+      actionDescription: 'Requester requested a document revision',
+      additionalData: {
+        requesterRevisionNote: revisionNote,
+        documentType: doc.type,
+        requesterEmail: resident?.email || resident?.userId?.email || ''
+      }
+    });
+
+    res.json({ success: true, data: serializeDocumentRequestForResponse(req, doc) });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.adminEdit = async (req, res, next) => {
   try {
     const reqId = req.params.id;
     const { fields, purpose, status } = req.body;
     const doc = await DocumentRequest.findById(reqId);
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
-    if (doc.status !== 'processing') {
-      return res.status(400).json({ success: false, message: 'Document edits are only available while processing' });
+    if (!['processing', 'revision_requested'].includes(doc.status)) {
+      return res.status(400).json({ success: false, message: 'Document edits are only available while processing or under revision' });
     }
 
     if (fields) {
@@ -597,8 +652,8 @@ exports.generateDocument = async (req, res, next) => {
     });
     if (!docReq) return res.status(404).json({ success: false, message: 'Not found' });
     await attachLegacyResidentFallbacks(docReq);
-    if (docReq.status !== 'processing') {
-      return res.status(400).json({ success: false, message: 'Document generation is only available while processing' });
+    if (!['processing', 'revision_requested'].includes(docReq.status)) {
+      return res.status(400).json({ success: false, message: 'Document generation is only available while processing or under revision' });
     }
 
     // Determine if the client is requesting PDF generation (POST or query)
