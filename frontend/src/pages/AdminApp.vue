@@ -7,30 +7,80 @@
         <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center;">
             <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
             <BrandMark initials="BC" eyebrow="Barangay Admin" title="Barangay Connect" style="margin-bottom: 2rem;" />
-            <form class="stack" @submit.prevent="loginAdmin" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
+            <form class="stack" @submit.prevent="handleAuthSubmit" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="section-head" style="text-align: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ texts.admin.login.heading }}</h3>
-                    <p class="fine-print" style="margin-top: 0.5rem;">{{ texts.admin.login.sub }}</p>
+                    <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ authView === 'login' ? texts.admin.login.heading : authView === 'forgot' ? texts.admin.forgot.heading : texts.admin.reset.heading }}</h3>
+                    <p class="fine-print" style="margin-top: 0.5rem;">{{ authView === 'login' ? texts.admin.login.sub : authView === 'forgot' ? texts.admin.forgot.sub : texts.admin.reset.sub }}</p>
                 </div>
-                <label>
-                    <span>{{ texts.admin.login.username }}</span>
-                    <input v-model="loginForm.username" type="text" required>
-                </label>
-                <label>
-                    <span>{{ texts.admin.login.password }}</span>
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <input v-model="loginForm.password" :type="showAdminPassword ? 'text' : 'password'" required style="padding-right: 42px; width: 100%;">
-                        <button
-                            type="button"
-                            @click="showAdminPassword = !showAdminPassword"
-                            :aria-label="showAdminPassword ? 'Hide password' : 'Show password'"
-                            style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
-                        >
-                            <i :class="showAdminPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
-                        </button>
-                    </div>
-                </label>
-                <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? texts.admin.login.signingIn : texts.admin.login.login }}</button>
+                <template v-if="authView === 'login'">
+                    <label>
+                        <span>{{ texts.admin.login.username }}</span>
+                        <input v-model="loginForm.username" type="text" required>
+                    </label>
+                    <label>
+                        <span>{{ texts.admin.login.password }}</span>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input v-model="loginForm.password" :type="showAdminPassword ? 'text' : 'password'" required style="padding-right: 42px; width: 100%;">
+                            <button
+                                type="button"
+                                @click="showAdminPassword = !showAdminPassword"
+                                :aria-label="showAdminPassword ? 'Hide password' : 'Show password'"
+                                style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
+                            >
+                                <i :class="showAdminPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                            </button>
+                        </div>
+                    </label>
+                    <button type="button" @click="setAuthView('forgot')" style="margin-left: auto; border: none; background: transparent; color: #2c5d3f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.login.forgot }}</button>
+                    <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? texts.admin.login.signingIn : texts.admin.login.login }}</button>
+                </template>
+
+                <template v-else-if="authView === 'forgot'">
+                    <label>
+                        <span>{{ texts.admin.forgot.email }}</span>
+                        <input v-model="forgotPasswordForm.email" type="email" autocomplete="email" required placeholder="admin@example.com">
+                    </label>
+                    <p class="fine-print" style="margin: 0;">{{ texts.admin.forgot.helper }}</p>
+                    <button type="submit" class="primary-button" :disabled="forgotPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="forgotPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i> {{ forgotPasswordLoading ? texts.admin.forgot.sending : texts.admin.forgot.send }}</button>
+                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.forgot.back }}</button>
+                </template>
+
+                <template v-else>
+                    <label>
+                        <span>{{ texts.admin.reset.email }}</span>
+                        <input v-model="resetPasswordForm.email" type="email" readonly>
+                    </label>
+                    <label>
+                        <span>{{ texts.admin.reset.password }}</span>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input v-model="resetPasswordForm.password" :type="showResetPassword ? 'text' : 'password'" minlength="8" required style="padding-right: 42px; width: 100%;">
+                            <button
+                                type="button"
+                                @click="showResetPassword = !showResetPassword"
+                                :aria-label="showResetPassword ? 'Hide password' : 'Show password'"
+                                style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
+                            >
+                                <i :class="showResetPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                            </button>
+                        </div>
+                    </label>
+                    <label>
+                        <span>{{ texts.admin.reset.confirmPassword }}</span>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input v-model="resetPasswordForm.confirmPassword" :type="showResetConfirmPassword ? 'text' : 'password'" minlength="8" required style="padding-right: 42px; width: 100%;">
+                            <button
+                                type="button"
+                                @click="showResetConfirmPassword = !showResetConfirmPassword"
+                                :aria-label="showResetConfirmPassword ? 'Hide password' : 'Show password'"
+                                style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
+                            >
+                                <i :class="showResetConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                            </button>
+                        </div>
+                    </label>
+                    <button type="submit" class="primary-button" :disabled="resetPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="resetPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i> {{ resetPasswordLoading ? texts.admin.reset.saving : texts.admin.reset.save }}</button>
+                    <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.reset.requestNew }}</button>
+                </template>
             </form>
         </div>
     </div>
@@ -1201,7 +1251,27 @@ import { useResidents } from '@/composables/useResidents';
 import { useReportNotifications } from '@/composables/useReportNotifications';
 
 // Composables
-const { isAuthenticated, user, loginForm, loginStatus, loginError, loginLoading, initializing, loginAdmin, logout, initSession } = useAdminAuth();
+const {
+    isAuthenticated,
+    user,
+    authView,
+    loginForm,
+    forgotPasswordForm,
+    resetPasswordForm,
+    loginStatus,
+    loginError,
+    loginLoading,
+    forgotPasswordLoading,
+    resetPasswordLoading,
+    initializing,
+    setAuthView,
+    hydrateAdminResetFromUrl,
+    loginAdmin,
+    requestAdminPasswordReset,
+    submitAdminPasswordReset,
+    logout,
+    initSession
+} = useAdminAuth();
 
 const texts = {
     admin: {
@@ -1212,7 +1282,27 @@ const texts = {
             username: 'Username',
             password: 'Password',
             signingIn: 'Signing in...',
-            login: 'Log In'
+            login: 'Log In',
+            forgot: 'Forgot password?'
+        },
+        forgot: {
+            heading: 'Recover Admin Access',
+            sub: 'Send a reset link to the admin email',
+            email: 'Admin Email',
+            helper: 'Use the email currently registered on your admin account.',
+            send: 'Send Reset Link',
+            sending: 'Sending...',
+            back: 'Back to Login'
+        },
+        reset: {
+            heading: 'Set New Admin Password',
+            sub: 'Choose a strong password to continue',
+            email: 'Admin Email',
+            password: 'New Password',
+            confirmPassword: 'Confirm New Password',
+            save: 'Update Password',
+            saving: 'Updating...',
+            requestNew: 'Request a new reset link'
         },
         sidebar: {
             dashboard: 'Dashboard',
@@ -1244,6 +1334,8 @@ const { unreadReports, startNotificationPolling, stopNotificationPolling, clearU
 // Local state
 const sidebarOpen = ref(false);
 const showAdminPassword = ref(false);
+const showResetPassword = ref(false);
+const showResetConfirmPassword = ref(false);
 const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
@@ -3112,8 +3204,23 @@ watch(isAuthenticated, async (authed) => {
 }, { immediate: true });
 
 onMounted(() => {
+    hydrateAdminResetFromUrl();
     initSession();
 });
+
+const handleAuthSubmit = async () => {
+    if (authView.value === 'forgot') {
+        await requestAdminPasswordReset();
+        return;
+    }
+
+    if (authView.value === 'reset') {
+        await submitAdminPasswordReset();
+        return;
+    }
+
+    await loginAdmin();
+};
 </script>
 
 <style scoped>

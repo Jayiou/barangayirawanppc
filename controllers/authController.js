@@ -108,6 +108,14 @@ const getAppOrigin = (req) => {
     return `${protocol}://${host}`.replace(/\/$/, '');
 };
 
+const getSafeRedirectPath = (pathValue) => {
+    const rawPath = String(pathValue || '').trim();
+    if (!rawPath) return '/';
+    if (!rawPath.startsWith('/')) return '/';
+    if (rawPath.startsWith('//')) return '/';
+    return rawPath.replace(/\/$/, '') || '/';
+};
+
 const createOtpExpiry = () => new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
 const hashOtp = (otpCode) => bcrypt.hash(otpCode, 10);
@@ -424,7 +432,10 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
         await user.save();
 
         try {
-            const resetLink = `${getAppOrigin(req)}/?resetToken=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}&redirect=reset-password`;
+            const appOrigin = getAppOrigin(req);
+            const redirectPath = getSafeRedirectPath(req.body?.redirectPath);
+            const redirectMode = String(req.body?.redirect || 'reset-password').trim() || 'reset-password';
+            const resetLink = `${appOrigin}${redirectPath}?resetToken=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectMode)}`;
             await mailer.sendPasswordResetEmail(user.email, user.username, resetLink);
         } catch (mailError) {
             console.error('Password reset email could not be sent:', mailError);
