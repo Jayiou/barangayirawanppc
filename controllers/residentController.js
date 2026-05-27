@@ -396,7 +396,7 @@ exports.sendResidentSMS = asyncHandler(async (req, res) => {
     }
 
     const content = String(message || '').trim() || 'Your resident account has an update.';
-    const prefixed = `Brgy Connect: ${content}`;
+    const prefixed = `Brgy Irawan: ${content}`;
     await sendSmsNotification({
         phoneNumber: resident.contactNumber,
         messageType: 'resident_update',

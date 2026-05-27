@@ -27,7 +27,7 @@ test('GET / returns the frontend shell', async () => {
         const body = await response.text();
 
         assert.equal(response.status, 200);
-        assert.match(body, /Barangay Connect/);
+        assert.match(body, /Barangay Irawan/);
         assert.match(body, /<div id="app"><\/div>/);
     } finally {
         await new Promise((resolve) => server.close(resolve));
@@ -43,7 +43,7 @@ test('GET /admin returns the separate admin entry page', async () => {
         const body = await response.text();
 
         assert.equal(response.status, 200);
-        assert.match(body, /Admin Portal \| Barangay Connect/);
+        assert.match(body, /Admin Portal \| Barangay Irawan/);
         assert.match(body, /<div id="app"><\/div>/);
     } finally {
         await new Promise((resolve) => server.close(resolve));

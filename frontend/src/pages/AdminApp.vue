@@ -6,7 +6,7 @@
     <div v-else-if="!isAuthenticated" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; padding: 20px;">
         <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center;">
             <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
-            <BrandMark initials="BC" eyebrow="Barangay Admin" title="Barangay Connect" style="margin-bottom: 2rem;" />
+            <BrandMark initials="BI" eyebrow="Barangay Admin" title="Barangay Irawan" style="margin-bottom: 2rem;" />
             <form class="stack" @submit.prevent="handleAuthSubmit" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="section-head" style="text-align: center; margin-bottom: 1.5rem;">
                     <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ authPanelTitle }}</h3>
@@ -117,7 +117,7 @@
             
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <BrandMark initials="BC" eyebrow="Admin Portal" title="Barangay Connect" />
+                <BrandMark initials="BI" eyebrow="Admin Portal" title="Barangay Irawan" />
             </div>
 
             <!-- Sidebar Navigation -->

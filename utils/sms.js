@@ -287,15 +287,15 @@ const sendDocumentStatusSMS = async (phoneNumber, name, documentType, status, re
     let messageContent = '';
     if (status === 'approved') {
         const referenceText = referenceNumber ? ' Ref: ' + referenceNumber : '';
-        messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is APPROVED. Please check your email for full details.${referenceText}`;
+        messageContent = `Brgy Irawan: Hi ${name}, your ${docTypeFormatted} request is APPROVED. Please check your email for full details.${referenceText}`;
     } else if (status === 'processing') {
-        messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is PROCESSING. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your ${docTypeFormatted} request is PROCESSING. Please check your email for full details.`;
     } else if (status === 'ready_for_pickup') {
-        messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} is READY FOR PICKUP. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your ${docTypeFormatted} is READY FOR PICKUP. Please check your email for full details.`;
     } else if (status === 'rejected') {
-        messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request was REJECTED. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your ${docTypeFormatted} request was REJECTED. Please check your email for full details.`;
     } else if (status === 'completed') {
-        messageContent = `Brgy Connect: Hi ${name}, your ${docTypeFormatted} request is COMPLETED. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your ${docTypeFormatted} request is COMPLETED. Please check your email for full details.`;
     } else {
         return { sent: false, skipped: true, reason: 'unsupported_status' };
     }
@@ -312,9 +312,9 @@ const sendStatusUpdateSMS = async (phoneNumber, name, status) => {
     let messageContent = '';
 
     if (status === 'approved') {
-        messageContent = `Brgy Connect: Hi ${name}, your account is APPROVED. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your account is APPROVED. Please check your email for full details.`;
     } else if (status === 'rejected') {
-        messageContent = `Brgy Connect: Hi ${name}, your account is REJECTED. Please check your email for full details.`;
+        messageContent = `Brgy Irawan: Hi ${name}, your account is REJECTED. Please check your email for full details.`;
     } else {
         return { sent: false, skipped: true, reason: 'unsupported_status' };
     }
@@ -327,7 +327,7 @@ const sendStatusUpdateSMS = async (phoneNumber, name, status) => {
 };
 
 const sendAppointmentSMS = async (phoneNumber, name, appointmentDate, appointmentTime, purpose) => {
-    const messageContent = `Brgy Connect: Hi ${name}, your Appointment request on ${appointmentDate} ${appointmentTime} is ${purpose || 'scheduled'}. Please check your email for full details. Ref: Appointment`;
+    const messageContent = `Brgy Irawan: Hi ${name}, your Appointment request on ${appointmentDate} ${appointmentTime} is ${purpose || 'scheduled'}. Please check your email for full details. Ref: Appointment`;
 
     return sendSmsNotification({
         phoneNumber,

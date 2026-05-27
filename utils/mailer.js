@@ -66,7 +66,7 @@ const buildDetailsHtml = (details) => {
     `;
 };
 
-const FROM_NAME = 'Barangay Connect';
+const FROM_NAME = 'Barangay Irawan';
 const DEFAULT_FROM_EMAIL = 'princejaydelapenaz@gmail.com';
 const DEFAULT_REPLY_TO = 'princejaydelapenaz@gmail.com';
 const path = require('node:path');
@@ -286,13 +286,13 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: 'Verify your Barangay Connect Registration',
+            subject: 'Verify your Barangay Irawan Registration',
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
             text: `Hello ${name},\n\nThank you for registering. To complete your registration and proceed to Admin Approval, please verify your email using the OTP below:\n\n${otpCode}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #235b82; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <p>Thank you for registering. To complete your registration and proceed to Admin Approval, please verify your email using the OTP below:</p>
                     <div style="text-align: center; margin: 30px 0;">
@@ -324,13 +324,13 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: 'Reset your Barangay Connect password',
+            subject: 'Reset your Barangay Irawan password',
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
             text: `Hello ${name},\n\nWe received a request to reset your password. Please copy and paste the link below in your browser:\n\n${resetLink}\n\nThis link will expire in 30 minutes.\n\nIf you did not request this, you can ignore this email.`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #235b82; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <p>We received a request to reset your password. Click the button below to choose a new password:</p>
                     <div style="text-align: center; margin: 30px 0;">
@@ -360,13 +360,13 @@ const sendAdminEmailChangeVerificationEmail = async (toEmail, name, confirmation
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: 'Confirm your new Barangay Connect admin email',
+            subject: 'Confirm your new Barangay Irawan admin email',
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\nWe received a request to change the admin recovery email on your Barangay Connect account. Please confirm the new email address by opening this link:\n\n${confirmationLink}\n\nIf you did not request this, you can ignore this message.`,
+            text: `Hello ${name},\n\nWe received a request to change the admin recovery email on your Barangay Irawan account. Please confirm the new email address by opening this link:\n\n${confirmationLink}\n\nIf you did not request this, you can ignore this message.`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #235b82; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <p>We received a request to change the admin recovery email for your account. Confirm the new email address by clicking the button below:</p>
                     <div style="text-align: center; margin: 30px 0;">
@@ -413,13 +413,13 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: `Barangay Connect - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
+            subject: `Barangay Irawan - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
             text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}${forgotPasswordReminderText}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #235b82; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #235b82; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
@@ -477,13 +477,13 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: `Barangay Connect - Document Request Update: ${formatLabel(status)}`,
+            subject: `Barangay Irawan - Document Request Update: ${formatLabel(status)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
             text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${detailsText}${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #257f49; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${escapeHtml(name)}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
@@ -539,13 +539,13 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
             to: toEmail,
-            subject: `Barangay Connect - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
+            subject: `Barangay Irawan - ${formattedLabel} Update: ${formatLabel(normalizedStatus)}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
             text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}\n\n${detailsText}${adminNoteText}\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #257f49; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${escapeHtml(name)}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
@@ -575,7 +575,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath,
         const docTypeFormatted = formatLabel(documentType);
         let htmlBody = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #257f49; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid #257f49; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">Your requested <strong>${docTypeFormatted}</strong> is now ready!</p>
@@ -646,7 +646,7 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             text: `Hello ${name || 'Resident'},\n\n${(message || '').replace(/<[^>]+>/g, '')}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #257f49; text-align: center;">Barangay Connect</h2>
+                    <h2 style="color: #257f49; text-align: center;">Barangay Irawan</h2>
                     <p>Hello <strong>${name || 'Resident'}</strong>,</p>
                     <div style="padding: 15px; border-left: 5px solid #235b82; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px; white-space: pre-wrap;">${String(message || '').trim()}</p>

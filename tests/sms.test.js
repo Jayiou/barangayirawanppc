@@ -80,7 +80,7 @@ test('sendDocumentStatusSMS sends a compact SMS through Twilio and records succe
     assert.equal(result.messageSid, 'SM123');
     assert.equal(createCalls.length, 1);
     assert.deepEqual(createCalls[0], {
-        body: 'Brgy Connect: Hi Prince, your Barangay Clearance request is APPROVED. Please check your email for full details. Ref: DOC-123',
+        body: 'Brgy Irawan: Hi Prince, your Barangay Clearance request is APPROVED. Please check your email for full details. Ref: DOC-123',
         from: '+15550001111',
         to: '+15550002222'
     });
@@ -99,7 +99,7 @@ test('sendSmsNotification records a failed log when Twilio credentials are missi
     const result = await sms.sendSmsNotification({
         phoneNumber: '+15550002222',
         messageType: 'resident_update',
-        messageContent: 'Brgy Connect: Hi Prince, your account is APPROVED. Please check your email for full details.'
+        messageContent: 'Brgy Irawan: Hi Prince, your account is APPROVED. Please check your email for full details.'
     });
 
     assert.equal(result.sent, false);
@@ -172,7 +172,7 @@ test('sendSmsNotification normalizes PH local numbers to E.164 before Twilio sen
     const result = await sms.sendSmsNotification({
         phoneNumber: '09300620000',
         messageType: 'document_status',
-        messageContent: 'Brgy Connect: test notification.'
+        messageContent: 'Brgy Irawan: test notification.'
     });
 
     assert.equal(result.sent, true);
@@ -208,7 +208,7 @@ test('sendSmsNotification skips invalid phone number and does not call Twilio', 
     const result = await sms.sendSmsNotification({
         phoneNumber: '0930062XXXX',
         messageType: 'document_status',
-        messageContent: 'Brgy Connect: test notification.'
+        messageContent: 'Brgy Irawan: test notification.'
     });
 
     assert.equal(result.sent, false);
@@ -247,7 +247,7 @@ test('sendSmsNotification uses messagingServiceSid when configured', async () =>
     const result = await sms.sendSmsNotification({
         phoneNumber: '+639300625493',
         messageType: 'document_status',
-        messageContent: 'Brgy Connect: test messaging service.'
+        messageContent: 'Brgy Irawan: test messaging service.'
     });
 
     assert.equal(result.sent, true);

@@ -123,7 +123,7 @@ const notifyRequestStatus = async (record, requestLabel, status, notes = '', det
 
     const name = getPersonName(requester, 'Resident');
     const humanStatus = formatLabel(status);
-    const message = `Brgy Connect: Hi ${name}, your ${requestLabel} is ${humanStatus}. Please check your email for full details.`;
+    const message = `Brgy Irawan: Hi ${name}, your ${requestLabel} is ${humanStatus}. Please check your email for full details.`;
 
     let messageType = 'resident_update';
     if (String(requestLabel).toLowerCase().includes('facility')) messageType = 'facility_reservation';

@@ -19,7 +19,7 @@
 
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <BrandMark initials="BC" eyebrow="Resident Portal" title="Barangay Connect" />
+                <BrandMark initials="BI" eyebrow="Resident Portal" title="Barangay Irawan" />
             </div>
 
             <!-- Sidebar Navigation -->
@@ -1630,6 +1630,7 @@ const deleteConfig = {
     document: { path: (id) => `/documents/${id}`, terminal: ['pending'], label: 'document request' }
 };
 
+const isDocumentRevisionRequested = (item) => String(item?.status || '').toLowerCase() === 'revision_requested';
 const canDeleteRecord = (type, item) => deleteConfig[type]?.terminal.includes(item?.status);
 const canEditRecord = (type, item) => type === 'document' && item?.status === 'pending';
 const canCancelAppointment = (item) => ['pending', 'approved'].includes(item?.status);
