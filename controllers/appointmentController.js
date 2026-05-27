@@ -460,7 +460,7 @@ const getMyAppointments = asyncHandler(async (req, res) => {
 
     const appointments = await Appointment.find(query)
         .populate('officialId', 'name position')
-        .sort({ appointmentDate: -1 });
+        .sort({ createdAt: -1 });
 
     res.status(200).json({
         success: true,
@@ -598,7 +598,7 @@ const getAllAppointments = asyncHandler(async (req, res) => {
     const appointments = await Appointment.find(query)
         .populate('residentId', 'firstName lastName contactNumber email')
         .populate('officialId', 'name position')
-        .sort({ appointmentDate: -1, 'timeSlot.startTime': 1 });
+        .sort({ createdAt: -1 });
 
     res.status(200).json({
         success: true,

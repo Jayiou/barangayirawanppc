@@ -1454,6 +1454,13 @@ const matchesDateFilter = (recordDate, filterDate) => {
     return toFilterDate(recordDate) === filterDate;
 };
 
+const getCreatedTime = (record) => {
+    const date = new Date(record?.createdAt || 0);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const sortNewestRequestsFirst = (records) => [...records].sort((left, right) => getCreatedTime(right) - getCreatedTime(left));
+
 const paginateTable = (records, page) => {
     const total = records.length;
     const pages = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
@@ -1468,45 +1475,45 @@ const paginateTable = (records, page) => {
     };
 };
 
-const filteredAppointments = computed(() => appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
+const filteredAppointments = computed(() => sortNewestRequestsFirst(appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
     (record) => record.officialId?.name,
     (record) => record.officialId?.position,
     (record) => record.purpose,
     (record) => record.status,
     (record) => formatDate(record.appointmentDate)
-]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value)));
+]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value))));
 
 const pagedAppointments = computed(() => paginateTable(filteredAppointments.value, appointmentPage.value));
 
 
 
-const filteredReservations = computed(() => reservations.value.filter((item) => matchesSearch(item, reservationSearch.value, [
+const filteredReservations = computed(() => sortNewestRequestsFirst(reservations.value.filter((item) => matchesSearch(item, reservationSearch.value, [
     (record) => normalizeLabel(record.facilityName),
     (record) => record.purpose,
     (record) => record.status,
     (record) => formatDate(record.reservationDate)
-]) && matchesStatusFilter(item.status, reservationStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, reservationDateFilter.value)));
+]) && matchesStatusFilter(item.status, reservationStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, reservationDateFilter.value))));
 
 const pagedReservations = computed(() => paginateTable(filteredReservations.value, reservationPage.value));
 
-const filteredReports = computed(() => reports.value.filter((item) => matchesSearch(item, reportSearch.value, [
+const filteredReports = computed(() => sortNewestRequestsFirst(reports.value.filter((item) => matchesSearch(item, reportSearch.value, [
     (record) => record.title,
     (record) => normalizeLabel(record.reportType),
     (record) => normalizeLabel(record.priority),
     (record) => record.locationText,
     (record) => record.status,
     (record) => formatDate(record.createdAt)
-]) && matchesStatusFilter(item.status, reportStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, reportDateFilter.value)));
+]) && matchesStatusFilter(item.status, reportStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, reportDateFilter.value))));
 
 const pagedReports = computed(() => paginateTable(filteredReports.value, reportPage.value));
 
-const filteredDocumentRequests = computed(() => documentRequests.value.filter((item) => matchesSearch(item, documentSearch.value, [
+const filteredDocumentRequests = computed(() => sortNewestRequestsFirst(documentRequests.value.filter((item) => matchesSearch(item, documentSearch.value, [
     (record) => normalizeLabel(record.type),
     (record) => record.purpose,
     (record) => record.status,
     (record) => getDocumentRequesterName(record),
     (record) => formatDate(record.createdAt)
-]) && matchesStatusFilter(item.status, documentStatusFilter.value) && matchesDateFilter(item.createdAt, documentDateFilter.value)));
+]) && matchesStatusFilter(item.status, documentStatusFilter.value) && matchesDateFilter(item.createdAt, documentDateFilter.value))));
 
 const pagedDocumentRequests = computed(() => paginateTable(filteredDocumentRequests.value, documentPage.value));
 

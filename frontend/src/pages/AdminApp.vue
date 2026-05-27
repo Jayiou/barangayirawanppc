@@ -249,8 +249,8 @@
                                     </div>
                                     <div class="ops-quick-actions">
                                         <button type="button" @click="currentView = 'reports'"><i class="fa-solid fa-shield-halved"></i><span>Review reports</span></button>
-                                        
-                                        <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Manage bookings</span></button>
+                                        <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Manage appointments</span></button>
+                                        <button type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building-columns"></i><span>Facility reservations</span></button>
                                         <button type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-bullhorn"></i><span>Publish advisory</span></button>
                                     </div>
                                 </article>
@@ -530,6 +530,17 @@
                                 <button v-if="currentView === 'announcements'" class="primary-button" type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> Add Announcement</button>
                             </div>
                         </div>
+                        <div v-if="supportsRequesterTabs(currentView)" class="requester-segment" aria-label="Requester type filter">
+                            <button
+                                v-for="option in requesterFilterOptions"
+                                :key="option.value"
+                                type="button"
+                                :class="{ active: managementRequesterFilter === option.value }"
+                                @click="managementRequesterFilter = option.value"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
 
                         <div class="table-responsive">
                             <table class="data-table">
@@ -544,14 +555,14 @@
                                 
                                 <tr v-if="currentView === 'reservations'">
                                     <th scope="col">Facility & Date</th>
-                                    <th scope="col">Resident</th>
+                                    <th scope="col">Requester</th>
                                     <th scope="col">Purpose</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Actions</th>
                                 </tr>
                                 <tr v-if="currentView === 'reports'">
                                     <th scope="col">Issue</th>
-                                    <th scope="col">Resident / Type</th>
+                                    <th scope="col">Requester / Type</th>
                                     <th scope="col">Priority</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Actions</th>
@@ -602,7 +613,7 @@
 
 
                                     <td v-if="currentView === 'reservations'"><strong>{{ normalizeLabel(item.facilityName) }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small><br><small v-if="isInventoryReservation(item)">Quantity: {{ item.quantity || item.chairQuantity || item.tentQuantity || item.tableQuantity || 0 }}</small><small v-else>Time-slot reservation</small></td>
-                                    <td v-if="currentView === 'reservations'">{{ getRequestorName(item) }}</td>
+                                    <td v-if="currentView === 'reservations'">{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }}</small></td>
                                     <td v-if="currentView === 'reservations'">{{ item.purpose }}</td>
                                     <td v-if="currentView === 'reservations'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'reservations'">
@@ -618,7 +629,7 @@
                                     <td v-if="currentView === 'documents'">
                                         <button class="icon-button" @click="openModal('document', item)"><i class="fa-solid fa-eye"></i> View</button>
                                     </td>
-                                    <td v-if="currentView === 'reports'">{{ getRequestorName(item) }}<br><small>{{ item.reportType.replaceAll('_', ' ') }}</small></td>
+                                    <td v-if="currentView === 'reports'">{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }} · {{ item.reportType.replaceAll('_', ' ') }}</small></td>
                                     <td v-if="currentView === 'reports'"><span class="priority-badge" :class="'p-' + item.priority">{{ item.priority.toUpperCase() }}</span></td>
                                     <td v-if="currentView === 'reports'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'reports'">
@@ -773,13 +784,37 @@
                                 <h3>Manage appointment requests</h3>
                             </div>
                         </div>
+                        <div class="table-toolbar appointment-toolbar">
+                            <input v-model="appointmentSearch" type="search" placeholder="Search appointments...">
+                            <select v-model="appointmentStatusFilter">
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                            <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                        </div>
+                        <div class="requester-segment" aria-label="Appointment requester type filter">
+                            <button
+                                v-for="option in requesterFilterOptions"
+                                :key="option.value"
+                                type="button"
+                                :class="{ active: appointmentRequesterFilter === option.value }"
+                                @click="appointmentRequesterFilter = option.value"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
 
                         <div class="table-responsive">
                             <table class="data-table">
                                 <thead>
                                     <tr>
                                         <th>Official</th>
-                                        <th>Resident</th>
+                                        <th>Requester</th>
                                         <th>Date & Time</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -800,7 +835,7 @@
                                     </template>
                                     <tr v-for="item in pagedAppointmentRows.items" :key="item._id" class="table-row hoverable">
                                         <td><strong>{{ item.officialId?.name }}</strong><br><small>{{ item.officialId?.position }}</small></td>
-                                        <td>{{ item.residentId?.firstName }} {{ item.residentId?.lastName }}</td>
+                                        <td>{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }}</small></td>
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'N/A' }} - {{ item.timeSlot?.endTime || 'N/A' }}</small></td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td>
@@ -1500,8 +1535,8 @@ const texts = {
             residents: 'Residents',
             appointments: 'Appointments',
             officials: 'Officials',
-            facilities: 'Facilities',
-            reports: 'Reports',
+            facilities: 'Facility Reservations',
+            reports: 'Incident Reports',
             documents: 'Documents',
             disaster: 'Disaster Management',
             smsLogs: 'SMS Logs',
@@ -1559,10 +1594,12 @@ const TABLE_PAGE_SIZE = 10;
 const managementSearch = ref('');
 const managementStatusFilter = ref('all');
 const managementDateFilter = ref('');
+const managementRequesterFilter = ref('all');
 const managementPage = ref(1);
 const appointmentSearch = ref('');
 const appointmentStatusFilter = ref('all');
 const appointmentDateFilter = ref('');
+const appointmentRequesterFilter = ref('all');
 const appointmentPage = ref(1);
 const officialSearch = ref('');
 const officialStatusFilter = ref('all');
@@ -1613,6 +1650,16 @@ watch(currentView, (view) => {
     }
 
     setStoredAdminView(view);
+    managementPage.value = 1;
+    appointmentPage.value = 1;
+});
+
+watch([managementSearch, managementStatusFilter, managementDateFilter, managementRequesterFilter], () => {
+    managementPage.value = 1;
+});
+
+watch([appointmentSearch, appointmentStatusFilter, appointmentDateFilter, appointmentRequesterFilter], () => {
+    appointmentPage.value = 1;
 });
 const reportAlertVisible = ref(false);
 const reportAlertBusy = ref(false);
@@ -1674,6 +1721,27 @@ const matchesStatusFilter = (value, filterValue) => {
 const matchesDateFilter = (value, filterValue) => {
     if (!filterValue) return true;
     return toFilterDate(value) === filterValue;
+};
+
+const requesterFilterOptions = [
+    { value: 'all', label: 'All requesters' },
+    { value: 'resident', label: 'Residents' },
+    { value: 'guest', label: 'Non-residents' }
+];
+
+const supportsRequesterTabs = (view) => ['appointments', 'reports', 'reservations'].includes(view);
+
+const getRequesterType = (item) => {
+    if (item?.requesterType === 'guest') return 'guest';
+    if (item?.requesterType === 'resident' || item?.residentId) return 'resident';
+    return 'guest';
+};
+
+const getRequesterTypeLabel = (item) => getRequesterType(item) === 'guest' ? 'Non-resident' : 'Resident';
+
+const matchesRequesterFilter = (item, filterValue) => {
+    if (!filterValue || filterValue === 'all') return true;
+    return getRequesterType(item) === filterValue;
 };
 
 const paginateTable = (records, page) => {
@@ -1791,7 +1859,7 @@ const viewTitle = computed(() => ({
     appointments: 'Appointments',
     officials: 'Officials Directory',
     reservations: 'Facility Reservations',
-    reports: 'Resident Reports',
+    reports: 'Incident Reports',
     disaster: 'Disaster Management',
     'sms-logs': 'SMS Logs'
     ,
@@ -1802,6 +1870,7 @@ const pendingWorkload = computed(() => pendingCounts.value.reserves + pendingCou
 const totalResidentsCount = computed(() => residents.value.length);
 const approvedResidentsCount = computed(() => residents.value.filter((resident) => resident.userId?.accountStatus === 'approved').length);
 const activeAnnouncementsCount = computed(() => announcements.value.filter((announcement) => announcement.isActive !== false).length);
+const activeOfficialsCount = computed(() => officials.value.filter((official) => official.status !== 'inactive').length);
 
 const analyticsRanges = [
     { key: 'daily', label: 'Daily' },
@@ -1820,16 +1889,16 @@ const dashboardCards = computed(() => ([
         tone: 'emerald'
     },
     {
-        key: 'pending',
-        label: 'Pending Requests',
-        value: pendingWorkload.value,
-        caption: `${pendingWorkload.value} in queue`,
-        icon: 'fa-solid fa-inbox',
+        key: 'officials',
+        label: 'Barangay Officials',
+        value: activeOfficialsCount.value,
+        caption: `${officials.value.length} in directory`,
+        icon: 'fa-solid fa-crown',
         tone: 'blue'
     },
     {
         key: 'reports',
-        label: 'Open Reports',
+        label: 'Incident Reports',
         value: pendingCounts.value.reports,
         caption: `${reportsToday.value} submitted today`,
         icon: 'fa-solid fa-shield-halved',
@@ -1837,7 +1906,7 @@ const dashboardCards = computed(() => ([
     },
     {
         key: 'appointments',
-        label: 'Scheduled Appointments',
+        label: 'Appointments',
         value: scheduledAppointmentsCount.value,
         caption: `${appointmentsThisWeek.value} this week`,
         icon: 'fa-solid fa-calendar-check',
@@ -2038,12 +2107,6 @@ const buildTrend = (records, dateKey) => {
 };
 
 const activeAnalyticsData = computed(() => {
-    const pendingRecords = [
-        ...reservations.value.filter((reservation) => reservation.status === 'pending').map((reservation) => ({ ...reservation, queueType: 'Facilities' })),
-        ...appointments.value.filter((appointment) => appointment.status === 'pending').map((appointment) => ({ ...appointment, queueType: 'Appointments' })),
-        ...reports.value.filter((report) => ['pending', 'reviewing'].includes(report.status)).map((report) => ({ ...report, queueType: 'Reports' }))
-    ];
-
     const configs = {
         residents: {
             kicker: 'Population registry',
@@ -2062,21 +2125,21 @@ const activeAnalyticsData = computed(() => {
                 { label: 'Most Active', value: 'Registry', detail: 'Citizen profile operations' }
             ]
         },
-        pending: {
-            kicker: 'Service queue',
-            title: 'Pending Request Operations',
-            records: pendingRecords,
+        officials: {
+            kicker: 'Barangay leadership',
+            title: 'Barangay Officials Directory',
+            records: officials.value,
             dateKey: 'createdAt',
-            distribution: buildDistribution(pendingRecords, (record) => record.queueType, ['No pending queue']),
+            distribution: buildDistribution(officials.value, (official) => normalizeLabel(official.position), ['No officials']),
             summaries: [
-                { label: 'Total Queue', value: pendingWorkload.value, detail: 'Awaiting action' },
-                { label: 'Citizen Reports', value: pendingCounts.value.reports, detail: 'Operational review' },
-                { label: 'Scheduled Appointments', value: pendingCounts.value.appointments, detail: 'Waiting confirmation' }
+                { label: 'Active', value: activeOfficialsCount.value, detail: 'Available for appointments' },
+                { label: 'Stored', value: officials.value.length, detail: 'Officials in directory' },
+                { label: 'Inactive', value: officials.value.length - activeOfficialsCount.value, detail: 'Hidden from scheduling' }
             ],
             insights: [
-                { label: 'Queue Pressure', value: pendingWorkload.value ? 'Active' : 'Clear', detail: 'Current workload state' },
-                { label: 'Top Queue', value: buildDistribution(pendingRecords, (record) => record.queueType)[0]?.label || 'None', detail: 'Largest pending category' },
-                { label: 'Awaiting Review', value: `${pendingCounts.value.reports}`, detail: 'Report action pending' }
+                { label: 'Top Role', value: buildDistribution(officials.value, (official) => normalizeLabel(official.position))[0]?.label || 'None', detail: 'Most represented position' },
+                { label: 'Scheduling Ready', value: activeOfficialsCount.value ? 'Ready' : 'No active officials', detail: 'Appointment availability source' },
+                { label: 'Directory Health', value: officials.value.length ? `${Math.round((activeOfficialsCount.value / officials.value.length) * 100)}%` : '0%', detail: 'Active official ratio' }
             ]
         },
         reports: {
@@ -2520,13 +2583,20 @@ const markDisasterAdvisoryStatus = async (advisory, status) => {
     }
 };
 
+const getCreatedTime = (record) => {
+    const date = new Date(record?.createdAt || record?.userId?.createdAt || 0);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const sortNewestRequestsFirst = (records) => [...records].sort((left, right) => getCreatedTime(right) - getCreatedTime(left));
+
 const currentList = computed(() => {
     switch (currentView.value) {
         case 'announcements': return announcements.value;
-        case 'residents': return residents.value;
-        case 'reservations': return [...reservations.value].sort((a, b) => new Date(b.reservationDate) - new Date(a.reservationDate));
-        case 'reports': return [...reports.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        case 'documents': return [...(documentRequests.value || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        case 'residents': return sortNewestRequestsFirst(residents.value);
+        case 'reservations': return sortNewestRequestsFirst(reservations.value);
+        case 'reports': return sortNewestRequestsFirst(reports.value);
+        case 'documents': return sortNewestRequestsFirst(documentRequests.value || []);
         default: return [];
     }
 });
@@ -2566,7 +2636,7 @@ const filteredManagementList = computed(() => {
                 (record) => record.purpose,
                 (record) => record.status,
                 (record) => formatDate(record.reservationDate)
-            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, managementDateFilter.value));
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.reservationDate || item.createdAt, managementDateFilter.value) && matchesRequesterFilter(item, managementRequesterFilter.value));
         case 'reports':
             return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
                 (record) => record.title,
@@ -2576,7 +2646,7 @@ const filteredManagementList = computed(() => {
                 (record) => getRequestorName(record),
                 (record) => record.status,
                 (record) => formatDate(record.createdAt)
-            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, managementDateFilter.value));
+            ]) && matchesStatusFilter(item.status, managementStatusFilter.value) && matchesDateFilter(item.createdAt || item.incidentDate, managementDateFilter.value) && matchesRequesterFilter(item, managementRequesterFilter.value));
         case 'documents':
             return currentList.value.filter((item) => matchesSearch(item, searchTerm, [
                 (record) => normalizeLabel(record.type),
@@ -2592,14 +2662,15 @@ const filteredManagementList = computed(() => {
 
 const pagedManagementList = computed(() => paginateTable(filteredManagementList.value, managementPage.value));
 
-const appointmentRows = computed(() => appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
+const appointmentRows = computed(() => sortNewestRequestsFirst(appointments.value.filter((item) => matchesSearch(item, appointmentSearch.value, [
     (record) => record.officialId?.name,
     (record) => record.officialId?.position,
+    (record) => getRequestorName(record),
     (record) => record.residentId ? `${record.residentId.firstName || ''} ${record.residentId.lastName || ''}`.trim() : '',
     (record) => record.purpose,
     (record) => record.status,
     (record) => formatDate(record.appointmentDate)
-]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value)));
+]) && matchesStatusFilter(item.status, appointmentStatusFilter.value) && matchesDateFilter(item.appointmentDate || item.createdAt, appointmentDateFilter.value) && matchesRequesterFilter(item, appointmentRequesterFilter.value))));
 
 const pagedAppointmentRows = computed(() => paginateTable(appointmentRows.value, appointmentPage.value));
 
@@ -4421,6 +4492,34 @@ const handleAuthSubmit = async () => {
     background: linear-gradient(135deg, #0d4a2a, #a1121c);
     color: #fff;
     border-color: transparent;
+}
+
+.requester-segment {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+
+.requester-segment button {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 8px 12px;
+}
+
+.requester-segment button.active {
+    background: #0d4a2a;
+    border-color: #0d4a2a;
+    color: #fff;
+}
+
+.appointment-toolbar {
+    margin: 0 0 12px;
 }
 
 .resident-tab-content {
