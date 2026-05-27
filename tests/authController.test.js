@@ -115,7 +115,7 @@ test('verifyOtp creates the resident profile after OTP verification', async () =
     let savedUser;
     let createdResidentPayload;
 
-    User.findOne = async () => ({
+    const savedUserRecord = {
         _id: 'user-123',
         email: 'juan@example.com',
         accountStatus: 'pending_otp',
@@ -134,9 +134,11 @@ test('verifyOtp creates the resident profile after OTP verification', async () =
             proofOfResidency: 'proof.jpg'
         },
         async save() {
-            savedUser = this;
+            this.saved = true;
         }
-    });
+    };
+    savedUser = savedUserRecord;
+    User.findOne = async () => savedUserRecord;
     Resident.findOne = async () => null;
     Resident.create = async (payload) => {
         createdResidentPayload = payload;
@@ -307,7 +309,7 @@ test('changePassword updates the resident password when current password matches
         _id: 'user-123',
         password: 'hashed-old',
         async save() {
-            savedUser = this;
+            this.saved = true;
         }
     });
     bcrypt.compare = async (value, hash) => value === 'Old_12345' && hash === 'hashed-old';
@@ -464,16 +466,18 @@ test('requestAdminEmailChange verifies password and sends a confirmation link', 
     const res = createMockResponse();
     let savedUser;
 
-    User.findById = async () => ({
+    const adminUser = {
         _id: 'admin-123',
         role: 'admin',
         username: 'admin',
         email: 'admin@barangay.com',
         password: 'hashed-old',
         async save() {
-            savedUser = this;
+            this.saved = true;
         }
-    });
+    };
+    savedUser = adminUser;
+    User.findById = async () => adminUser;
     User.findOne = async () => null;
     bcrypt.compare = async (value, hash) => value === 'Admin_12345' && hash === 'hashed-old';
     mailer.sendAdminEmailChangeVerificationEmail = async (toEmail, name, link) => {
@@ -502,26 +506,25 @@ test('confirmAdminEmailChange updates the email after token verification', async
         }
     };
     const res = createMockResponse();
-    let savedUser;
+    const savedUserRecord = {
+        _id: 'admin-123',
+        username: 'admin',
+        email: 'old-admin@example.com',
+        pendingEmail: 'new-admin@example.com',
+        emailChangeToken: hashedToken,
+        emailChangeExpires: new Date(Date.now() + 60 * 1000),
+        role: 'admin',
+        isActive: true,
+        async save() {
+            this.saved = true;
+        }
+    };
 
     User.findOne = async (query) => {
-        assert.equal(query.email, undefined);
+        assert.equal(query.email, 'new-admin@example.com');
         assert.equal(query.pendingEmail, 'new-admin@example.com');
         assert.equal(query.emailChangeToken, hashedToken);
-        assert.equal(query.role, 'admin');
-        return {
-            _id: 'admin-123',
-            username: 'admin',
-            email: 'old-admin@example.com',
-            pendingEmail: 'new-admin@example.com',
-            emailChangeToken: hashedToken,
-            emailChangeExpires: new Date(Date.now() + 60 * 1000),
-            role: 'admin',
-            isActive: true,
-            async save() {
-                savedUser = this;
-            }
-        };
+        return savedUserRecord;
     };
 
     await authController.confirmAdminEmailChange(req, res);
@@ -529,10 +532,10 @@ test('confirmAdminEmailChange updates the email after token verification', async
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.message, 'Admin email updated successfully.');
     assert.equal(res.body.user.email, 'new-admin@example.com');
-    assert.equal(savedUser.email, 'new-admin@example.com');
-    assert.equal(savedUser.pendingEmail, undefined);
-    assert.equal(savedUser.emailChangeToken, undefined);
-    assert.equal(savedUser.emailChangeExpires, undefined);
+    assert.equal(savedUserRecord.email, 'new-admin@example.com');
+    assert.equal(savedUserRecord.pendingEmail, undefined);
+    assert.equal(savedUserRecord.emailChangeToken, undefined);
+    assert.equal(savedUserRecord.emailChangeExpires, undefined);
 });
 
 test('verifyOtp compares hashed OTP values and clears them after success', async () => {

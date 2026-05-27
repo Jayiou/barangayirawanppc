@@ -310,6 +310,7 @@ export function useAdminAuth() {
         try {
             const me = await apiFetch('/auth/me');
             if (me.role === 'admin') {
+                setAuth(auth.token, me);
                 user.value = me;
                 isAuthenticated.value = true;
                 syncAdminProfileFormFromUser();
