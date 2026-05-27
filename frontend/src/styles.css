@@ -1410,9 +1410,6 @@ textarea { resize: vertical; }
     flex-wrap: wrap;
     min-width: 160px;
 }
-.portal-mobile-meta {
-    display: none;
-}
 .table-action {
     padding: 8px 10px;
     border-radius: 10px;
@@ -1940,51 +1937,22 @@ textarea { resize: vertical; }
     .resident-shell.sidebar-expanded .logout-btn {
         width: 100%;
     }
-    .portal-record-table { min-width: 560px; }
-    .portal-record-table th:first-child,
-    .portal-record-table th:nth-child(4),
-    .portal-record-table .portal-date-cell,
-    .portal-record-table .portal-status-cell {
-        display: none;
-    }
-    .portal-row-actions {
-        min-width: 0;
-        flex-direction: column;
-        align-items: stretch;
+    .portal-record-filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 8px;
+        padding: 8px;
     }
-    .portal-row-actions .table-action {
-        width: 100%;
-        justify-content: center;
-    }
-    .portal-mobile-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        width: 100%;
-        padding: 7px 8px;
-        border: 1px solid rgba(22, 36, 26, 0.08);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.72);
-        color: #4f5f56;
-        font-size: 0.78rem;
-        line-height: 1.25;
-    }
-    .portal-mobile-meta span {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+    .portal-record-filters select,
+    .portal-record-filters .date-filter-field {
         min-width: 0;
+        width: 100%;
+        flex: none;
     }
-    .portal-mobile-meta i {
-        color: #257f49;
-    }
-    .portal-mobile-meta .status-badge {
-        flex: 0 0 auto;
-        white-space: nowrap;
-        font-size: 0.68rem;
-        padding: 4px 7px;
+    .portal-record-filters input[type="date"] {
+        min-width: 0;
+        width: 100%;
+        font-size: 0.84rem;
     }
     .portal-detail-grid { grid-template-columns: 1fr; }
     .portal-modal-actions {
@@ -2204,6 +2172,27 @@ textarea { resize: vertical; }
 .table-filter-bar select,
 .table-filter-bar input[type="date"] {
     flex: 0 1 180px;
+}
+
+.date-filter-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 1 180px;
+}
+
+.date-filter-field i {
+    position: absolute;
+    left: 12px;
+    color: #257f49;
+    font-size: 0.92rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.date-filter-field input[type="date"] {
+    width: 100%;
+    padding-left: 36px;
 }
 
 .table-pagination {

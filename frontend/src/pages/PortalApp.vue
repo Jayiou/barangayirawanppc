@@ -318,7 +318,7 @@
                             <button class="primary-button" @click="activeModal = 'appointment'">{{ texts.appointments.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="appointmentSearch" type="search" :placeholder="texts.appointments.searchPlaceholder">
-                        <div class="table-filter-bar">
+                        <div class="table-filter-bar portal-record-filters">
                             <select v-model="appointmentStatusFilter">
                                 <option value="all">All statuses</option>
                                 <option value="pending">Pending</option>
@@ -327,7 +327,10 @@
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
-                            <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                            <label class="date-filter-field">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                            </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
@@ -337,15 +340,11 @@
                                 <tbody>
                                     <tr v-if="!pagedAppointments.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.appointments.empty }}</td></tr>
                                     <tr v-for="item in pagedAppointments.items" :key="item._id">
-                                        <td class="portal-date-cell">{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
+                                        <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
                                         <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
                                         <td>{{ item.purpose }}</td>
-                                        <td class="portal-status-cell"><StatusBadge :status="item.status" /></td>
+                                        <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <div class="portal-mobile-meta">
-                                                <span><i class="fa-solid fa-calendar-days"></i>{{ formatDate(item.appointmentDate) }} · {{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</span>
-                                                <StatusBadge :status="item.status" />
-                                            </div>
                                             <button class="ghost-button table-action" @click="openRecordDetail('appointment', item)">View</button>
                                             <button v-if="canCancelAppointment(item)" class="ghost-button table-action danger" @click="cancelResidentAppointment(item)">Cancel</button>
                                             <button v-if="canDeleteRecord('appointment', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('appointment', item)">Delete</button>
@@ -377,7 +376,7 @@
                             <button class="primary-button" @click="openDocumentRequestModal()">{{ texts.documents.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="texts.documents.searchPlaceholder">
-                        <div class="table-filter-bar">
+                        <div class="table-filter-bar portal-record-filters">
                             <select v-model="documentStatusFilter">
                                 <option value="all">All statuses</option>
                                 <option value="pending">Pending</option>
@@ -387,7 +386,10 @@
                                 <option value="completed">Completed</option>
                                 <option value="rejected">Rejected</option>
                             </select>
-                            <input v-model="documentDateFilter" type="date" aria-label="Filter documents by date">
+                            <label class="date-filter-field">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <input v-model="documentDateFilter" type="date" aria-label="Filter documents by date">
+                            </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
@@ -397,15 +399,11 @@
                                 <tbody>
                                     <tr v-if="!pagedDocumentRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.documents.empty }}</td></tr>
                                     <tr v-for="item in pagedDocumentRequests.items" :key="item._id">
-                                        <td class="portal-date-cell">{{ formatDate(item.createdAt) }}</td>
+                                        <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ normalizeLabel(item.type) }}</td>
                                         <td>{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
-                                        <td class="portal-status-cell"><StatusBadge :status="item.status" /></td>
+                                        <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <div class="portal-mobile-meta">
-                                                <span><i class="fa-solid fa-calendar-days"></i>{{ formatDate(item.createdAt) }}</span>
-                                                <StatusBadge :status="item.status" />
-                                            </div>
                                             <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
                                             <button v-if="canEditRecord('document', item)" class="ghost-button table-action" @click="openDocumentRequestEditor(item)">Edit</button>
                                             <button v-if="canDeleteRecord('document', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('document', item)">Delete</button>
@@ -437,7 +435,7 @@
                             <button class="primary-button" @click="activeModal = 'reservation'">{{ texts.reservations.requestButton }}</button>
                         </div>
                         <input class="portal-search-input" v-model="reservationSearch" type="search" :placeholder="texts.reservations.searchPlaceholder">
-                        <div class="table-filter-bar">
+                        <div class="table-filter-bar portal-record-filters">
                             <select v-model="reservationStatusFilter">
                                 <option value="all">All statuses</option>
                                 <option value="pending">Pending</option>
@@ -447,7 +445,10 @@
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
-                            <input v-model="reservationDateFilter" type="date" aria-label="Filter reservations by date">
+                            <label class="date-filter-field">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <input v-model="reservationDateFilter" type="date" aria-label="Filter reservations by date">
+                            </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
@@ -455,7 +456,7 @@
                                 <tbody>
                                     <tr v-if="!pagedReservations.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.reservations.empty }}</td></tr>
                                     <tr v-for="item in pagedReservations.items" :key="item._id">
-                                        <td class="portal-date-cell">
+                                        <td>
                                             {{ formatDate(item.reservationDate) }}<br>
                                             <small>{{ item.startTime }}-{{ item.endTime }}</small><br>
                                             <small>
@@ -465,12 +466,8 @@
                                         </td>
                                         <td>{{ normalizeLabel(item.facilityName) }}</td>
                                         <td>{{ item.purpose }}</td>
-                                        <td class="portal-status-cell"><StatusBadge :status="item.status" /></td>
+                                        <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <div class="portal-mobile-meta">
-                                                <span><i class="fa-solid fa-calendar-days"></i>{{ formatDate(item.reservationDate) }} · {{ item.startTime }}-{{ item.endTime }}</span>
-                                                <StatusBadge :status="item.status" />
-                                            </div>
                                             <button class="ghost-button table-action" @click="openRecordDetail('reservation', item)">View</button>
                                             <button v-if="canDeleteRecord('reservation', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('reservation', item)">Delete</button>
                                         </div></td>
@@ -501,7 +498,7 @@
                             <button class="primary-button" @click="activeModal = 'report'">Submit New Report</button>
                         </div>
                         <input class="portal-search-input" v-model="reportSearch" type="search" placeholder="Search reports">
-                        <div class="table-filter-bar">
+                        <div class="table-filter-bar portal-record-filters">
                             <select v-model="reportStatusFilter">
                                 <option value="all">All statuses</option>
                                 <option value="pending">Pending</option>
@@ -511,7 +508,10 @@
                                 <option value="rejected">Rejected</option>
                                 <option value="closed">Closed</option>
                             </select>
-                            <input v-model="reportDateFilter" type="date" aria-label="Filter reports by date">
+                            <label class="date-filter-field">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                                <input v-model="reportDateFilter" type="date" aria-label="Filter reports by date">
+                            </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
@@ -519,15 +519,11 @@
                                 <tbody>
                                     <tr v-if="!pagedReports.items.length"><td colspan="5" class="portal-empty-cell">No reports found.</td></tr>
                                     <tr v-for="item in pagedReports.items" :key="item._id">
-                                        <td class="portal-date-cell">{{ formatDate(item.createdAt) }}</td>
+                                        <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ item.title }}<br><small>{{ normalizeLabel(item.reportType) }} | {{ normalizeLabel(item.priority) }}</small></td>
                                         <td>{{ item.locationText }}</td>
-                                        <td class="portal-status-cell"><StatusBadge :status="item.status" /></td>
+                                        <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <div class="portal-mobile-meta">
-                                                <span><i class="fa-solid fa-calendar-days"></i>{{ formatDate(item.createdAt) }}</span>
-                                                <StatusBadge :status="item.status" />
-                                            </div>
                                             <button class="ghost-button table-action" @click="openRecordDetail('report', item)">View</button>
                                             <button v-if="canDeleteRecord('report', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('report', item)">Delete</button>
                                         </div></td>
