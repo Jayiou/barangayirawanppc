@@ -642,7 +642,7 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findById(userId);
-    if (!user || user.role !== 'admin') {
+    if (user?.role !== 'admin') {
         throw createHttpError(403, 'Access denied', { code: 'AUTH_FORBIDDEN' });
     }
 
