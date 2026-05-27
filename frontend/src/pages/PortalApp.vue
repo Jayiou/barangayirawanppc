@@ -58,7 +58,6 @@
                     <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ texts.nav.reports }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
-                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span>{{ texts.nav.profile }}</span></button>
                 </nav>
             </header>
             <section class="hero-banner">
