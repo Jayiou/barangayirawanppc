@@ -40,12 +40,59 @@ const appointmentSchema = new mongoose.Schema(
         residentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resident',
-            required: true
+            default: null,
+            required() {
+                return this.requesterType !== 'guest';
+            }
         },
         userId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
-            required: true
+            default: null,
+            required() {
+                return this.requesterType !== 'guest';
+            }
+        },
+        requesterType: {
+            type: String,
+            enum: ['resident', 'guest'],
+            default: 'resident'
+        },
+        firstName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        middleName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        lastName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        suffix: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        contactNumber: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: ''
+        },
+        address: {
+            type: String,
+            trim: true,
+            default: ''
         },
         officialId: {
             type: mongoose.Schema.Types.ObjectId,

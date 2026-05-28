@@ -415,6 +415,97 @@
                                 </button>
                             </form>
 
+                            <form v-else-if="activeModal === 'guest-appointment-request'" class="modern-form register-form guest-request-form" @submit.prevent="handleGuestAppointmentRequest">
+                                <div class="guest-request-banner">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                    <div>
+                                        <strong>{{ texts.landing.auth.guestAppointment.bannerTitle }}</strong>
+                                        <p>{{ texts.landing.auth.guestAppointment.bannerCopy }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="guest-appointment-official">Barangay Official</label>
+                                        <div class="custom-select">
+                                            <select id="guest-appointment-official" v-model="guestAppointmentForm.officialId" required @change="handleGuestAppointmentOfficialChange">
+                                                <option disabled value="">Select official</option>
+                                                <option v-for="official in sortedOfficials" :key="official._id" :value="official._id" :disabled="official.status !== 'active'">
+                                                    {{ getGuestAppointmentOfficialLabel(official) }}
+                                                </option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                        <small v-if="guestAppointmentInactiveMessage" class="fine-print">{{ guestAppointmentInactiveMessage }}</small>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="guest-appointment-date">Appointment Date</label>
+                                        <input id="guest-appointment-date" v-model="guestAppointmentForm.appointmentDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="loadGuestAppointmentSlots">
+                                    </div>
+                                </div>
+
+                                <div class="facility-slot-picker" v-if="guestAppointmentForm.officialId && guestAppointmentForm.appointmentDate && !selectedGuestAppointmentOfficialInactive">
+                                    <div class="facility-slot-head">
+                                        <span>Available Time Slot</span>
+                                        <small>{{ guestAppointmentSlotsAvailable.length }} available</small>
+                                    </div>
+                                    <div v-if="isGuestAppointmentSlotsLoading" class="facility-slot-note">Loading appointment schedule...</div>
+                                    <div v-else-if="!guestAppointmentSlotsAvailable.length" class="facility-slot-note">No appointment slots are available for the selected official and date.</div>
+                                    <div v-else class="input-group">
+                                        <label for="guest-appointment-slot">Time Slot</label>
+                                        <div class="custom-select">
+                                            <select id="guest-appointment-slot" v-model="guestAppointmentSelectedSlot" required @change="applyGuestAppointmentSlot">
+                                                <option disabled value="">Select time</option>
+                                                <option v-for="slot in guestAppointmentSlotsAvailable" :key="`${slot.startTime}-${slot.endTime}`" :value="`${slot.startTime}|${slot.endTime}`">{{ slot.label || `${slot.startTime} - ${slot.endTime}` }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="guest-appointment-purpose">Purpose</label>
+                                    <textarea id="guest-appointment-purpose" v-model="guestAppointmentForm.purpose" rows="3" placeholder="Briefly describe your appointment concern" required></textarea>
+                                </div>
+
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="guest-appointment-first-name">First Name</label>
+                                        <input id="guest-appointment-first-name" v-model="guestAppointmentForm.firstName" type="text" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="guest-appointment-last-name">Last Name</label>
+                                        <input id="guest-appointment-last-name" v-model="guestAppointmentForm.lastName" type="text" required>
+                                    </div>
+                                </div>
+
+                                <div class="two-col-grid">
+                                    <div class="input-group">
+                                        <label for="guest-appointment-contact">Contact Number</label>
+                                        <input id="guest-appointment-contact" v-model="guestAppointmentForm.contactNumber" type="tel" placeholder="09xxxxxxxxx" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="guest-appointment-email">Gmail Address</label>
+                                        <input id="guest-appointment-email" v-model="guestAppointmentForm.email" type="email" placeholder="yourname@gmail.com" required>
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="guest-appointment-address">Current Address</label>
+                                    <input id="guest-appointment-address" v-model="guestAppointmentForm.address" type="text" placeholder="City / municipality / barangay" required>
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" v-model="guestAppointmentForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                    </label>
+                                </div>
+
+                                <button type="submit" class="auth-submit-btn" :disabled="!canSubmitGuestAppointment">
+                                    {{ isGuestAppointmentLoading ? texts.landing.auth.guestAppointment.submitting : texts.landing.auth.guestAppointment.submit }} <i :class="isGuestAppointmentLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                </button>
+                            </form>
+
                             <form v-else-if="activeModal === 'guest-facility-request'" class="modern-form register-form guest-request-form" @submit.prevent="handleGuestReservationRequest">
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-building-circle-check"></i>
@@ -1055,6 +1146,7 @@ const landingText = {
         reset: { title: 'Reset Password', visualTitle: 'Choose a New Password', visualCopy: 'Set a new password to restore access to your resident portal.', instruction: 'Choose a strong new password to restore access to your account.', button: 'Save New Password', saving: 'Saving...' },
         pending: { title: 'Registration Received', visualTitle: 'Account Pending Approval', visualCopy: 'Your registration has been verified and is now being reviewed by the Barangay Admin.' },
         guestReport: { title: 'Non-Resident Incident Report', visualTitle: 'Report Without Registration', visualCopy: 'Non-residents may file incident reports or community concerns. The admin will review the report and respond by email.', bannerTitle: 'Non-Resident Report', bannerCopy: 'Submit an incident report, complaint, or community concern. The admin will review it and email the update.', submit: 'Submit Report', submitting: 'Submitting...' },
+        guestAppointment: { title: 'Non-Resident Appointment Request', visualTitle: 'Appoint Without Registration', visualCopy: 'Non-residents may request an appointment with an available barangay official. The admin will review the request and respond by email.', bannerTitle: 'Non-Resident Appointment', bannerCopy: 'Choose an active official and available time slot. The barangay admin will confirm your appointment by email.', submit: 'Submit Appointment', submitting: 'Submitting...' },
         guestReservation: { title: 'Non-Resident Facility Request', visualTitle: 'Reserve Without Registration', visualCopy: 'Non-residents may submit facility reservations. The barangay admin will review your request and contact you by email.', bannerTitle: 'Non-Resident Facility Request', bannerCopy: 'Reserve a barangay facility for your event. The admin will confirm availability and send an update by email.', submit: 'Submit Request', submitting: 'Submitting...' }
     }
 };
@@ -1167,6 +1259,26 @@ const guestReportMapEmbedUrl = computed(() => {
     return `https://maps.google.com/maps?q=${guestReportForm.locationLatitude},${guestReportForm.locationLongitude}&z=16&output=embed`;
 });
 const guestReportTypeConfig = computed(() => REPORT_TYPE_CONFIG[guestReportForm.reportType] || REPORT_TYPE_CONFIG.other);
+const guestAppointmentFormDefaults = {
+    officialId: '',
+    appointmentDate: '',
+    startTime: '',
+    endTime: '',
+    purpose: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    suffix: '',
+    contactNumber: '',
+    email: '',
+    address: '',
+    agreePrivacy: false
+};
+const guestAppointmentForm = reactive({ ...guestAppointmentFormDefaults });
+const guestAppointmentSlots = ref([]);
+const guestAppointmentSelectedSlot = ref('');
+const isGuestAppointmentSlotsLoading = ref(false);
+const isGuestAppointmentLoading = ref(false);
 const guestReservationFormDefaults = {
     facilityName: 'barangay_hall',
     reservationDate: '',
@@ -1491,11 +1603,41 @@ const sortedOfficials = computed(() => {
         return String(a.name || '').localeCompare(String(b.name || ''));
     });
 });
+const selectedGuestAppointmentOfficial = computed(() => officials.value.find((official) => official._id === guestAppointmentForm.officialId) || null);
+const selectedGuestAppointmentOfficialInactive = computed(() => Boolean(selectedGuestAppointmentOfficial.value && selectedGuestAppointmentOfficial.value.status !== 'active'));
+const guestAppointmentInactiveMessage = computed(() => {
+    if (!selectedGuestAppointmentOfficialInactive.value) {
+        return '';
+    }
+
+    const reason = String(selectedGuestAppointmentOfficial.value?.notes || '').trim() || 'No reason provided';
+    return `This official is currently inactive: ${reason}`;
+});
+const guestAppointmentSlotsAvailable = computed(() => guestAppointmentSlots.value.filter((slot) => slot.isAvailable));
+const canSubmitGuestAppointment = computed(() => (
+    !isGuestAppointmentLoading.value
+    && guestAppointmentForm.agreePrivacy
+    && guestAppointmentForm.officialId
+    && guestAppointmentForm.appointmentDate
+    && guestAppointmentForm.startTime
+    && guestAppointmentForm.endTime
+    && !selectedGuestAppointmentOfficialInactive.value
+));
 
 const getOfficialInitials = (official) => {
     const names = String(official.name || '').split(' ').filter(Boolean);
     if (!names.length) return 'BI';
     return names.slice(0, 2).map((part) => part[0].toUpperCase()).join('');
+};
+
+const getGuestAppointmentOfficialLabel = (official) => {
+    const base = `${official.name} - ${official.position}`;
+    if (official.status === 'active') {
+        return base;
+    }
+
+    const reason = String(official.notes || '').trim() || 'No reason provided';
+    return `${base} (Inactive: ${reason})`;
 };
 
 const loadOfficials = async () => {
@@ -1573,6 +1715,7 @@ const getModalTitle = (mode) => {
     if (mode === 'reset-password') return auth.reset.title;
     if (mode === 'pending-approval') return auth.pending.title;
     if (mode === 'guest-report-request') return auth.guestReport.title;
+    if (mode === 'guest-appointment-request') return auth.guestAppointment.title;
     if (mode === 'guest-facility-request') return auth.guestReservation.title;
     return 'Resident Portal';
 };
@@ -1586,6 +1729,7 @@ const getVisualTitle = (mode) => {
     if (mode === 'reset-password') return auth.reset.visualTitle;
     if (mode === 'pending-approval') return auth.pending.visualTitle;
     if (mode === 'guest-report-request') return auth.guestReport.visualTitle;
+    if (mode === 'guest-appointment-request') return auth.guestAppointment.visualTitle;
     if (mode === 'guest-facility-request') return auth.guestReservation.visualTitle;
     return 'Resident Portal';
 };
@@ -1599,6 +1743,7 @@ const getVisualCopy = (mode) => {
     if (mode === 'reset-password') return auth.reset.visualCopy;
     if (mode === 'pending-approval') return auth.pending.visualCopy;
     if (mode === 'guest-report-request') return auth.guestReport.visualCopy;
+    if (mode === 'guest-appointment-request') return auth.guestAppointment.visualCopy;
     if (mode === 'guest-facility-request') return auth.guestReservation.visualCopy;
     return 'Access barangay services securely from any device.';
 };
@@ -1644,6 +1789,9 @@ const openModal = (mode) => {
     setStatus('');
     if (mode === 'guest-report-request') {
         resetGuestReportForm();
+    }
+    if (mode === 'guest-appointment-request') {
+        resetGuestAppointmentForm();
     }
     if (mode === 'guest-facility-request') {
         resetGuestReservationForm();
@@ -1803,6 +1951,12 @@ const resetGuestReportForm = () => {
     guestReportProofFiles.value = [];
 };
 
+const resetGuestAppointmentForm = () => {
+    Object.assign(guestAppointmentForm, guestAppointmentFormDefaults);
+    guestAppointmentSlots.value = [];
+    guestAppointmentSelectedSlot.value = '';
+};
+
 const resetGuestReservationForm = () => {
     Object.assign(guestReservationForm, guestReservationFormDefaults);
     guestFacilityAvailability.value = null;
@@ -1813,6 +1967,48 @@ const isGuestReportLoading = ref(false);
 const handleGuestReportProofFiles = (event) => {
     const incoming = Array.from(event.target.files || []);
     guestReportProofFiles.value = incoming.slice(0, 5);
+};
+
+const clearGuestAppointmentSlotSelection = () => {
+    guestAppointmentSelectedSlot.value = '';
+    guestAppointmentForm.startTime = '';
+    guestAppointmentForm.endTime = '';
+};
+
+const handleGuestAppointmentOfficialChange = () => {
+    clearGuestAppointmentSlotSelection();
+    guestAppointmentSlots.value = [];
+    loadGuestAppointmentSlots();
+};
+
+const applyGuestAppointmentSlot = () => {
+    const [startTime, endTime] = String(guestAppointmentSelectedSlot.value || '').split('|');
+    guestAppointmentForm.startTime = startTime || '';
+    guestAppointmentForm.endTime = endTime || '';
+};
+
+const loadGuestAppointmentSlots = async () => {
+    clearGuestAppointmentSlotSelection();
+    guestAppointmentSlots.value = [];
+
+    if (!guestAppointmentForm.officialId || !guestAppointmentForm.appointmentDate || selectedGuestAppointmentOfficialInactive.value) {
+        return;
+    }
+
+    isGuestAppointmentSlotsLoading.value = true;
+    try {
+        const query = new URLSearchParams({
+            officialId: guestAppointmentForm.officialId,
+            appointmentDate: guestAppointmentForm.appointmentDate
+        }).toString();
+        const response = await apiFetch('/appointments/available-slots/public?' + query);
+        guestAppointmentSlots.value = response.data || response || [];
+    } catch (error) {
+        guestAppointmentSlots.value = [];
+        setStatus(error.message || 'Failed to load appointment slots.', true);
+    } finally {
+        isGuestAppointmentSlotsLoading.value = false;
+    }
 };
 
 const isGuestSafariBrowser = () => {
@@ -1978,6 +2174,56 @@ const handleGuestReportRequest = async () => {
     }
 };
 
+const handleGuestAppointmentRequest = async () => {
+    if (isGuestAppointmentLoading.value) return;
+
+    if (!guestAppointmentForm.agreePrivacy) {
+        setStatus('Please accept the Privacy Policy before submitting your appointment request.', true);
+        return;
+    }
+
+    if (selectedGuestAppointmentOfficialInactive.value) {
+        setStatus(guestAppointmentInactiveMessage.value, true);
+        return;
+    }
+
+    if (!guestAppointmentForm.startTime || !guestAppointmentForm.endTime) {
+        setStatus('Please choose an available appointment time slot.', true);
+        return;
+    }
+
+    isGuestAppointmentLoading.value = true;
+    try {
+        const payload = {
+            officialId: String(guestAppointmentForm.officialId || '').trim(),
+            appointmentDate: guestAppointmentForm.appointmentDate,
+            startTime: String(guestAppointmentForm.startTime || '').trim(),
+            endTime: String(guestAppointmentForm.endTime || '').trim(),
+            purpose: String(guestAppointmentForm.purpose || '').trim(),
+            firstName: String(guestAppointmentForm.firstName || '').trim(),
+            middleName: String(guestAppointmentForm.middleName || '').trim(),
+            lastName: String(guestAppointmentForm.lastName || '').trim(),
+            suffix: String(guestAppointmentForm.suffix || '').trim(),
+            contactNumber: String(guestAppointmentForm.contactNumber || '').trim(),
+            email: String(guestAppointmentForm.email || '').trim().toLowerCase(),
+            address: String(guestAppointmentForm.address || '').trim()
+        };
+
+        const result = await apiFetch('/appointments/request/public', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        resetGuestAppointmentForm();
+        closeModal();
+        setStatus(`Appointment request submitted. We will send the update to ${result.data?.email || payload.email}.`, false);
+    } catch (error) {
+        setStatus(error.message, true);
+    } finally {
+        isGuestAppointmentLoading.value = false;
+    }
+};
+
 const isGuestReservationLoading = ref(false);
 
 const handleGuestReservationRequest = async () => {
@@ -2055,7 +2301,7 @@ const services = computed(() => [
     { icon: '🏛', title: texts.value.landing.nav.facilities, copy: 'Reserve community facilities for approved events and barangay activities.', action: 'guest-facility-request' },
     { icon: '🚩', title: 'Incident Report', copy: 'Non-residents can report incidents or community concerns and receive updates by email.', action: 'guest-report-request' },
     { icon: '🔔', title: texts.value.landing.sections.announcementsTitle, copy: texts.value.landing.sections.announcementsCopy },
-    { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.sections.officialsCopy, action: 'login' },
+    { icon: '🛡', title: texts.value.landing.sections.officialsTitle, copy: texts.value.landing.sections.officialsCopy, action: 'guest-appointment-request' },
     { icon: '📍', title: texts.value.landing.nav.location, copy: 'Find Barangay Irawan Hall and open the map for quick directions.' },
     { icon: '🏢', title: 'Community Hub', copy: texts.value.landing.sections.servicesCopy }
 ]);

@@ -27,8 +27,21 @@ const getPersonName = (person, fallback = 'Resident') => {
     return fullName || person?.username || fallback;
 };
 
+const normalizeText = (value) => String(value || '').trim();
+const normalizeEmail = (value) => normalizeText(value).toLowerCase();
+
+const getAppointmentRequesterName = (appointment) => {
+    const guestName = getPersonName(appointment, '');
+    if (guestName) {
+        return guestName;
+    }
+
+    return getPersonName(appointment?.residentId, 'Requester');
+};
+
 const getAppointmentRecipientEmail = (appointment) => (
-    appointment?.residentId?.email
+    appointment?.email
+    || appointment?.residentId?.email
     || appointment?.residentId?.userId?.email
     || appointment?.userId?.email
     || ''
@@ -57,7 +70,8 @@ const buildAppointmentEmailDetails = (appointment, status) => [
 ];
 
 const getAppointmentAuditData = (appointment) => ({
-    residentName: getPersonName(appointment?.residentId, 'Resident'),
+    residentName: getAppointmentRequesterName(appointment),
+    requesterType: appointment?.requesterType || 'resident',
     residentId: appointment?.residentId?._id || appointment?.residentId,
     officialName: appointment?.officialId?.name,
     officialId: appointment?.officialId?._id || appointment?.officialId,
@@ -86,7 +100,7 @@ const notifyAppointmentStatus = async (appointment, status, notes = '') => {
 
     await sendRequestStatusEmail(
         recipientEmail,
-        getPersonName(appointment.residentId, 'Resident'),
+        getAppointmentRequesterName(appointment),
         'appointment',
         status,
         notes,
@@ -125,6 +139,16 @@ const throwSlotAlreadyBooked = () => {
 const getInactiveOfficialMessage = (official) => {
     const reason = String(official?.notes || '').trim() || 'No reason provided';
     return `This official is currently inactive: ${reason}`;
+};
+
+const validateGuestAppointmentData = (payload) => {
+    const required = ['firstName', 'lastName', 'contactNumber', 'email', 'address'];
+
+    if (required.some((field) => !normalizeText(payload[field]))) {
+        return 'firstName, lastName, contactNumber, email, and address are required';
+    }
+
+    return null;
 };
 
 // ============================================
@@ -481,6 +505,114 @@ const requestAppointment = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Request appointment without resident registration
+ */
+const requestPublicAppointment = asyncHandler(async (req, res) => {
+    const {
+        officialId,
+        appointmentDate,
+        startTime,
+        endTime,
+        purpose,
+        firstName,
+        middleName,
+        lastName,
+        suffix,
+        contactNumber,
+        email,
+        address
+    } = req.body;
+
+    if (!officialId || !appointmentDate || !startTime || !endTime || !purpose) {
+        throw createHttpError(
+            400,
+            'officialId, appointmentDate, startTime, endTime, and purpose are required'
+        );
+    }
+
+    const validationError = validateGuestAppointmentData(req.body);
+    if (validationError) {
+        throw createHttpError(400, validationError);
+    }
+
+    const official = await Official.findById(officialId);
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
+    }
+
+    if (official.status !== 'active') {
+        throw createHttpError(400, getInactiveOfficialMessage(official));
+    }
+
+    if (!isValidAppointmentDate(appointmentDate)) {
+        throw createHttpError(400, 'Appointment date must be at least 1 day in the future');
+    }
+
+    const isSupportedTimeSlot = DEFAULT_TIME_SLOTS.some((slot) => (
+        slot.startTime === startTime && slot.endTime === endTime
+    ));
+
+    if (!isSupportedTimeSlot) {
+        throw createHttpError(400, 'Please choose one of the available appointment time slots');
+    }
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existingAppointment = await Appointment.findOne({
+        email: normalizeEmail(email),
+        requesterType: 'guest',
+        createdAt: { $gte: oneDayAgo }
+    });
+
+    if (existingAppointment) {
+        throw createHttpError(409, 'You already submitted an appointment request in the last 24 hours. Please check your email for updates or contact the barangay admin.', {
+            code: 'DUPLICATE_REQUEST'
+        });
+    }
+
+    const availability = await isTimeSlotAvailable(officialId, appointmentDate, startTime, endTime);
+    if (!availability.available) {
+        throw createHttpError(400, availability.reason);
+    }
+
+    const appointment = new Appointment({
+        residentId: null,
+        userId: null,
+        requesterType: 'guest',
+        firstName: normalizeText(firstName),
+        middleName: normalizeText(middleName),
+        lastName: normalizeText(lastName),
+        suffix: normalizeText(suffix),
+        contactNumber: normalizeText(contactNumber),
+        email: normalizeEmail(email),
+        address: normalizeText(address),
+        officialId,
+        appointmentDate: new Date(appointmentDate),
+        timeSlot: {
+            startTime,
+            endTime
+        },
+        purpose: normalizeText(purpose),
+        status: 'pending'
+    });
+
+    try {
+        await appointment.save();
+    } catch (error) {
+        if (isDuplicateSlotError(error)) {
+            throwSlotAlreadyBooked();
+        }
+
+        throw error;
+    }
+
+    res.status(201).json({
+        success: true,
+        message: 'Appointment request submitted successfully',
+        data: formatAppointmentResponse(appointment)
+    });
+});
+
+/**
  * Get my appointments (resident)
  */
 const getMyAppointments = asyncHandler(async (req, res) => {
@@ -640,7 +772,7 @@ const getAllAppointments = asyncHandler(async (req, res) => {
     }
 
     const appointments = await Appointment.find(query)
-        .populate('residentId', 'firstName lastName contactNumber email')
+        .populate('residentId', 'firstName middleName lastName suffix contactNumber email address')
         .populate('officialId', 'name position')
         .sort({ createdAt: -1 });
 
@@ -857,6 +989,7 @@ module.exports = {
     // Resident Appointments
     getAvailableSlots,
     requestAppointment,
+    requestPublicAppointment,
     getMyAppointments,
     getAppointmentDetail,
     cancelAppointment,

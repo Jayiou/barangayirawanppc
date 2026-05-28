@@ -128,6 +128,33 @@ test('Appointment generates a slotKey only while the slot should stay reserved',
     assert.equal(appointment.slotKey, undefined);
 });
 
+test('Guest Appointment generates a slotKey without resident or user ids', async () => {
+    const appointment = new Appointment({
+        requesterType: 'guest',
+        firstName: 'Maria',
+        lastName: 'Santos',
+        contactNumber: '09171234567',
+        email: 'maria@example.com',
+        address: 'Outside Barangay',
+        officialId,
+        appointmentDate: new Date('2099-05-01T00:00:00'),
+        timeSlot: {
+            startTime: '09:00',
+            endTime: '10:00'
+        },
+        purpose: 'Consultation',
+        status: 'pending'
+    });
+
+    await appointment.validate();
+    assert.equal(appointment.residentId, null);
+    assert.equal(appointment.userId, null);
+    assert.equal(
+        appointment.slotKey,
+        `${officialId}|2099-05-01|09:00|10:00`
+    );
+});
+
 test('requestAppointment rejects inactive officials with the admin note', async () => {
     const req = {
         user: { _id: userId },
@@ -200,6 +227,53 @@ test('requestAppointment returns conflict when another request grabs the same sl
         success: false,
         message: 'This appointment slot was just booked by another request. Please choose another time slot.'
     });
+});
+
+test('requestPublicAppointment creates a guest appointment with slot conflict checks', async () => {
+    const req = {
+        body: {
+            officialId,
+            appointmentDate: '2099-05-01',
+            startTime: '09:00',
+            endTime: '10:00',
+            purpose: 'Consultation',
+            firstName: 'Maria',
+            lastName: 'Santos',
+            contactNumber: '09171234567',
+            email: 'maria@example.com',
+            address: 'Outside Barangay'
+        }
+    };
+    const res = createMockResponse();
+
+    Official.findById = async () => ({
+        _id: officialId,
+        status: 'active',
+        officeHours: {
+            startTime: '08:00',
+            endTime: '17:00',
+            lunchBreakStart: '12:00',
+            lunchBreakEnd: '13:00'
+        }
+    });
+    Appointment.findOne = async () => null;
+    BlockedSchedule.findOne = async () => null;
+    Appointment.prototype.save = async function saveAppointment() {
+        assert.equal(this.requesterType, 'guest');
+        assert.equal(this.residentId, null);
+        assert.equal(this.userId, null);
+        assert.equal(this.email, 'maria@example.com');
+        assert.equal(this.status, 'pending');
+        this._id = '665000000000000000000099';
+        return this;
+    };
+
+    await appointmentController.requestPublicAppointment(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.data.requesterType, 'guest');
+    assert.equal(res.body.data.email, 'maria@example.com');
 });
 
 test('createRequest creates resident manpower request with personnel count', async () => {

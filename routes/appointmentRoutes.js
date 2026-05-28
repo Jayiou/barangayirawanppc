@@ -20,6 +20,7 @@ const {
     // Resident Appointments
     getAvailableSlots,
     requestAppointment,
+    requestPublicAppointment,
     getMyAppointments,
     getAppointmentDetail,
     cancelAppointment,
@@ -53,6 +54,17 @@ router.get('/officials', getAllOfficials);
  * Get single official (public)
  */
 router.get('/officials/:id', getOfficial);
+
+/**
+ * Get available time slots for public appointment requests
+ * Query: officialId, appointmentDate
+ */
+router.get('/available-slots/public', getAvailableSlots);
+
+/**
+ * Request appointment without resident registration
+ */
+router.post('/request/public', appointmentLimiter, requestPublicAppointment);
 
 // ============================================
 // RESIDENT ROUTES
