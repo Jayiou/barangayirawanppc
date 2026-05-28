@@ -488,6 +488,7 @@
                                         <div class="input-group">
                                             <label for="guest-facility-quantity">Quantity</label>
                                             <input id="guest-facility-quantity" v-model.number="guestReservationForm.quantity" type="number" min="1" :max="guestReservationQuantityMax" placeholder="0" :disabled="guestReservationInventoryUnavailable">
+                                            <small v-if="guestReservationInventoryMessage" class="fine-print">{{ guestReservationInventoryMessage }}</small>
                                         </div>
                                     </div>
 
@@ -1202,6 +1203,25 @@ const guestReservationQuantityMax = computed(() => {
     return availableQuantity === null ? selectedGuestReservationItem.value.max : Math.max(availableQuantity, 0);
 });
 const guestReservationInventoryUnavailable = computed(() => guestReservationRequiresQuantity.value && guestReservationAvailableQuantity.value !== null && guestReservationAvailableQuantity.value <= 0);
+const guestReservationInventoryMessage = computed(() => {
+    if (!guestReservationRequiresQuantity.value || !guestReservationHasSelectedTime.value) {
+        return '';
+    }
+
+    const availableQuantity = guestReservationAvailableQuantity.value;
+    const label = selectedGuestReservationItem.value?.availableLabel || 'items';
+
+    if (availableQuantity !== null && availableQuantity <= 0) {
+        return `No ${label} are available for the selected date and time. Please choose another time.`;
+    }
+
+    const requestedQuantity = Number(guestReservationForm.quantity || 0);
+    if (availableQuantity !== null && requestedQuantity > availableQuantity) {
+        return `Only ${availableQuantity} ${label} are available for the selected date and time.`;
+    }
+
+    return '';
+});
 const canSubmitGuestReservation = computed(() => {
     if (isGuestReservationLoading.value || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime) {
         return false;

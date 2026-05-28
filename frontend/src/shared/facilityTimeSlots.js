@@ -129,17 +129,40 @@ const normalizeReservedSlots = (slots = []) => slots
     .map((slot) => ({
         ...slot,
         start: toMinutes(slot.startTime),
-        end: toMinutes(slot.endTime)
+        end: toMinutes(slot.endTime),
+        quantity: getFacilityReservationQuantity(slot)
     }))
     .filter((slot) => slot.start !== null && slot.end !== null && slot.start < slot.end);
 
 const rangeIsOpen = (start, end, reservedSlots) => !reservedSlots.some((slot) => rangesOverlap(start, end, slot.start, slot.end));
+
+const getInventoryAvailabilityForRange = (start, end, reservedSlots, inventoryQuantity) => {
+    if (!Number.isFinite(inventoryQuantity)) {
+        return null;
+    }
+
+    let lowestAvailable = inventoryQuantity;
+
+    for (let current = start; current < end; current += STEP_MINUTES) {
+        const slotEnd = Math.min(current + STEP_MINUTES, end);
+        const reservedQuantity = reservedSlots
+            .filter((slot) => rangesOverlap(current, slotEnd, slot.start, slot.end))
+            .reduce((total, slot) => total + slot.quantity, 0);
+
+        lowestAvailable = Math.min(lowestAvailable, Math.max(inventoryQuantity - reservedQuantity, 0));
+    }
+
+    return lowestAvailable;
+};
 
 export const buildFacilityTimeOptions = (availability, selectedStartTime = '') => {
     const operatingHours = availability?.operatingHours || DEFAULT_OPERATING_HOURS;
     const operatingStart = toMinutes(operatingHours.start) ?? toMinutes(DEFAULT_OPERATING_HOURS.start);
     const operatingEnd = toMinutes(operatingHours.end) ?? toMinutes(DEFAULT_OPERATING_HOURS.end);
     const reservedSlots = normalizeReservedSlots(availability?.reservedSlots || []);
+    const selectedOption = getFacilityItemOption(availability?.facilityName);
+    const inventoryQuantity = Number(availability?.inventoryQuantity);
+    const isInventoryView = selectedOption?.isInventory === true && Number.isFinite(inventoryQuantity);
     const selectedStart = toMinutes(selectedStartTime);
 
     const startOptions = [];
@@ -147,20 +170,27 @@ export const buildFacilityTimeOptions = (availability, selectedStartTime = '') =
 
     for (let current = operatingStart; current < operatingEnd; current += STEP_MINUTES) {
         const hasValidEnd = current + STEP_MINUTES <= operatingEnd;
+        const availableQuantity = isInventoryView
+            ? getInventoryAvailabilityForRange(current, current + STEP_MINUTES, reservedSlots, inventoryQuantity)
+            : null;
 
         startOptions.push({
             value: minutesToTime(current),
             label: formatFacilityTime(minutesToTime(current)),
-            disabled: !hasValidEnd
+            disabled: !hasValidEnd || (availableQuantity !== null && availableQuantity <= 0)
         });
     }
 
     if (selectedStart !== null) {
         for (let current = selectedStart + STEP_MINUTES; current <= operatingEnd; current += STEP_MINUTES) {
+            const availableQuantity = isInventoryView
+                ? getInventoryAvailabilityForRange(selectedStart, current, reservedSlots, inventoryQuantity)
+                : null;
+
             endOptions.push({
                 value: minutesToTime(current),
                 label: formatFacilityTime(minutesToTime(current)),
-                disabled: false
+                disabled: availableQuantity !== null && availableQuantity <= 0
             });
         }
     }

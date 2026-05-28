@@ -721,8 +721,8 @@
                                 <span>Quantity</span>
                                 <input v-model.number="reservationForm.quantity" type="number" min="1" :max="reservationQuantityMax" placeholder="0" :disabled="reservationInventoryUnavailable">
                             </label>
-                            <!-- Inventory availability note removed -->
                         </div>
+                        <div class="facility-slot-note" v-if="reservationInventoryMessage">{{ reservationInventoryMessage }}</div>
                         <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
                         <button type="submit" class="primary-button" :disabled="!canSubmitReservation">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
@@ -1500,6 +1500,25 @@ const reservationQuantityMax = computed(() => {
     return availableQuantity === null ? selectedReservationItem.value.max : Math.max(availableQuantity, 0);
 });
 const reservationInventoryUnavailable = computed(() => reservationRequiresQuantity.value && reservationAvailableQuantity.value !== null && reservationAvailableQuantity.value <= 0);
+const reservationInventoryMessage = computed(() => {
+    if (!reservationRequiresQuantity.value || !reservationHasSelectedTime.value) {
+        return '';
+    }
+
+    const availableQuantity = reservationAvailableQuantity.value;
+    const label = selectedReservationItem.value?.availableLabel || 'items';
+
+    if (availableQuantity !== null && availableQuantity <= 0) {
+        return `No ${label} are available for the selected date and time. Please choose another time.`;
+    }
+
+    const requestedQuantity = Number(reservationForm.quantity || 0);
+    if (availableQuantity !== null && requestedQuantity > availableQuantity) {
+        return `Only ${availableQuantity} ${label} are available for the selected date and time.`;
+    }
+
+    return '';
+});
 const canSubmitReservation = computed(() => {
     if (isSubmitting.value || !reservationForm.startTime || !reservationForm.endTime) {
         return false;
