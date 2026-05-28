@@ -34,24 +34,24 @@ const normalizeDetailItems = (details = []) => {
         .filter((detail) => detail.label && detail.value);
 };
 
-const buildDetailsText = (details) => {
+const buildDetailsText = (details, heading = 'Request Details') => {
     const items = normalizeDetailItems(details);
     if (!items.length) return '';
 
-    let output = 'Request Details:\n';
+    let output = `${heading}:\n`;
     for (const item of items) {
         output += '- ' + item.label + ': ' + item.value + '\n';
     }
     return output;
 };
 
-const buildDetailsHtml = (details) => {
+const buildDetailsHtml = (details, heading = 'Request Details') => {
     const items = normalizeDetailItems(details);
     if (!items.length) return '';
 
     return `
         <div style="margin-top: 16px; padding: 12px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px;">
-            <p style="margin: 0 0 8px 0; font-weight: bold; color: #235b82;">Request Details</p>
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: #235b82;">${escapeHtml(heading)}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <tbody>
                     ${items.map((item) => `
@@ -684,8 +684,8 @@ const sendDisasterAdvisoryEmail = async (toEmail, name, advisory, details = []) 
             })
             : 'To be announced';
         const message = String(advisory?.advisoryMessage || '').trim();
-        const detailsText = buildDetailsText(details);
-        const detailsSection = buildDetailsHtml(details);
+        const detailsText = buildDetailsText(details, 'Details');
+        const detailsSection = buildDetailsHtml(details, 'Details');
 
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },

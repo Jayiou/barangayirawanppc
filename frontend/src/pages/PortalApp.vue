@@ -211,6 +211,10 @@
                                                 <option v-for="zone in selectedPurokZones" :key="zone" :value="zone">{{ zone }}</option>
                                             </select>
                                         </label>
+                                        <label v-else>
+                                            <span>Zone</span>
+                                            <input v-model="profile.zone" type="text" placeholder="Enter Zone" required>
+                                        </label>
                                         <label class="form-span-2"><span>Occupation</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
                                     </div>
                                     <div class="profile-form-actions">
@@ -1057,9 +1061,9 @@ const PASSWORD_SPECIAL_CHAR_REGEX = /[^A-Za-z0-9]/;
 
 const selectedPurokZones = computed(() => zoneOptionsByPurok[profile.purok] || []);
 const profilePurokZoneLabel = computed(() => {
-    if (!profile.purok) return 'N/A';
-    if (!selectedPurokZones.value.length) return profile.purok;
-    return `${profile.purok}${profile.zone ? ' / ' + profile.zone : ''}`;
+    if (!profile.purok && !profile.zone) return 'N/A';
+    if (profile.zone) return `${profile.purok || 'N/A'} / ${profile.zone}`;
+    return profile.purok || 'N/A';
 });
 
 const profileAvatarSrc = computed(() => profileCropSourceUrl.value || profileImagePreview.value || profile.profileImage || '');
@@ -1353,7 +1357,7 @@ const formatProfilePhoneInput = () => {
 watch(() => profile.purok, () => {
     const zones = selectedPurokZones.value;
 
-    if (!zones.length || !zones.includes(profile.zone)) {
+    if (zones.length && !zones.includes(profile.zone)) {
         profile.zone = '';
     }
 });

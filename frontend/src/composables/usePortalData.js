@@ -141,6 +141,7 @@ export function usePortalData() {
             await loadProfile();
         } catch (error) {
             setStatus(error.message, true);
+            throw error;
         }
     };
 
