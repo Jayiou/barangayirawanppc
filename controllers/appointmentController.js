@@ -122,6 +122,11 @@ const throwSlotAlreadyBooked = () => {
     );
 };
 
+const getInactiveOfficialMessage = (official) => {
+    const reason = String(official?.notes || '').trim() || 'No reason provided';
+    return `This official is currently inactive: ${reason}`;
+};
+
 // ============================================
 // ADMIN - OFFICIAL MANAGEMENT
 // ============================================
@@ -376,6 +381,15 @@ const getAvailableSlots = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'officialId and appointmentDate are required');
     }
 
+    const official = await Official.findById(officialId);
+    if (!official) {
+        throw createHttpError(404, 'Official not found');
+    }
+
+    if (official.status !== 'active') {
+        throw createHttpError(400, getInactiveOfficialMessage(official));
+    }
+
     const availableSlots = await getAvailableTimeSlots(officialId, appointmentDate);
 
     res.status(200).json({
@@ -413,7 +427,7 @@ const requestAppointment = asyncHandler(async (req, res) => {
     }
 
     if (official.status !== 'active') {
-        throw createHttpError(400, 'This official is currently inactive');
+        throw createHttpError(400, getInactiveOfficialMessage(official));
     }
 
     // Validate appointment date

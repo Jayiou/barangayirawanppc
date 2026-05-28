@@ -155,6 +155,90 @@ const getInventoryAvailabilityForRange = (start, end, reservedSlots, inventoryQu
     return lowestAvailable;
 };
 
+const INVENTORY_ICONS = {
+    chair: '🪑',
+    tent: '⛺',
+    table: '🪑'
+};
+
+const formatAvailabilityDateLabel = (value) => {
+    if (!value) {
+        return 'Selected Date';
+    }
+
+    const rawDate = String(value).slice(0, 10);
+    const today = new Date().toLocaleDateString('en-CA');
+    if (rawDate === today) {
+        return 'Today';
+    }
+
+    const parsed = new Date(`${rawDate}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'Selected Date';
+    }
+
+    return parsed.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
+
+export const buildFacilityInventoryPeakSummary = (availability) => {
+    const selectedOption = getFacilityItemOption(availability?.facilityName);
+    const inventoryQuantity = Number(availability?.inventoryQuantity);
+    if (!availability || !selectedOption?.isInventory || !Number.isFinite(inventoryQuantity)) {
+        return null;
+    }
+
+    const operatingHours = availability.operatingHours || DEFAULT_OPERATING_HOURS;
+    const operatingStart = toMinutes(operatingHours.start) ?? toMinutes(DEFAULT_OPERATING_HOURS.start);
+    const operatingEnd = toMinutes(operatingHours.end) ?? toMinutes(DEFAULT_OPERATING_HOURS.end);
+    const reservedSlots = normalizeReservedSlots(availability.reservedSlots || []);
+    const ranges = [];
+
+    for (let current = operatingStart; current < operatingEnd; current += STEP_MINUTES) {
+        const end = Math.min(current + STEP_MINUTES, operatingEnd);
+        const availableQuantity = getInventoryAvailabilityForRange(current, end, reservedSlots, inventoryQuantity);
+
+        if (availableQuantity === null || availableQuantity >= inventoryQuantity) {
+            continue;
+        }
+
+        const type = availableQuantity <= 0 ? 'full' : 'limited';
+        const lastRange = ranges[ranges.length - 1];
+
+        if (lastRange && lastRange.type === type && lastRange.end === current) {
+            lastRange.end = end;
+            lastRange.availableQuantity = Math.min(lastRange.availableQuantity, availableQuantity);
+        } else {
+            ranges.push({
+                type,
+                start: current,
+                end,
+                availableQuantity
+            });
+        }
+    }
+
+    const label = getFacilityItemLabel(availability.facilityName);
+    const icon = INVENTORY_ICONS[availability.facilityName] || '📦';
+
+    return {
+        title: `${icon} ${label} Availability for ${formatAvailabilityDateLabel(availability.date)}:`,
+        ranges: ranges.map((range) => ({
+            ...range,
+            icon: range.type === 'full' ? '❌' : '⚠️',
+            label: range.type === 'full' ? 'Fully Booked' : 'Limited Stock',
+            rangeLabel: `${formatFacilityTime(minutesToTime(range.start))} - ${formatFacilityTime(minutesToTime(range.end))}`,
+            message: range.type === 'full'
+                ? 'Fully Booked (0 available)'
+                : `Limited Stock (${range.availableQuantity} available)`
+        })),
+        note: `✨ Note: All other time slots between ${formatFacilityTime(operatingHours.start)} to ${formatFacilityTime(operatingHours.end)} have full ${inventoryQuantity} ${selectedOption.availableLabel} available.`
+    };
+};
+
 export const buildFacilityTimeOptions = (availability, selectedStartTime = '') => {
     const operatingHours = availability?.operatingHours || DEFAULT_OPERATING_HOURS;
     const operatingStart = toMinutes(operatingHours.start) ?? toMinutes(DEFAULT_OPERATING_HOURS.start);

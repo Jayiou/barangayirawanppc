@@ -468,13 +468,14 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="facility-reserved-list" v-if="guestFacilityTimeOptions.reservedSlots.length">
+                                    <div class="facility-reserved-list" v-if="guestReservationInventoryPeakSummary">
+                                        <span>{{ guestReservationInventoryPeakSummary.title }}</span>
+                                        <small v-for="range in guestReservationInventoryPeakSummary.ranges" :key="`${range.type}-${range.start}-${range.end}`">{{ range.icon }} {{ range.rangeLabel }}: {{ range.message }}</small>
+                                        <small>{{ guestReservationInventoryPeakSummary.note }}</small>
+                                    </div>
+                                    <div class="facility-reserved-list" v-else-if="guestFacilityTimeOptions.reservedSlots.length">
                                         <span>Reserved ranges</span>
                                         <small v-for="slot in guestFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="getFacilityReservationQuantity(slot) > 0">x{{ getFacilityReservationQuantity(slot) }}</span></small>
-                                    </div>
-                                    <div class="facility-reserved-list" v-if="guestReservationRequiresQuantity && guestFacilityAvailability">
-                                        <span>Inventory summary</span>
-                                        <small>{{ formatFacilityInventorySummary(guestFacilityAvailability) }}</small>
                                     </div>
                                     <!-- Standard flow helper text removed -->
                                 </div>
@@ -1029,7 +1030,7 @@ import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
-import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
+import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { REPORT_TYPE_CONFIG } from '@/shared/reportTypeConfig';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
@@ -1187,6 +1188,7 @@ const guestReservationForm = reactive({ ...guestReservationFormDefaults });
 const guestFacilityAvailability = ref(null);
 const isGuestFacilityAvailabilityLoading = ref(false);
 const guestFacilityTimeOptions = computed(() => buildFacilityTimeOptions(guestFacilityAvailability.value, guestReservationForm.startTime));
+const guestReservationInventoryPeakSummary = computed(() => buildFacilityInventoryPeakSummary(guestFacilityAvailability.value));
 const selectedGuestReservationItem = computed(() => getFacilityItemOption(guestReservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
 const guestReservationRequiresQuantity = computed(() => selectedGuestReservationItem.value?.isInventory === true);
 const guestReservationHasSelectedTime = computed(() => Boolean(guestReservationForm.startTime && guestReservationForm.endTime));

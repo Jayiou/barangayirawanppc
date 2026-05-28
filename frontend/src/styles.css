@@ -1407,13 +1407,16 @@ textarea { resize: vertical; }
 .portal-row-actions {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
-    min-width: 160px;
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: max-content;
 }
 .table-action {
+    flex: 0 0 auto;
     padding: 8px 10px;
     border-radius: 10px;
     font-size: 0.85rem;
+    white-space: nowrap;
 }
 .ghost-button.danger,
 .table-action.danger {

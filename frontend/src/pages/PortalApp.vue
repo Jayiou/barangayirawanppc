@@ -644,12 +644,13 @@
                         <label><span>Official</span>
                             <select v-model="appointmentForm.officialId" required @change="loadAvailableSlots">
                                 <option disabled value="">Select Official</option>
-                                <option v-for="official in officials" :key="official._id" :value="official._id">{{ official.name }} - {{ official.position }}</option>
+                                <option v-for="official in officials" :key="official._id" :value="official._id" :disabled="isOfficialInactive(official)">{{ formatAppointmentOfficialOption(official) }}</option>
                             </select>
                         </label>
+                        <div v-if="selectedAppointmentOfficialInactive" class="facility-slot-note">{{ inactiveAppointmentOfficialMessage }}</div>
                         <label><span>Date</span><input v-model="appointmentForm.appointmentDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadAvailableSlots"></label>
                         
-                        <div v-if="appointmentForm.officialId && appointmentForm.appointmentDate">
+                        <div v-if="appointmentForm.officialId && appointmentForm.appointmentDate && !selectedAppointmentOfficialInactive">
                             <span>Available Time Slots</span>
                             <div v-if="isFetchingSlots" style="margin-top: 5px; font-size: 0.9em; color: #666;">Loading slots...</div>
                             <div v-else-if="availableSlots.length === 0" style="margin-top: 5px; font-size: 0.9em; color: #d32f2f;">No available slots for this date.</div>
@@ -672,7 +673,7 @@
                         </div>
 
                         <label><span>Purpose</span><input v-model="appointmentForm.purpose" type="text" required placeholder="What is this meeting about?"></label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting || !appointmentForm.startTime">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
+                        <button type="submit" class="primary-button" :disabled="!canSubmitAppointment">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
                     </form>
                 </div>
 
@@ -709,10 +710,14 @@
                                     </select>
                                 </label>
                             </div>
-                            <div class="facility-reserved-list" v-if="portalFacilityTimeOptions.reservedSlots.length">
+                            <div class="facility-reserved-list" v-if="reservationInventoryPeakSummary">
+                                <span>{{ reservationInventoryPeakSummary.title }}</span>
+                                <small v-for="range in reservationInventoryPeakSummary.ranges" :key="`${range.type}-${range.start}-${range.end}`">{{ range.icon }} {{ range.rangeLabel }}: {{ range.message }}</small>
+                                <small>{{ reservationInventoryPeakSummary.note }}</small>
+                            </div>
+                            <div class="facility-reserved-list" v-else-if="portalFacilityTimeOptions.reservedSlots.length">
                                 <span>Reserved ranges</span>
                                 <small v-for="slot in portalFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="slot.quantity">x{{ slot.quantity }}</span></small>
-                                <small v-if="facilityAvailabilityDetails && facilityAvailabilityDetails.availableQuantity !== undefined">{{ formatFacilityInventorySummary(facilityAvailabilityDetails) }}</small>
                             </div>
                             <!-- Removed standard flow helper text -->
                         </div>
@@ -727,7 +732,7 @@
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
                         <button type="submit" class="primary-button" :disabled="!canSubmitReservation">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
-                    <div class="facility-slot-note" v-if="reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
+                    <div class="facility-slot-note" v-if="!reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
 
                 <div v-if="activeModal === 'manpower'">
@@ -953,7 +958,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
-import { buildFacilityTimeOptions, formatFacilityRange, formatFacilityInventorySummary, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
+import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
@@ -1450,6 +1455,27 @@ const isFetchingSlots = ref(false);
 const isFetchingFacilityAvailability = ref(false);
 const viewingAppointment = ref(null);
 const locatingPosition = ref(false);
+const getOfficialInactiveReason = (official) => String(official?.notes || '').trim() || 'No reason provided';
+const isOfficialInactive = (official) => official?.status === 'inactive';
+const selectedAppointmentOfficial = computed(() => officials.value.find((official) => official._id === appointmentForm.value.officialId) || null);
+const selectedAppointmentOfficialInactive = computed(() => isOfficialInactive(selectedAppointmentOfficial.value));
+const inactiveAppointmentOfficialMessage = computed(() => {
+    if (!selectedAppointmentOfficialInactive.value) {
+        return '';
+    }
+
+    return `This official is currently inactive: ${getOfficialInactiveReason(selectedAppointmentOfficial.value)}`;
+});
+const formatAppointmentOfficialOption = (official) => {
+    const base = `${official.name} - ${official.position}`;
+    return isOfficialInactive(official) ? `${base} (Inactive: ${getOfficialInactiveReason(official)})` : base;
+};
+const canSubmitAppointment = computed(() => (
+    !isSubmitting.value
+    && Boolean(appointmentForm.value.officialId)
+    && !selectedAppointmentOfficialInactive.value
+    && Boolean(appointmentForm.value.startTime)
+));
 const appointmentSlotMinWidth = computed(() => {
     const longestLabelLength = availableSlots.value.reduce((longest, slot) => {
         const label = String(slot?.label || `${slot?.startTime || ''} - ${slot?.endTime || ''}`).trim();
@@ -1461,13 +1487,21 @@ const appointmentSlotMinWidth = computed(() => {
 });
 
 const loadAvailableSlots = async () => {
+    appointmentForm.value.startTime = '';
+    appointmentForm.value.endTime = '';
+
     if (!appointmentForm.value.officialId || !appointmentForm.value.appointmentDate) {
         availableSlots.value = [];
         return;
     }
+
+    if (selectedAppointmentOfficialInactive.value) {
+        availableSlots.value = [];
+        setStatus(inactiveAppointmentOfficialMessage.value, true);
+        return;
+    }
+
     isFetchingSlots.value = true;
-    appointmentForm.value.startTime = '';
-    appointmentForm.value.endTime = '';
     try {
         availableSlots.value = await getAvailableSlots(appointmentForm.value.officialId, appointmentForm.value.appointmentDate);
     } catch(err) {
@@ -1484,6 +1518,7 @@ const selectSlot = (slot) => {
 };
 
 const portalFacilityTimeOptions = computed(() => buildFacilityTimeOptions(facilityAvailabilityDetails.value, reservationForm.startTime));
+const reservationInventoryPeakSummary = computed(() => buildFacilityInventoryPeakSummary(facilityAvailabilityDetails.value));
 const selectedReservationItem = computed(() => getFacilityItemOption(reservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
 const reservationRequiresQuantity = computed(() => selectedReservationItem.value?.isInventory === true);
 const reservationHasSelectedTime = computed(() => Boolean(reservationForm.startTime && reservationForm.endTime));
@@ -1574,6 +1609,12 @@ const handleReservationTimeChange = async () => {
 
 const handleSubmitAppointment = async () => {
     if (isSubmitting.value) return;
+
+    if (selectedAppointmentOfficialInactive.value) {
+        setStatus(inactiveAppointmentOfficialMessage.value, true);
+        return;
+    }
+
     isSubmitting.value = true;
     try {
         await requestAppointment(appointmentForm.value);

@@ -16,8 +16,10 @@ const residentId = '665000000000000000000002';
 const userId = '665000000000000000000003';
 
 const originals = {
+    appointmentFind: Appointment.find,
     appointmentFindOne: Appointment.findOne,
     appointmentSave: Appointment.prototype.save,
+    blockedScheduleFind: BlockedSchedule.find,
     blockedScheduleFindOne: BlockedSchedule.findOne,
     officialFindById: Official.findById,
     residentFindOne: Resident.findOne,
@@ -31,8 +33,10 @@ const originals = {
 };
 
 test.afterEach(() => {
+    Appointment.find = originals.appointmentFind;
     Appointment.findOne = originals.appointmentFindOne;
     Appointment.prototype.save = originals.appointmentSave;
+    BlockedSchedule.find = originals.blockedScheduleFind;
     BlockedSchedule.findOne = originals.blockedScheduleFindOne;
     Official.findById = originals.officialFindById;
     Resident.findOne = originals.residentFindOne;
@@ -43,6 +47,60 @@ test.afterEach(() => {
     ManpowerRequest.findByIdAndDelete = originals.manpowerFindByIdAndDelete;
     ManpowerRequest.prototype.save = originals.manpowerSave;
     StatusAuditLog.prototype.save = originals.auditSave;
+});
+
+test('getAvailableSlots rejects inactive officials with the admin note', async () => {
+    const req = {
+        query: {
+            officialId,
+            appointmentDate: '2099-05-01'
+        }
+    };
+    const res = createMockResponse();
+
+    Official.findById = async () => ({
+        _id: officialId,
+        status: 'inactive',
+        notes: 'On official travel'
+    });
+
+    await appointmentController.getAvailableSlots(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'This official is currently inactive: On official travel'
+    });
+});
+
+test('getAvailableSlots returns slots for active officials', async () => {
+    const req = {
+        query: {
+            officialId,
+            appointmentDate: '2099-05-01'
+        }
+    };
+    const res = createMockResponse();
+
+    Official.findById = async () => ({
+        _id: officialId,
+        status: 'active',
+        officeHours: {
+            startTime: '08:00',
+            endTime: '17:00',
+            lunchBreakStart: '12:00',
+            lunchBreakEnd: '13:00'
+        }
+    });
+    Appointment.find = async () => [];
+    BlockedSchedule.find = async () => [];
+
+    await appointmentController.getAvailableSlots(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.data.length, 8);
+    assert.equal(res.body.data[0].isAvailable, true);
 });
 
 test('Appointment generates a slotKey only while the slot should stay reserved', async () => {
@@ -68,6 +126,35 @@ test('Appointment generates a slotKey only while the slot should stay reserved',
     appointment.status = 'cancelled';
     await appointment.validate();
     assert.equal(appointment.slotKey, undefined);
+});
+
+test('requestAppointment rejects inactive officials with the admin note', async () => {
+    const req = {
+        user: { _id: userId },
+        body: {
+            officialId,
+            appointmentDate: '2099-05-01',
+            startTime: '09:00',
+            endTime: '10:00',
+            purpose: 'Consultation'
+        }
+    };
+    const res = createMockResponse();
+
+    Resident.findOne = async () => ({ _id: residentId, userId });
+    Official.findById = async () => ({
+        _id: officialId,
+        status: 'inactive',
+        notes: ''
+    });
+
+    await appointmentController.requestAppointment(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'This official is currently inactive: No reason provided'
+    });
 });
 
 test('requestAppointment returns conflict when another request grabs the same slot first', async () => {
