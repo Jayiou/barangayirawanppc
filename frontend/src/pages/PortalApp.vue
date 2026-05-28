@@ -788,7 +788,7 @@
                         <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
                         <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
                         <label v-if="currentReportTypeConfig.requireIncidentDate">
-                            <span>Incident date</span>
+                            <span>Date</span>
                             <input
                                 v-model="reportForm.incidentDate"
                                 type="date"
@@ -1831,7 +1831,7 @@ const todayDate = formatLocalDateInputValue();
 const limitIncidentDateToToday = () => {
     if (reportForm.incidentDate && reportForm.incidentDate > todayDate) {
         reportForm.incidentDate = todayDate;
-        setStatus('Incident date cannot be in the future.', true);
+        setStatus('Date cannot be in the future.', true);
     }
 };
 
@@ -2510,12 +2510,12 @@ const handleSubmitReport = async () => {
     }
 
     if (currentReportTypeConfig.value.requireIncidentDate && !reportForm.incidentDate) {
-        setStatus('Incident date is required for this report type.', true);
+        setStatus('Date is required for this report type.', true);
         return;
     }
 
     if (reportForm.incidentDate && reportForm.incidentDate > todayDate) {
-        setStatus('Incident date cannot be in the future.', true);
+        setStatus('Date cannot be in the future.', true);
         return;
     }
 

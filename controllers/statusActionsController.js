@@ -76,7 +76,7 @@ const buildReportEmailDetails = (report, status) => [
     { label: 'Report Type', value: formatLabel(report?.reportType) },
     { label: 'Location', value: report?.locationText },
     { label: 'Priority', value: formatLabel(report?.priority) },
-    { label: 'Incident Date', value: formatEmailDate(report?.incidentDate) },
+    { label: 'Date', value: formatEmailDate(report?.incidentDate) },
     { label: 'Status', value: formatLabel(status) }
 ];
 

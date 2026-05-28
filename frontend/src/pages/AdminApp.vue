@@ -3198,7 +3198,7 @@ const getRequestDetails = (item) => {
             { label: 'Address', value: item.address || item.residentId?.address },
             { label: 'Report Type', value: item.reportType?.replaceAll('_', ' ') },
             { label: 'Priority', value: item.priority?.toUpperCase() },
-            { label: 'Incident Date', value: formatDate(item.incidentDate) },
+            { label: 'Date', value: formatDate(item.incidentDate) },
             { label: 'Location', value: item.locationText },
             { label: 'Description', value: item.description },
             {

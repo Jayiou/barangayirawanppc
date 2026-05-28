@@ -336,7 +336,7 @@
                                         <input id="guest-report-location" v-model="guestReportForm.locationText" type="text" placeholder="Where did it happen?" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-report-incident-date">Incident Date</label>
+                                        <label for="guest-report-incident-date">Date</label>
                                         <input
                                             id="guest-report-incident-date"
                                             v-model="guestReportForm.incidentDate"
@@ -1164,7 +1164,7 @@ const todayDate = formatLocalDateInputValue();
 const limitGuestIncidentDateToToday = () => {
     if (guestReportForm.incidentDate && guestReportForm.incidentDate > todayDate) {
         guestReportForm.incidentDate = todayDate;
-        setStatus('Incident date cannot be in the future.', true);
+        setStatus('Date cannot be in the future.', true);
     }
 };
 
@@ -2154,7 +2154,7 @@ const handleGuestReportRequest = async () => {
     }
 
     if (guestReportForm.incidentDate && guestReportForm.incidentDate > todayDate) {
-        setStatus('Incident date cannot be in the future.', true);
+        setStatus('Date cannot be in the future.', true);
         return;
     }
 

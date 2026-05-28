@@ -61,7 +61,7 @@ test('createReport rejects invalid incident dates', async () => {
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'Please provide a valid incidentDate'
+        message: 'Please provide a valid date'
     });
 });
 
@@ -83,7 +83,7 @@ test('createReport rejects future incident dates', async () => {
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'incidentDate cannot be in the future'
+        message: 'Date cannot be in the future'
     });
 });
 

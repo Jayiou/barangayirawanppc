@@ -202,7 +202,7 @@ const buildReportEmailDetails = (report, status) => [
     { label: 'Report Type', value: formatLabel(report.reportType) },
     { label: 'Location', value: report.locationText },
     { label: 'Priority', value: formatLabel(report.priority) },
-    { label: 'Incident Date', value: formatEmailDate(report.incidentDate) },
+    { label: 'Date', value: formatEmailDate(report.incidentDate) },
     { label: 'Status', value: formatLabel(status) }
 ];
 
@@ -221,11 +221,11 @@ const validateReportData = (payload) => {
     }
 
     if (payload.incidentDate !== undefined && payload.incidentDate !== null && !isValidDate(payload.incidentDate)) {
-        return 'Please provide a valid incidentDate';
+        return 'Please provide a valid date';
     }
 
     if (payload.incidentDate !== undefined && payload.incidentDate !== null && isFutureDate(payload.incidentDate)) {
-        return 'incidentDate cannot be in the future';
+        return 'Date cannot be in the future';
     }
 
     if (payload.proofFiles !== undefined && !Array.isArray(payload.proofFiles)) {
@@ -254,7 +254,7 @@ const validateTypeSpecificRules = (payload, options = {}) => {
     }
 
     if (rules.requireIncidentDate && !payload.incidentDate) {
-        return 'incidentDate is required for this report type';
+        return 'Date is required for this report type';
     }
 
     if (enforceProofForResident && rules.requireProofForResident) {
