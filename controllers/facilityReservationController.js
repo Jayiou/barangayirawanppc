@@ -136,8 +136,52 @@ const buildInventoryTotals = (reservations = []) => reservations.reduce((totals,
     return totals;
 }, { chair: 0, tent: 0, table: 0 });
 
+const getPeakReservedQuantityForRange = (reservations = [], startTime = OPERATING_HOURS.start, endTime = OPERATING_HOURS.end) => {
+    const rangeStart = toMinutes(startTime);
+    const rangeEnd = toMinutes(endTime);
+    const boundaries = new Set([rangeStart, rangeEnd]);
+    const overlappingReservations = reservations.filter((reservation) => {
+        const reservationStart = toMinutes(reservation.startTime);
+        const reservationEnd = toMinutes(reservation.endTime);
+
+        if (!rangesOverlap(rangeStart, rangeEnd, reservationStart, reservationEnd)) {
+            return false;
+        }
+
+        boundaries.add(Math.max(rangeStart, reservationStart));
+        boundaries.add(Math.min(rangeEnd, reservationEnd));
+        return true;
+    });
+
+    const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
+
+    return sortedBoundaries.reduce((peak, currentStart, index) => {
+        const currentEnd = sortedBoundaries[index + 1];
+        if (currentEnd === undefined || currentStart >= currentEnd) {
+            return peak;
+        }
+
+        const reservedQuantity = overlappingReservations.reduce((total, reservation) => {
+            const reservationStart = toMinutes(reservation.startTime);
+            const reservationEnd = toMinutes(reservation.endTime);
+
+            return rangesOverlap(currentStart, currentEnd, reservationStart, reservationEnd)
+                ? total + getReservationQuantity(reservation)
+                : total;
+        }, 0);
+
+        return Math.max(peak, reservedQuantity);
+    }, 0);
+};
+
+const buildInventoryPeakTotals = (reservations = []) => INVENTORY_FACILITY_NAMES.reduce((totals, facilityName) => {
+    const facilityReservations = reservations.filter((reservation) => reservation.facilityName === facilityName);
+    totals[facilityName] = getPeakReservedQuantityForRange(facilityReservations);
+    return totals;
+}, { chair: 0, tent: 0, table: 0 });
+
 const buildInventoryAvailability = (reservations = []) => {
-    const reservedQuantities = buildInventoryTotals(reservations);
+    const reservedQuantities = buildInventoryPeakTotals(reservations);
 
     return {
         inventory: FACILITY_INVENTORY,
@@ -439,7 +483,7 @@ const validateInventoryAvailability = async ({
         excludeReservationId
     });
 
-    const reservedQuantity = overlappingReservations.reduce((total, reservation) => total + getReservationQuantity(reservation), 0);
+    const reservedQuantity = getPeakReservedQuantityForRange(overlappingReservations, startTime, endTime);
 
     if ((reservedQuantity + requestedQuantity) > capacity) {
         const availableQuantity = Math.max(capacity - reservedQuantity, 0);
@@ -686,7 +730,11 @@ exports.getFacilityAvailability = asyncHandler(async (req, res) => {
         ))
         : reservations;
     const reservedQuantity = isInventoryView
-        ? relevantReservations.reduce((total, reservation) => total + getReservationQuantity(reservation), 0)
+        ? getPeakReservedQuantityForRange(
+            relevantReservations,
+            requestedStart || OPERATING_HOURS.start,
+            requestedEnd || OPERATING_HOURS.end
+        )
         : 0;
     const availableQuantity = isInventoryView
         ? Math.max(inventoryCapacity - reservedQuantity, 0)

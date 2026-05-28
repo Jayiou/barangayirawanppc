@@ -222,6 +222,107 @@ test('createPublicFacilityReservation creates and returns a populated guest rese
     assert.deepEqual(res.body, populatedReservation);
 });
 
+test('createPublicFacilityReservation rejects overlapping non-inventory reservations', async () => {
+    const req = {
+        body: {
+            facilityName: 'barangay_hall',
+            reservationDate: '2099-05-01',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Family event',
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            contactNumber: '09171234567',
+            email: 'juan@example.com',
+            address: 'Outside Barangay'
+        }
+    };
+    const res = createMockResponse();
+
+    FacilityReservation.findOne = async () => null;
+    FacilityReservation.find = async () => ([
+        {
+            _id: 'reservation-existing',
+            facilityName: 'barangay_hall',
+            startTime: '10:00',
+            endTime: '12:00',
+            status: 'approved'
+        }
+    ]);
+
+    await facilityReservationController.createPublicFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 409);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'This facility is already reserved for the selected date and time.'
+    });
+});
+
+test('createPublicFacilityReservation checks inventory conflicts by peak concurrent quantity', async () => {
+    const populatedReservation = {
+        _id: 'reservation-public-peak',
+        requesterType: 'guest',
+        firstName: 'Juan',
+        lastName: 'Dela Cruz',
+        email: 'juan@example.com',
+        facilityName: 'chair',
+        quantity: 100,
+        reservationDate: '2099-05-01T00:00:00.000Z',
+        status: 'pending'
+    };
+    const req = {
+        body: {
+            facilityName: 'chair',
+            reservationDate: '2099-05-01',
+            startTime: '09:00',
+            endTime: '11:00',
+            purpose: 'Family event',
+            quantity: 100,
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            contactNumber: '09171234567',
+            email: 'juan@example.com',
+            address: 'Outside Barangay'
+        }
+    };
+    const res = createMockResponse();
+
+    FacilityReservation.findOne = async () => null;
+    FacilityReservation.find = async () => ([
+        {
+            _id: 'reservation-1',
+            facilityName: 'chair',
+            startTime: '09:00',
+            endTime: '10:00',
+            status: 'approved',
+            quantity: 200
+        },
+        {
+            _id: 'reservation-2',
+            facilityName: 'chair',
+            startTime: '10:00',
+            endTime: '11:00',
+            status: 'approved',
+            quantity: 200
+        }
+    ]);
+    FacilityReservation.create = async (payload) => {
+        assert.equal(payload.quantity, 100);
+        return { _id: 'reservation-public-peak', ...payload };
+    };
+    FacilityReservation.findById = () => ({
+        populate() {
+            return Promise.resolve(populatedReservation);
+        }
+    });
+
+    await facilityReservationController.createPublicFacilityReservation(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(res.body, populatedReservation);
+});
+
 test('createFacilityReservation creates and returns a populated reservation', async () => {
     const populatedReservation = {
         _id: 'reservation-1',
