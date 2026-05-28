@@ -1,20 +1,63 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const asyncHandler = require('../utils/asyncHandler');
-const createHttpError = require('../utils/httpError');
+const { createHttpError } = require('../utils/httpError');
+const { resolvePublicUploadFilePath } = require('../utils/uploadPaths');
 const Announcement = require('../models/Announcement');
 
-// Get all active announcements
+const parseAnnouncementDate = (value, fieldName, required = false) => {
+    const normalized = String(value || '').trim();
+
+    if (!normalized) {
+        if (required) {
+            throw createHttpError(400, `${fieldName} is required`);
+        }
+
+        return null;
+    }
+
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) {
+        throw createHttpError(400, `Invalid ${fieldName} format`);
+    }
+
+    return date;
+};
+
+const validateAnnouncementWindow = (startDate, endDate) => {
+    if (startDate && endDate && endDate < startDate) {
+        throw createHttpError(400, 'End date cannot be earlier than start date');
+    }
+};
+
+const getBooleanValue = (value, fallback = true) => {
+    if (value === undefined) return fallback;
+    return value === true || value === 'true';
+};
+
+const deleteAnnouncementImageFile = (imagePath) => {
+    const filename = path.basename(String(imagePath || '').trim().split('?')[0].split('#')[0]);
+    if (!filename) return;
+
+    const filePath = resolvePublicUploadFilePath(filename);
+    if (filePath && fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+};
+
 exports.getAnnouncements = asyncHandler(async (req, res) => {
+    const now = new Date();
     const announcements = await Announcement.find({
         isActive: true,
-        startDate: { $lte: new Date() },
+        startDate: { $lte: now },
         $or: [
-            { endDate: { $gte: new Date() } },
+            { endDate: { $gte: now } },
             { endDate: null },
             { endDate: { $exists: false } }
         ]
     })
-    .sort({ displayOrder: 1, createdAt: -1 })
-    .select('-createdBy');
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .select('-createdBy');
 
     res.json({
         success: true,
@@ -22,7 +65,6 @@ exports.getAnnouncements = asyncHandler(async (req, res) => {
     });
 });
 
-// Get all announcements (admin only)
 exports.getAllAnnouncements = asyncHandler(async (req, res) => {
     const announcements = await Announcement.find()
         .populate('createdBy', 'username email')
@@ -34,42 +76,34 @@ exports.getAllAnnouncements = asyncHandler(async (req, res) => {
     });
 });
 
-// Create announcement
+exports.getNextDisplayOrder = asyncHandler(async (req, res) => {
+    const nextOrder = await Announcement.getNextDisplayOrder();
+
+    res.json({
+        success: true,
+        data: { nextDisplayOrder: nextOrder }
+    });
+});
+
 exports.createAnnouncement = asyncHandler(async (req, res) => {
     const { title, description, startDate, endDate, isActive } = req.body;
 
-    if (!title || !description) {
+    if (!String(title || '').trim() || !String(description || '').trim()) {
         throw createHttpError(400, 'Title and description are required');
     }
 
-    // Auto-assign next displayOrder
-    const nextOrder = await Announcement.getNextDisplayOrder();
-
-    let startDateObj = new Date();
-    if (startDate) {
-        const parsedDate = new Date(startDate);
-        if (!Number.isNaN(parsedDate.getTime())) {
-            startDateObj = parsedDate;
-        }
-    }
-
-    let endDateObj = null;
-    if (endDate?.trim()) {
-
-        const parsedDate = new Date(endDate);
-        if (!Number.isNaN(parsedDate.getTime())) {
-            endDateObj = parsedDate;
-        }
-    }
+    const startDateObj = parseAnnouncementDate(startDate, 'start date', true);
+    const endDateObj = parseAnnouncementDate(endDate, 'end date');
+    validateAnnouncementWindow(startDateObj, endDateObj);
 
     const announcement = new Announcement({
-        title,
-        description,
-        displayOrder: nextOrder,
+        title: String(title).trim(),
+        description: String(description).trim(),
+        displayOrder: await Announcement.getNextDisplayOrder(),
         startDate: startDateObj,
         endDate: endDateObj,
-        createdBy: req.user._id,
-        isActive: isActive === 'true' || isActive === true
+        createdBy: req.user.id,
+        isActive: getBooleanValue(isActive, true)
     });
 
     if (req.file) {
@@ -86,44 +120,44 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     });
 });
 
-// Get next displayOrder (admin only)
-exports.getNextDisplayOrder = asyncHandler(async (req, res) => {
-    const nextOrder = await Announcement.getNextDisplayOrder();
-
-    res.json({
-        success: true,
-        data: { nextDisplayOrder: nextOrder }
-    });
-});
-
 const applyAnnouncementUpdates = (announcement, body, file) => {
     const { title, description, displayOrder, startDate, endDate, isActive } = body;
 
-    if (title) announcement.title = title;
-    if (description) announcement.description = description;
+    if (title !== undefined && !String(title || '').trim()) {
+        throw createHttpError(400, 'Title is required');
+    }
+
+    if (description !== undefined && !String(description || '').trim()) {
+        throw createHttpError(400, 'Description is required');
+    }
+
+    const nextStartDate = startDate !== undefined
+        ? parseAnnouncementDate(startDate, 'start date', true)
+        : announcement.startDate;
+    const nextEndDate = endDate !== undefined
+        ? parseAnnouncementDate(endDate, 'end date')
+        : announcement.endDate;
+
+    validateAnnouncementWindow(nextStartDate, nextEndDate);
+
+    if (title !== undefined) announcement.title = String(title).trim();
+    if (description !== undefined) announcement.description = String(description).trim();
     if (displayOrder !== undefined) {
         const parsedOrder = Number.parseInt(displayOrder, 10);
         announcement.displayOrder = Number.isFinite(parsedOrder) && parsedOrder >= 1 ? parsedOrder : 1;
     }
-    if (startDate) {
-        const parsedDate = new Date(startDate);
-        if (!Number.isNaN(parsedDate.getTime())) announcement.startDate = parsedDate;
+    if (startDate !== undefined) announcement.startDate = nextStartDate;
+    if (endDate !== undefined) announcement.endDate = nextEndDate;
+    if (isActive !== undefined) announcement.isActive = getBooleanValue(isActive, true);
+    if (file) {
+        const oldImagePath = announcement.imagePath;
+        announcement.imagePath = `/uploads/${file.filename}`;
+        deleteAnnouncementImageFile(oldImagePath);
     }
-    if (endDate?.trim()) {
-        const parsedDate = new Date(endDate);
-        if (!Number.isNaN(parsedDate.getTime())) announcement.endDate = parsedDate;
-    } else if (endDate === '' || endDate === null) {
-        announcement.endDate = null;
-    }
-    if (isActive !== undefined) announcement.isActive = isActive === 'true' || isActive === true;
-    if (file) announcement.imagePath = `/uploads/${file.filename}`;
 };
 
-// Update announcement
 exports.updateAnnouncement = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    const announcement = await Announcement.findById(id);
+    const announcement = await Announcement.findById(req.params.id);
     if (!announcement) {
         throw createHttpError(404, 'Announcement not found');
     }
@@ -140,14 +174,13 @@ exports.updateAnnouncement = asyncHandler(async (req, res) => {
     });
 });
 
-// Delete announcement
 exports.deleteAnnouncement = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    const announcement = await Announcement.findByIdAndDelete(id);
+    const announcement = await Announcement.findByIdAndDelete(req.params.id);
     if (!announcement) {
         throw createHttpError(404, 'Announcement not found');
     }
+
+    deleteAnnouncementImageFile(announcement.imagePath);
 
     res.json({
         success: true,
@@ -155,16 +188,15 @@ exports.deleteAnnouncement = asyncHandler(async (req, res) => {
     });
 });
 
-// Update display order
 exports.updateDisplayOrder = asyncHandler(async (req, res) => {
     const { announcements } = req.body;
 
     if (!Array.isArray(announcements)) {
-        throw createHttpError(400, 'Announcements must be an array');
+        throw createHttpError(400, 'Announcements array is required');
     }
 
     for (const item of announcements) {
-        await Announcement.findByIdAndUpdate(item.id, { displayOrder: item.order });
+        await Announcement.findByIdAndUpdate(item.id, { displayOrder: item.displayOrder ?? item.order });
     }
 
     res.json({

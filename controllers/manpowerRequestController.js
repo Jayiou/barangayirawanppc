@@ -369,28 +369,31 @@ exports.cancelMyRequest = asyncHandler(async (req, res) => {
 });
 
 exports.deleteMyRequest = asyncHandler(async (req, res) => {
-    const resident = await Resident.findOne({ userId: req.user.id });
-
-    if (!resident) {
-        throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
-            code: 'RESIDENT_NOT_FOUND'
-        });
-    }
-
     const request = await ManpowerRequest.findById(req.params.id);
 
     if (!request) {
         throw createHttpError(404, 'Manpower request not found', { code: 'MANPOWER_NOT_FOUND' });
     }
 
-    if (!request.residentId || request.residentId.toString() !== resident._id.toString()) {
-        throw createHttpError(403, 'Access denied', { code: 'MANPOWER_FORBIDDEN' });
-    }
-
-    if (!['completed', 'rejected', 'cancelled'].includes(request.status)) {
+    const allowedStatuses = req.user.role === 'admin' ? ['rejected', 'cancelled'] : ['completed', 'rejected', 'cancelled'];
+    if (!allowedStatuses.includes(request.status)) {
         throw createHttpError(400, `Cannot delete manpower request with status: ${request.status}`, {
             code: 'MANPOWER_NOT_TERMINAL'
         });
+    }
+
+    if (req.user.role !== 'admin') {
+        const resident = await Resident.findOne({ userId: req.user.id });
+
+        if (!resident) {
+            throw createHttpError(404, 'Resident profile not found. Please complete your profile first.', {
+                code: 'RESIDENT_NOT_FOUND'
+            });
+        }
+
+        if (!request.residentId || request.residentId.toString() !== resident._id.toString()) {
+            throw createHttpError(403, 'Access denied', { code: 'MANPOWER_FORBIDDEN' });
+        }
     }
 
     await ManpowerRequest.findByIdAndDelete(req.params.id);

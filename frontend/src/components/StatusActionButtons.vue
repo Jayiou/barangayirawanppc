@@ -51,9 +51,13 @@ const actionDefinitions = {
     ready_for_pickup: [
       { label: 'Complete', action: 'complete', icon: 'check-circle', color: 'success' }
     ],
-    rejected: [],
+    rejected: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ],
     completed: [],
-    cancelled: []
+    cancelled: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ]
   },
   facilityReservation: {
     pending: [
@@ -68,9 +72,13 @@ const actionDefinitions = {
       { label: 'Complete', action: 'complete', icon: 'check-circle', color: 'success' },
       { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
     ],
-    rejected: [],
+    rejected: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ],
     completed: [],
-    cancelled: []
+    cancelled: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ]
   },
   report: {
     pending: [
@@ -86,7 +94,9 @@ const actionDefinitions = {
       { label: 'Reject', action: 'reject', icon: 'times', color: 'danger', requiresReason: true }
     ],
     resolved: [],
-    rejected: [],
+    rejected: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ],
     closed: []
   },
   appointment: {
@@ -98,9 +108,13 @@ const actionDefinitions = {
       { label: 'Complete', action: 'complete', icon: 'check-circle', color: 'success', requiresReason: true },
       { label: 'Cancel', action: 'cancel', icon: 'times', color: 'danger', requiresReason: true }
     ],
-    cancelled: [],
+    cancelled: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ],
     completed: [],
-    rejected: []
+    rejected: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ]
   },
   manpowerRequest: {
     pending: [
@@ -120,8 +134,12 @@ const actionDefinitions = {
       { label: 'Cancel', action: 'cancel', icon: 'times', color: 'danger', requiresReason: true }
     ],
     completed: [],
-    rejected: [],
-    cancelled: []
+    rejected: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ],
+    cancelled: [
+      { label: 'Delete', action: 'delete', icon: 'trash', color: 'danger' }
+    ]
   }
 };
 

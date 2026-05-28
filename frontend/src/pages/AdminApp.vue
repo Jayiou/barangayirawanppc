@@ -662,9 +662,9 @@
                                     </td>
 
                                     <td v-if="currentView === 'announcements'"><strong>{{ item.title }}</strong></td>
-                                    <td v-if="currentView === 'announcements'"><StatusBadge :status="item.isActive ? 'active' : 'inactive'" /></td>
+                                    <td v-if="currentView === 'announcements'"><StatusBadge :status="getAnnouncementPublishingStatus(item)" /></td>
                                     <td v-if="currentView === 'announcements'">{{ item.displayOrder }}</td>
-                                    <td v-if="currentView === 'announcements'"><small>{{ formatDate(item.startDate) }} - {{ item.endDate ? formatDate(item.endDate) : 'No end date' }}</small></td>
+                                    <td v-if="currentView === 'announcements'"><small>{{ formatDateTime(item.startDate) }} - {{ item.endDate ? formatDateTime(item.endDate) : 'No end date' }}</small></td>
                                     <td v-if="currentView === 'announcements'">
                                         <button class="icon-button" @click="openModal('announcement', item)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                                     </td>
@@ -1385,7 +1385,7 @@
                         <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                         <div v-if="editForm.imagePath && !announcementImageFile" style="margin-top: -10px; font-size: 0.9rem; color: #666;">Current: {{ editForm.imagePath }}</div>
                         <label><span>Start Date</span><input v-model="editForm.startDate" type="datetime-local" required></label>
-                        <label><span>End Date (Optional)</span><input v-model="editForm.endDate" type="datetime-local"></label>
+                        <label><span>End Date (Optional)</span><input v-model="editForm.endDate" type="datetime-local" :min="editForm.startDate || undefined"></label>
                         <div style="font-size: 0.95rem; color: #1f3c5a; background: #eaf3ff; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #4a90e2; margin-bottom: 15px; display: grid; gap: 4px;">
                             <strong>Display Order</strong>
                             <span v-if="editForm._id">Current order: {{ editForm.displayOrder || 'N/A' }}</span>
@@ -1753,6 +1753,28 @@ const toFilterDate = (value) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
+const formatDateTimeLocalInput = (value) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const pad = (part) => String(part).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const getAnnouncementPublishingStatus = (announcement) => {
+    if (announcement?.isActive === false) return 'inactive';
+
+    const now = Date.now();
+    const startTime = new Date(announcement?.startDate || 0).getTime();
+    const endTime = announcement?.endDate ? new Date(announcement.endDate).getTime() : null;
+
+    if (Number.isFinite(startTime) && startTime > now) return 'scheduled';
+    if (endTime && Number.isFinite(endTime) && endTime < now) return 'expired';
+    return 'live';
+};
+
 const matchesSearch = (item, term, fields) => {
     const needle = String(term || '').trim().toLowerCase();
     if (!needle) return true;
@@ -1919,7 +1941,7 @@ const viewTitle = computed(() => ({
 const pendingWorkload = computed(() => pendingCounts.value.reserves + pendingCounts.value.reports + pendingCounts.value.appointments);
 const totalResidentsCount = computed(() => residents.value.length);
 const approvedResidentsCount = computed(() => residents.value.filter((resident) => resident.userId?.accountStatus === 'approved').length);
-const activeAnnouncementsCount = computed(() => announcements.value.filter((announcement) => announcement.isActive !== false).length);
+const activeAnnouncementsCount = computed(() => announcements.value.filter((announcement) => getAnnouncementPublishingStatus(announcement) === 'live').length);
 const activeOfficialsCount = computed(() => officials.value.filter((official) => official.status !== 'inactive').length);
 
 const analyticsRanges = [
@@ -2250,7 +2272,7 @@ const activeAnalyticsData = computed(() => {
             title: 'Announcement Reach Monitor',
             records: announcements.value,
             dateKey: 'createdAt',
-            distribution: buildDistribution(announcements.value, (announcement) => announcement.isActive === false ? 'Inactive' : 'Active', ['No advisories']),
+            distribution: buildDistribution(announcements.value, (announcement) => normalizeLabel(getAnnouncementPublishingStatus(announcement)), ['No advisories']),
             summaries: [
                 { label: 'Active', value: activeAnnouncementsCount.value, detail: 'Live on portal' },
                 { label: 'Stored', value: announcements.value.length, detail: 'Total advisories' },
@@ -2726,7 +2748,7 @@ const filteredManagementList = computed(() => {
     switch (currentView.value) {
         case 'announcements':
             return currentList.value.filter((item) => {
-                const status = item.isActive === false ? 'inactive' : 'active';
+                const status = getAnnouncementPublishingStatus(item);
                 return matchesSearch(item, searchTerm, [
                     (record) => record.title,
                     (record) => record.content,
@@ -2828,7 +2850,9 @@ const managementFilterConfig = computed(() => {
                 dateLabel: 'Start date',
                 statusOptions: [
                     { value: 'all', label: 'All statuses' },
-                    { value: 'active', label: 'Active' },
+                    { value: 'live', label: 'Live' },
+                    { value: 'scheduled', label: 'Scheduled' },
+                    { value: 'expired', label: 'Expired' },
                     { value: 'inactive', label: 'Inactive' }
                 ]
             };
@@ -3375,10 +3399,11 @@ const setupAnnouncementModal = async (item) => {
     editForm._id = item._id || '';
     editForm.title = item.title || '';
     editForm.description = item.description || '';
-    editForm.startDate = item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '';
-    editForm.endDate = item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '';
+    editForm.startDate = formatDateTimeLocalInput(item.startDate);
+    editForm.endDate = formatDateTimeLocalInput(item.endDate);
     editForm.isActive = item.isActive !== false;
-    // For editing, we don't change displayOrder
+    editForm.displayOrder = item.displayOrder || '';
+    editForm.imagePath = item.imagePath || item.imageUrl || '';
 };
 
 const openModal = async (type, item) => {
@@ -3766,6 +3791,7 @@ const handleSaveAnnouncement = async () => {
         announcementForm.startDate = editForm.startDate;
         announcementForm.endDate = editForm.endDate;
         announcementForm.isActive = editForm.isActive;
+        announcementForm.displayOrder = editForm.displayOrder || announcementForm.displayOrder;
         
         await saveAnnouncement(isEdit, editForm._id);
         msg(isEdit ? 'Announcement updated successfully.' : 'Announcement created successfully.');
@@ -3901,7 +3927,46 @@ const setResidentStatusAndSave = async (status) => {
     editForm.status = status;
     await handleSave();
 };
+const getDeleteEndpointForActiveModal = () => {
+    const paths = {
+        document: (id) => `/admin/documents/${id}`,
+        reservation: (id) => `/facility-reservations/${id}`,
+        manpower: (id) => `/manpower-requests/${id}`,
+        report: (id) => `/reports/${id}`,
+        appointment: (id) => `/appointments/${id}`
+    };
+
+    return paths[activeModal.value]?.(selectedItem.value?._id) || '';
+};
+
+const handleDeleteTerminalRecord = async () => {
+    if (!selectedItem.value?._id || isSubmitting.value) return;
+    if (!(await showConfirm(`Delete this ${activeModal.value} record?`))) return;
+
+    isSubmitting.value = true;
+    try {
+        const endpoint = getDeleteEndpointForActiveModal();
+        if (!endpoint) {
+            throw new Error('Delete is not available for this record.');
+        }
+
+        await apiFetch(endpoint, { method: 'DELETE' });
+        msg(`${normalizeLabel(activeModal.value)} deleted successfully.`);
+        await loadAll();
+        activeModal.value = null;
+    } catch (error) {
+        msg(error.message || 'Delete failed', true);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
 const handleStatusAction = (actionObj) => {
+    if (actionObj?.action === 'delete') {
+        handleDeleteTerminalRecord();
+        return;
+    }
+
     confirmingAction.value = actionObj;
 };
 
@@ -6240,9 +6305,10 @@ const handleAuthSubmit = async () => {
 }
 
 .record-preview-close {
-    position: absolute;
+    position: sticky;
     top: 14px;
-    right: 14px;
+    margin-left: auto;
+    margin-bottom: -40px;
     width: 40px;
     height: 40px;
     border: none;
@@ -6277,9 +6343,11 @@ const handleAuthSubmit = async () => {
 }
 
 .admin-modal-close {
-    position: absolute;
+    position: sticky;
     top: 16px;
-    right: 16px;
+    margin-left: auto;
+    margin-right: 16px;
+    margin-bottom: -40px;
     width: 40px;
     height: 40px;
     border-radius: 8px;

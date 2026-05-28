@@ -801,6 +801,7 @@ exports.getFacilityReservationById = asyncHandler(async (req, res) => {
 
 exports.deleteMyFacilityReservation = asyncHandler(async (req, res) => {
     const terminalStatuses = ['rejected', 'completed', 'cancelled'];
+    const adminDeleteStatuses = ['rejected', 'cancelled'];
     const reservation = await FacilityReservation.findById(req.params.id);
 
     if (!reservation) {
@@ -809,17 +810,20 @@ exports.deleteMyFacilityReservation = asyncHandler(async (req, res) => {
         });
     }
 
-    const resident = await Resident.findOne({ userId: req.user.id });
-    if (!resident || reservation.residentId?.toString() !== resident?._id?.toString()) {
-        throw createHttpError(403, 'Access denied', {
-            code: 'FACILITY_RESERVATION_FORBIDDEN'
-        });
-    }
-
-    if (!terminalStatuses.includes(reservation.status)) {
+    const allowedStatuses = req.user.role === 'admin' ? adminDeleteStatuses : terminalStatuses;
+    if (!allowedStatuses.includes(reservation.status)) {
         throw createHttpError(400, `Cannot delete reservation with status: ${reservation.status}`, {
             code: 'FACILITY_RESERVATION_DELETE_NOT_ALLOWED'
         });
+    }
+
+    if (req.user.role !== 'admin') {
+        const resident = await Resident.findOne({ userId: req.user.id });
+        if (!resident || reservation.residentId?.toString() !== resident?._id?.toString()) {
+            throw createHttpError(403, 'Access denied', {
+                code: 'FACILITY_RESERVATION_FORBIDDEN'
+            });
+        }
     }
 
     await FacilityReservation.findByIdAndDelete(req.params.id);

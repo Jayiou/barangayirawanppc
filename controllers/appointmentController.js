@@ -719,6 +719,7 @@ const cancelAppointment = asyncHandler(async (req, res) => {
  */
 const deleteMyAppointment = asyncHandler(async (req, res) => {
     const terminalStatuses = ['rejected', 'cancelled', 'completed', 'expired'];
+    const adminDeleteStatuses = ['rejected', 'cancelled'];
     const userId = req.user._id;
     const appointment = await Appointment.findById(req.params.id);
 
@@ -726,13 +727,16 @@ const deleteMyAppointment = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Appointment not found');
     }
 
-    const resident = await Resident.findById(appointment.residentId);
-    if (!resident || resident.userId.toString() !== userId.toString()) {
-        throw createHttpError(403, 'You do not have permission to delete this appointment');
+    const allowedStatuses = req.user.role === 'admin' ? adminDeleteStatuses : terminalStatuses;
+    if (!allowedStatuses.includes(appointment.status)) {
+        throw createHttpError(400, `Cannot delete appointment with status: ${appointment.status}`);
     }
 
-    if (!terminalStatuses.includes(appointment.status)) {
-        throw createHttpError(400, `Cannot delete appointment with status: ${appointment.status}`);
+    if (req.user.role !== 'admin') {
+        const resident = await Resident.findById(appointment.residentId);
+        if (!resident || resident.userId.toString() !== userId.toString()) {
+            throw createHttpError(403, 'You do not have permission to delete this appointment');
+        }
     }
 
     await Appointment.findByIdAndDelete(req.params.id);

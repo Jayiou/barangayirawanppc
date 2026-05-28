@@ -10,6 +10,7 @@ router.use(auth, role('admin', 'official'));
 router.get('/', documentController.getAllRequests);
 router.get('/:id', documentController.getRequestById);
 router.put('/:id', documentController.adminEdit);
+router.delete('/:id', documentController.adminDeleteRequest);
 router.put('/:id/approve', documentController.approveRequest);
 router.put('/:id/reject', documentController.rejectRequest);
 router.get('/:id/generate', documentController.generateDocument);

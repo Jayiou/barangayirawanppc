@@ -47,9 +47,30 @@ export function useAnnouncements() {
             throw new Error('Please enter an announcement title.');
         }
 
+        if (!announcementForm.description.trim()) {
+            throw new Error('Please enter an announcement description.');
+        }
+
+        const startDate = new Date(announcementForm.startDate || '');
+        if (!announcementForm.startDate || Number.isNaN(startDate.getTime())) {
+            throw new Error('Please choose a valid start date.');
+        }
+
+        if (announcementForm.endDate) {
+            const endDate = new Date(announcementForm.endDate);
+            if (Number.isNaN(endDate.getTime())) {
+                throw new Error('Please choose a valid end date.');
+            }
+
+            if (endDate < startDate) {
+                throw new Error('End date cannot be earlier than start date.');
+            }
+        }
+
         const formData = new FormData();
         formData.append('title', announcementForm.title);
         formData.append('description', announcementForm.description);
+        formData.append('displayOrder', announcementForm.displayOrder || 1);
         formData.append('startDate', announcementForm.startDate || '');
         formData.append('endDate', announcementForm.endDate || '');
         formData.append('isActive', announcementForm.isActive !== false);

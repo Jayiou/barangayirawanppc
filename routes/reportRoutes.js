@@ -18,7 +18,7 @@ router.post('/', authMiddleware, roleMiddleware('resident'), upload.array('proof
 router.post('/public', publicReportLimiter, upload.array('proofFiles', 5), createPublicReport);
 router.get('/me', authMiddleware, roleMiddleware('resident'), getMyReports);
 router.get('/:id', authMiddleware, getReportById);
-router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyReport);
+router.delete('/:id', authMiddleware, roleMiddleware('resident', 'admin'), deleteMyReport);
 router.get('/', authMiddleware, roleMiddleware('admin'), getReports);
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin'), updateReportStatus);
 

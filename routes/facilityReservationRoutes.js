@@ -20,7 +20,7 @@ router.get('/me', authMiddleware, roleMiddleware('resident'), getMyFacilityReser
 router.get('/availability/public', getFacilityAvailability);
 router.get('/availability', authMiddleware, getFacilityAvailability);
 router.get('/:id', authMiddleware, getFacilityReservationById);
-router.delete('/:id', authMiddleware, roleMiddleware('resident'), deleteMyFacilityReservation);
+router.delete('/:id', authMiddleware, roleMiddleware('resident', 'admin'), deleteMyFacilityReservation);
 router.get('/', authMiddleware, roleMiddleware('admin'), getFacilityReservations);
 router.patch('/:id/status', authMiddleware, roleMiddleware('admin'), updateFacilityReservationStatus);
 

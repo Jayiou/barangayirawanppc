@@ -9,6 +9,8 @@ const Announcement = require('../models/Announcement');
 const originalFindById = User.findById;
 const originalFind = Announcement.find;
 const originalAnnouncementFindById = Announcement.findById;
+const originalAnnouncementFindByIdAndDelete = Announcement.findByIdAndDelete;
+const originalAnnouncementFindByIdAndUpdate = Announcement.findByIdAndUpdate;
 const originalAnnouncementGetNextDisplayOrder = Announcement.getNextDisplayOrder;
 const originalAnnouncementSave = Announcement.prototype.save;
 const originalAnnouncementPopulate = Announcement.prototype.populate;
@@ -48,6 +50,8 @@ test.afterEach(() => {
     User.findById = originalFindById;
     Announcement.find = originalFind;
     Announcement.findById = originalAnnouncementFindById;
+    Announcement.findByIdAndDelete = originalAnnouncementFindByIdAndDelete;
+    Announcement.findByIdAndUpdate = originalAnnouncementFindByIdAndUpdate;
     Announcement.getNextDisplayOrder = originalAnnouncementGetNextDisplayOrder;
     Announcement.prototype.save = originalAnnouncementSave;
     Announcement.prototype.populate = originalAnnouncementPopulate;
@@ -101,6 +105,55 @@ test('announcement write routes reject authenticated residents', async () => {
     }
 });
 
+test('public announcement listing only returns currently live active announcements', async () => {
+    const server = startServer();
+    let queryFilter = null;
+    let sortFilter = null;
+    let selectFilter = null;
+    const liveAnnouncements = [
+        {
+            _id: 'announcement-1',
+            title: 'Live Advisory',
+            description: 'Shown on portal',
+            isActive: true,
+            startDate: new Date('2026-05-01T08:00:00.000Z'),
+            endDate: null,
+            displayOrder: 1
+        }
+    ];
+
+    Announcement.find = (query) => {
+        queryFilter = query;
+        return {
+            sort: (sort) => {
+                sortFilter = sort;
+                return {
+                    select: async (select) => {
+                        selectFilter = select;
+                        return liveAnnouncements;
+                    }
+                };
+            }
+        };
+    };
+
+    try {
+        const response = await fetch(`${server.baseUrl}/api/announcements`);
+        const body = await response.json();
+
+        assert.equal(response.status, 200);
+        assert.equal(body.success, true);
+        assert.equal(body.data.length, 1);
+        assert.equal(body.data[0].title, 'Live Advisory');
+        assert.equal(queryFilter.isActive, true);
+        assert.ok(queryFilter.startDate.$lte instanceof Date);
+        assert.deepEqual(sortFilter, { displayOrder: 1, createdAt: -1 });
+        assert.equal(selectFilter, '-createdBy');
+    } finally {
+        await server.close();
+    }
+});
+
 test('announcement admin listing rejects residents and allows admins', async () => {
     const server = startServer();
 
@@ -127,6 +180,34 @@ test('announcement admin listing rejects residents and allows admins', async () 
 
         assert.equal(adminResponse.status, 200);
         assert.deepEqual(body, { success: true, data: [] });
+    } finally {
+        await server.close();
+    }
+});
+
+test('announcement create route rejects end date earlier than start date', async () => {
+    stubUserRole('admin');
+
+    const server = startServer();
+
+    try {
+        const response = await fetch(`${server.baseUrl}/api/announcements`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${tokenFor('admin-user', 'admin')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: 'Invalid Announcement',
+                description: 'End date is before start date',
+                startDate: '2026-05-20T12:00',
+                endDate: '2026-05-01T12:00'
+            })
+        });
+        const body = await response.json();
+
+        assert.equal(response.status, 400);
+        assert.equal(body.message, 'End date cannot be earlier than start date');
     } finally {
         await server.close();
     }

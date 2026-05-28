@@ -2339,6 +2339,24 @@ textarea { resize: vertical; }
     box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
 }
 
+.badge.live {
+    background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(21, 128, 61, 0.2);
+}
+
+.badge.scheduled {
+    background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.badge.expired {
+    background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.2);
+}
+
 .badge.inactive {
     background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
     color: white;

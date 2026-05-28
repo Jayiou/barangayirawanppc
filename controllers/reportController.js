@@ -407,21 +407,25 @@ exports.getReportById = asyncHandler(async (req, res) => {
 
 exports.deleteMyReport = asyncHandler(async (req, res) => {
     const terminalStatuses = ['resolved', 'rejected', 'closed'];
+    const adminDeleteStatuses = ['rejected'];
     const report = await Report.findById(req.params.id);
 
     if (!report) {
         throw createHttpError(404, 'Report not found', { code: 'REPORT_NOT_FOUND' });
     }
 
-    const resident = await Resident.findOne({ userId: req.user.id });
-    if (!resident || !report.residentId || report.residentId.toString() !== resident._id.toString()) {
-        throw createHttpError(403, 'Access denied', { code: 'REPORT_FORBIDDEN' });
-    }
-
-    if (!terminalStatuses.includes(report.status)) {
+    const allowedStatuses = req.user.role === 'admin' ? adminDeleteStatuses : terminalStatuses;
+    if (!allowedStatuses.includes(report.status)) {
         throw createHttpError(400, `Cannot delete report with status: ${report.status}`, {
             code: 'REPORT_DELETE_NOT_ALLOWED'
         });
+    }
+
+    if (req.user.role !== 'admin') {
+        const resident = await Resident.findOne({ userId: req.user.id });
+        if (!resident || !report.residentId || report.residentId.toString() !== resident._id.toString()) {
+            throw createHttpError(403, 'Access denied', { code: 'REPORT_FORBIDDEN' });
+        }
     }
 
     await Report.findByIdAndDelete(req.params.id);
