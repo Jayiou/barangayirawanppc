@@ -719,13 +719,13 @@
                             <div class="facility-slot-grid" v-if="reservationRequiresQuantity">
                             <label>
                                 <span>Quantity</span>
-                                <input v-model.number="reservationForm.quantity" type="number" min="1" :max="selectedReservationItem.max" placeholder="0">
+                                <input v-model.number="reservationForm.quantity" type="number" min="1" :max="reservationQuantityMax" placeholder="0" :disabled="reservationInventoryUnavailable">
                             </label>
                             <!-- Inventory availability note removed -->
                         </div>
                         <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
                         <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
-                        <button type="submit" class="primary-button" :disabled="isSubmitting || !reservationForm.startTime || !reservationForm.endTime || (reservationRequiresQuantity && !reservationForm.quantity)">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
+                        <button type="submit" class="primary-button" :disabled="!canSubmitReservation">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
                     <div class="facility-slot-note" v-if="reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
@@ -1486,6 +1486,44 @@ const selectSlot = (slot) => {
 const portalFacilityTimeOptions = computed(() => buildFacilityTimeOptions(facilityAvailabilityDetails.value, reservationForm.startTime));
 const selectedReservationItem = computed(() => getFacilityItemOption(reservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
 const reservationRequiresQuantity = computed(() => selectedReservationItem.value?.isInventory === true);
+const reservationHasSelectedTime = computed(() => Boolean(reservationForm.startTime && reservationForm.endTime));
+const reservationAvailableQuantity = computed(() => {
+    if (!reservationRequiresQuantity.value || !reservationHasSelectedTime.value) {
+        return null;
+    }
+
+    const availableQuantity = Number(facilityAvailabilityDetails.value?.availableQuantity);
+    return Number.isFinite(availableQuantity) ? availableQuantity : null;
+});
+const reservationQuantityMax = computed(() => {
+    const availableQuantity = reservationAvailableQuantity.value;
+    return availableQuantity === null ? selectedReservationItem.value.max : Math.max(availableQuantity, 0);
+});
+const reservationInventoryUnavailable = computed(() => reservationRequiresQuantity.value && reservationAvailableQuantity.value !== null && reservationAvailableQuantity.value <= 0);
+const canSubmitReservation = computed(() => {
+    if (isSubmitting.value || !reservationForm.startTime || !reservationForm.endTime) {
+        return false;
+    }
+
+    if (!reservationRequiresQuantity.value) {
+        return true;
+    }
+
+    const requestedQuantity = Number(reservationForm.quantity || 0);
+    return requestedQuantity > 0 && !reservationInventoryUnavailable.value && requestedQuantity <= reservationQuantityMax.value;
+});
+
+const clampReservationQuantityToAvailability = () => {
+    if (!reservationRequiresQuantity.value) {
+        reservationForm.quantity = 0;
+        return;
+    }
+
+    const maxQuantity = Number(reservationQuantityMax.value);
+    if (Number.isFinite(maxQuantity) && maxQuantity > 0) {
+        reservationForm.quantity = Math.min(Math.max(Number(reservationForm.quantity) || 1, 1), maxQuantity);
+    }
+};
 
 const handleReservationAvailabilityChange = async () => {
     reservationForm.startTime = '';
@@ -1494,6 +1532,7 @@ const handleReservationAvailabilityChange = async () => {
     isFetchingFacilityAvailability.value = true;
     try {
         await loadFacilityAvailability(reservationForm.facilityName, reservationForm.reservationDate);
+        clampReservationQuantityToAvailability();
     } finally {
         isFetchingFacilityAvailability.value = false;
     }
@@ -1508,6 +1547,7 @@ const handleReservationTimeChange = async () => {
             reservationForm.startTime,
             reservationForm.endTime
         );
+        clampReservationQuantityToAvailability();
     } finally {
         isFetchingFacilityAvailability.value = false;
     }

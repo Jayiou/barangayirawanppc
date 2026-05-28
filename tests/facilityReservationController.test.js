@@ -482,7 +482,7 @@ test('updateFacilityReservationStatus rejects conflicting approvals', async () =
 
     FacilityReservation.findById = async () => ({
         _id: 'reservation-1',
-        facilityName: 'chair',
+        facilityName: 'barangay_hall',
         reservationDate: '2026-05-01',
         startTime: '10:00',
         endTime: '11:00',
@@ -503,6 +503,44 @@ test('updateFacilityReservationStatus rejects conflicting approvals', async () =
     assert.deepEqual(res.body, {
         success: false,
         message: 'This facility is already reserved for the selected date and time.'
+    });
+});
+
+test('updateFacilityReservationStatus rejects inventory approvals beyond available quantity', async () => {
+    const req = {
+        params: { id: 'reservation-1' },
+        body: {
+            status: 'approved'
+        }
+    };
+    const res = createMockResponse();
+
+    FacilityReservation.findById = async () => ({
+        _id: 'reservation-1',
+        facilityName: 'chair',
+        reservationDate: '2026-05-01',
+        startTime: '10:00',
+        endTime: '11:00',
+        status: 'pending',
+        quantity: 250
+    });
+    FacilityReservation.find = async () => ([
+        {
+            _id: 'reservation-2',
+            facilityName: 'chair',
+            startTime: '10:30',
+            endTime: '11:30',
+            status: 'approved',
+            quantity: 100
+        }
+    ]);
+
+    await facilityReservationController.updateFacilityReservationStatus(req, res);
+
+    assert.equal(res.statusCode, 409);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Only 200 chairs are available for the selected time.'
     });
 });
 

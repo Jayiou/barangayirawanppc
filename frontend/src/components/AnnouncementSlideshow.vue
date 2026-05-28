@@ -2,7 +2,7 @@
     <section class="announcement-section">
         <div class="section-title" v-if="announcements.length > 0" style="text-align: center; margin-bottom: 3rem;">
             <span class="eyebrow">Latest Updates</span>
-            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcement</h2>
+            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcements & Advisories</h2>
         </div>
 
         <!-- Horizontal Rotating Carousel -->
@@ -26,11 +26,11 @@
                             </div>
                             <div class="card-overlay"></div>
                             <div class="card-content">
-                                <span class="card-badge">{{ getStatusBadge(announcement.isActive) }}</span>
+                                <span class="card-badge">{{ getTypeBadge(announcement) }}</span>
                                 <h3>{{ announcement.title }}</h3>
                                 <p>{{ truncateText(announcement.description, 80) }}</p>
                                 <div class="card-meta">
-                                    <span class="card-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(announcement.startDate) }}</span>
+                                    <span class="card-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(announcement.displayDate) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -45,7 +45,7 @@
                         class="dot" 
                         :class="{ active: index === currentSlide }"
                         type="button"
-                        :aria-label="`Go to announcement ${index + 1}: ${announcement.title}`"
+                        :aria-label="`Go to update ${index + 1}: ${announcement.title}`"
                         :aria-current="index === currentSlide ? 'true' : null"
                         @click="goToSlide(index)">
                 </button>
@@ -66,11 +66,11 @@
                     </div>
                     <div class="card-overlay"></div>
                     <div class="card-content">
-                        <span class="card-badge">{{ getStatusBadge(announcement.isActive) }}</span>
+                        <span class="card-badge">{{ getTypeBadge(announcement) }}</span>
                         <h3>{{ announcement.title }}</h3>
                         <p>{{ truncateText(announcement.description, 80) }}</p>
                         <div class="card-meta">
-                            <span class="card-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(announcement.startDate) }}</span>
+                            <span class="card-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(announcement.displayDate) }}</span>
                         </div>
                     </div>
                 </div>
@@ -88,9 +88,9 @@
                     <img :src="selectedAnnouncement.imagePath || selectedAnnouncement.imageUrl" :alt="selectedAnnouncement.title" decoding="async">
                 </div>
                 <div class="modal-body">
-                    <span class="card-badge" style="margin-bottom: 12px;">{{ getStatusBadge(selectedAnnouncement.isActive) }}</span>
+                    <span class="card-badge" style="margin-bottom: 12px;">{{ getTypeBadge(selectedAnnouncement) }}</span>
                     <h2>{{ selectedAnnouncement.title }}</h2>
-                    <div class="modal-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(selectedAnnouncement.startDate) }}</div>
+                    <div class="modal-date"><i class="fa-solid fa-calendar"></i> {{ formatDateShort(selectedAnnouncement.displayDate) }}</div>
                     <p class="modal-desc">{{ selectedAnnouncement.description }}</p>
                 </div>
             </div>
@@ -109,6 +109,46 @@ const selectedAnnouncement = ref(null);
 let autoSlideInterval = null;
 let visibilityChangeHandler = null;
 const showCarousel = computed(() => announcements.value.length >= 3);
+
+const normalizeAnnouncement = (announcement) => ({
+    kind: 'announcement',
+    key: `announcement-${announcement._id || announcement.id || announcement.title || Math.random()}`,
+    title: announcement.title || 'Barangay Announcement',
+    description: announcement.description || '',
+    imagePath: announcement.imagePath || announcement.imageUrl || '',
+    displayDate: announcement.startDate || announcement.createdAt || '',
+    isActive: announcement.isActive !== false,
+    raw: announcement
+});
+
+const normalizeAdvisory = (advisory) => ({
+    kind: 'advisory',
+    key: `advisory-${advisory._id || advisory.id || advisory.disasterType || Math.random()}`,
+    title: advisory.title || advisory.disasterType?.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Disaster Advisory',
+    description: advisory.advisoryMessage || advisory.description || '',
+    imagePath: advisory.imagePath || advisory.imageUrl || '',
+    displayDate: advisory.expectedImpactDate || advisory.createdAt || '',
+    status: advisory.status || '',
+    raw: advisory
+});
+
+const getTypeBadge = (item) => {
+    if (item?.kind === 'advisory') {
+        const statusLabel = String(item.status || 'ongoing').replaceAll('_', ' ');
+        return `Advisory · ${statusLabel.replace(/\b\w/g, (letter) => letter.toUpperCase())}`;
+    }
+
+    return item?.isActive === false ? 'Announcement · Inactive' : 'Announcement · Active';
+};
+
+const mergeAndSortUpdates = (announcementsList, advisoriesList) => {
+    const merged = [
+        ...announcementsList.map(normalizeAnnouncement),
+        ...advisoriesList.map(normalizeAdvisory)
+    ];
+
+    return merged.sort((left, right) => new Date(right.displayDate || 0).getTime() - new Date(left.displayDate || 0).getTime());
+};
 
 // Swipe logic variables
 let touchStartX = 0;
@@ -140,8 +180,19 @@ const handleSwipeGesture = () => {
 
 const fetchAnnouncements = async () => {
     try {
-        const response = await apiFetch('/announcements');
-        announcements.value = response.data || [];
+        const [announcementResult, advisoryResult] = await Promise.allSettled([
+            apiFetch('/announcements'),
+            apiFetch('/disaster-advisories/public')
+        ]);
+
+        const announcementsList = announcementResult.status === 'fulfilled'
+            ? (announcementResult.value.data || announcementResult.value || [])
+            : [];
+        const advisoriesList = advisoryResult.status === 'fulfilled'
+            ? (advisoryResult.value.data || advisoryResult.value || [])
+            : [];
+
+        announcements.value = mergeAndSortUpdates(announcementsList, advisoriesList);
         currentSlide.value = 0;
 
         if (showCarousel.value) {

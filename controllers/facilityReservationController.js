@@ -805,18 +805,35 @@ exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
     const previousStatus = existingReservation.status;
 
     if (CONFLICT_STATUSES.includes(statusData.status)) {
-        const conflictingReservation = await findConflictingReservation({
-            facilityName: existingReservation.facilityName,
-            reservationDate: existingReservation.reservationDate,
-            startTime: existingReservation.startTime,
-            endTime: existingReservation.endTime,
-            excludeReservationId: existingReservation._id
-        });
-
-        if (conflictingReservation) {
-            throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
-                code: 'FACILITY_RESERVATION_CONFLICT'
+        if (isInventoryFacility(existingReservation.facilityName)) {
+            const inventoryError = await validateInventoryAvailability({
+                facilityName: existingReservation.facilityName,
+                reservationDate: existingReservation.reservationDate,
+                startTime: existingReservation.startTime,
+                endTime: existingReservation.endTime,
+                quantity: getReservationQuantity(existingReservation),
+                excludeReservationId: existingReservation._id
             });
+
+            if (inventoryError) {
+                throw createHttpError(409, inventoryError, {
+                    code: 'FACILITY_RESERVATION_CONFLICT'
+                });
+            }
+        } else {
+            const conflictingReservation = await findConflictingReservation({
+                facilityName: existingReservation.facilityName,
+                reservationDate: existingReservation.reservationDate,
+                startTime: existingReservation.startTime,
+                endTime: existingReservation.endTime,
+                excludeReservationId: existingReservation._id
+            });
+
+            if (conflictingReservation) {
+                throw createHttpError(409, 'This facility is already reserved for the selected date and time.', {
+                    code: 'FACILITY_RESERVATION_CONFLICT'
+                });
+            }
         }
     }
 

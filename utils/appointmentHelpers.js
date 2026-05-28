@@ -341,6 +341,18 @@ const formatAppointmentResponse = (appointment) => {
     };
 };
 
+// Include derived display fields for API consumers
+const formatAppointmentResponseWithNote = (appointment) => {
+    const base = formatAppointmentResponse(appointment);
+
+    if (String(appointment.status).toLowerCase() === 'expired') {
+        base.expiredAt = appointment.expiredAt || null;
+        base.systemNote = 'Expired (No Response within 24 hours): The officials might be currently unavailable. You may submit a new appointment request or visit the barangay hall directly as a walk-in transaction.';
+    }
+
+    return base;
+};
+
 /**
  * Check if an appointment has expired (pending for too long)
  * Default: 24 hours
@@ -391,5 +403,6 @@ module.exports = {
     isValidAppointmentDate,
     formatAppointmentResponse,
     hasAppointmentExpired,
-    expireOldPendingAppointments
+    expireOldPendingAppointments,
+    formatAppointmentResponseWithNote
 };

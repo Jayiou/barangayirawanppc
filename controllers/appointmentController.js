@@ -506,10 +506,13 @@ const getAppointmentDetail = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Appointment not found');
     }
 
+    // Use the formatter that includes system notes for expired appointments
+    const formatted = formatAppointmentResponseWithNote(appointment);
+
     res.status(200).json({
         success: true,
         message: 'Appointment retrieved successfully',
-        data: appointment
+        data: formatted
     });
 });
 

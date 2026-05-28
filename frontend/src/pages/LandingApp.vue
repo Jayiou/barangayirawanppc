@@ -487,7 +487,7 @@
                                     <div class="two-col-grid" v-if="guestReservationRequiresQuantity">
                                         <div class="input-group">
                                             <label for="guest-facility-quantity">Quantity</label>
-                                            <input id="guest-facility-quantity" v-model.number="guestReservationForm.quantity" type="number" min="1" :max="selectedGuestReservationItem.max" placeholder="0">
+                                            <input id="guest-facility-quantity" v-model.number="guestReservationForm.quantity" type="number" min="1" :max="guestReservationQuantityMax" placeholder="0" :disabled="guestReservationInventoryUnavailable">
                                         </div>
                                     </div>
 
@@ -529,7 +529,7 @@
                                     </label>
                                 </div>
 
-                                <button type="submit" class="auth-submit-btn" :disabled="isGuestReservationLoading || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime || (guestReservationRequiresQuantity && !guestReservationForm.quantity)">
+                                <button type="submit" class="auth-submit-btn" :disabled="!canSubmitGuestReservation">
                                     {{ isGuestReservationLoading ? texts.landing.auth.guestReservation.submitting : texts.landing.auth.guestReservation.submit }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
@@ -1188,6 +1188,44 @@ const isGuestFacilityAvailabilityLoading = ref(false);
 const guestFacilityTimeOptions = computed(() => buildFacilityTimeOptions(guestFacilityAvailability.value, guestReservationForm.startTime));
 const selectedGuestReservationItem = computed(() => getFacilityItemOption(guestReservationForm.facilityName) || FACILITY_ITEM_OPTIONS[0]);
 const guestReservationRequiresQuantity = computed(() => selectedGuestReservationItem.value?.isInventory === true);
+const guestReservationHasSelectedTime = computed(() => Boolean(guestReservationForm.startTime && guestReservationForm.endTime));
+const guestReservationAvailableQuantity = computed(() => {
+    if (!guestReservationRequiresQuantity.value || !guestReservationHasSelectedTime.value) {
+        return null;
+    }
+
+    const availableQuantity = Number(guestFacilityAvailability.value?.availableQuantity);
+    return Number.isFinite(availableQuantity) ? availableQuantity : null;
+});
+const guestReservationQuantityMax = computed(() => {
+    const availableQuantity = guestReservationAvailableQuantity.value;
+    return availableQuantity === null ? selectedGuestReservationItem.value.max : Math.max(availableQuantity, 0);
+});
+const guestReservationInventoryUnavailable = computed(() => guestReservationRequiresQuantity.value && guestReservationAvailableQuantity.value !== null && guestReservationAvailableQuantity.value <= 0);
+const canSubmitGuestReservation = computed(() => {
+    if (isGuestReservationLoading.value || !guestReservationForm.agreePrivacy || !guestReservationForm.startTime || !guestReservationForm.endTime) {
+        return false;
+    }
+
+    if (!guestReservationRequiresQuantity.value) {
+        return true;
+    }
+
+    const requestedQuantity = Number(guestReservationForm.quantity || 0);
+    return requestedQuantity > 0 && !guestReservationInventoryUnavailable.value && requestedQuantity <= guestReservationQuantityMax.value;
+});
+
+const clampGuestReservationQuantityToAvailability = () => {
+    if (!guestReservationRequiresQuantity.value) {
+        guestReservationForm.quantity = 0;
+        return;
+    }
+
+    const maxQuantity = Number(guestReservationQuantityMax.value);
+    if (Number.isFinite(maxQuantity) && maxQuantity > 0) {
+        guestReservationForm.quantity = Math.min(Math.max(Number(guestReservationForm.quantity) || 1, 1), maxQuantity);
+    }
+};
 
 const loadGuestFacilityAvailability = async () => {
     guestReservationForm.startTime = '';
@@ -1206,6 +1244,7 @@ const loadGuestFacilityAvailability = async () => {
             date: guestReservationForm.reservationDate
         }).toString();
         guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability/public?' + query);
+        clampGuestReservationQuantityToAvailability();
     } catch (error) {
         guestFacilityAvailability.value = null;
         setStatus(error.message || 'Failed to load facility schedule.', true);
@@ -1228,6 +1267,7 @@ const loadGuestFacilityAvailabilityForTime = async () => {
             ...(guestReservationForm.endTime ? { endTime: guestReservationForm.endTime } : {})
         }).toString();
         guestFacilityAvailability.value = await apiFetch('/facility-reservations/availability/public?' + query);
+        clampGuestReservationQuantityToAvailability();
     } catch (error) {
         guestFacilityAvailability.value = null;
         setStatus(error.message || 'Failed to load facility schedule.', true);
