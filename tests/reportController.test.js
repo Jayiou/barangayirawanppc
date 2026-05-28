@@ -270,6 +270,36 @@ test('getReportById blocks residents from viewing other resident reports', async
     });
 });
 
+test('getReportById returns guest reports for admins', async () => {
+    const report = {
+        _id: 'report-public-1',
+        requesterType: 'guest',
+        residentId: null,
+        firstName: 'Maria',
+        lastName: 'Santos',
+        email: 'maria@example.com',
+        reportType: 'other',
+        status: 'submitted'
+    };
+
+    const req = {
+        user: { id: 'admin-1', role: 'admin' },
+        params: { id: 'report-public-1' }
+    };
+    const res = createMockResponse();
+
+    Report.findById = () => ({
+        populate() {
+            return Promise.resolve(report);
+        }
+    });
+
+    await reportController.getReportById(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.body, report);
+});
+
 test('updateReportStatus requires a status value', async () => {
     const req = {
         params: { id: 'report-1' },

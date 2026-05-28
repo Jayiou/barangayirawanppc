@@ -17,6 +17,7 @@ const userId = '665000000000000000000003';
 
 const originals = {
     appointmentFind: Appointment.find,
+    appointmentFindById: Appointment.findById,
     appointmentFindOne: Appointment.findOne,
     appointmentSave: Appointment.prototype.save,
     blockedScheduleFind: BlockedSchedule.find,
@@ -34,6 +35,7 @@ const originals = {
 
 test.afterEach(() => {
     Appointment.find = originals.appointmentFind;
+    Appointment.findById = originals.appointmentFindById;
     Appointment.findOne = originals.appointmentFindOne;
     Appointment.prototype.save = originals.appointmentSave;
     BlockedSchedule.find = originals.blockedScheduleFind;
@@ -273,6 +275,55 @@ test('requestPublicAppointment creates a guest appointment with slot conflict ch
     assert.equal(res.statusCode, 201);
     assert.equal(res.body.success, true);
     assert.equal(res.body.data.requesterType, 'guest');
+    assert.equal(res.body.data.email, 'maria@example.com');
+});
+
+test('getAppointmentDetail returns guest appointment details for admins', async () => {
+    const req = {
+        user: { _id: userId, role: 'admin' },
+        params: { id: '665000000000000000000099' }
+    };
+    const res = createMockResponse();
+    const guestAppointment = {
+        _id: '665000000000000000000099',
+        requesterType: 'guest',
+        residentId: null,
+        userId: null,
+        firstName: 'Maria',
+        lastName: 'Santos',
+        contactNumber: '09171234567',
+        email: 'maria@example.com',
+        address: 'Outside Barangay',
+        officialId: {
+            _id: officialId,
+            name: 'Captain Juan',
+            position: 'Barangay Captain'
+        },
+        appointmentDate: '2099-05-01T00:00:00.000Z',
+        timeSlot: {
+            startTime: '09:00',
+            endTime: '10:00'
+        },
+        purpose: 'Consultation',
+        status: 'pending'
+    };
+
+    Appointment.findById = () => ({
+        populate() {
+            return {
+                populate() {
+                    return Promise.resolve(guestAppointment);
+                }
+            };
+        }
+    });
+
+    await appointmentController.getAppointmentDetail(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.data.requesterType, 'guest');
+    assert.equal(res.body.data.residentId, null);
     assert.equal(res.body.data.email, 'maria@example.com');
 });
 

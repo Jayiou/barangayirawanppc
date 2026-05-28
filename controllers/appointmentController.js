@@ -11,6 +11,7 @@ const {
     isTimeSlotAvailable,
     isValidAppointmentDate,
     formatAppointmentResponse,
+    formatAppointmentResponseWithNote,
     hasAppointmentExpired,
     expireOldPendingAppointments,
     DEFAULT_TIME_SLOTS
@@ -646,10 +647,18 @@ const getMyAppointments = asyncHandler(async (req, res) => {
 const getAppointmentDetail = asyncHandler(async (req, res) => {
     const appointment = await Appointment.findById(req.params.id)
         .populate('officialId', 'name position email contactNumber')
-        .populate('residentId', 'firstName lastName contactNumber email');
+        .populate('residentId', 'firstName middleName lastName suffix contactNumber email address');
 
     if (!appointment) {
         throw createHttpError(404, 'Appointment not found');
+    }
+
+    if (req.user.role === 'resident') {
+        const resident = await Resident.findOne({ userId: req.user._id || req.user.id });
+
+        if (!appointment.residentId || !resident || appointment.residentId._id.toString() !== resident._id.toString()) {
+            throw createHttpError(403, 'You do not have permission to view this appointment');
+        }
     }
 
     // Use the formatter that includes system notes for expired appointments
@@ -676,8 +685,8 @@ const cancelAppointment = asyncHandler(async (req, res) => {
     }
 
     // Verify ownership
-    const resident = await Resident.findById(appointment.residentId);
-    if (resident.userId.toString() !== userId.toString()) {
+    const resident = appointment.residentId ? await Resident.findById(appointment.residentId) : null;
+    if (!resident || resident.userId.toString() !== userId.toString()) {
         throw createHttpError(403, 'You do not have permission to cancel this appointment');
     }
 

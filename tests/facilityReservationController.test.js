@@ -554,6 +554,36 @@ test('getFacilityReservationById blocks residents from viewing other residents r
     });
 });
 
+test('getFacilityReservationById returns guest reservations for admins', async () => {
+    const reservation = {
+        _id: 'reservation-public-1',
+        requesterType: 'guest',
+        residentId: null,
+        firstName: 'Juan',
+        lastName: 'Dela Cruz',
+        email: 'juan@example.com',
+        facilityName: 'chair',
+        status: 'pending'
+    };
+
+    const req = {
+        user: { id: 'admin-1', role: 'admin' },
+        params: { id: 'reservation-public-1' }
+    };
+    const res = createMockResponse();
+
+    FacilityReservation.findById = () => ({
+        populate() {
+            return Promise.resolve(reservation);
+        }
+    });
+
+    await facilityReservationController.getFacilityReservationById(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.body, reservation);
+});
+
 test('updateFacilityReservationStatus requires a status value', async () => {
     const req = {
         params: { id: 'reservation-1' },
