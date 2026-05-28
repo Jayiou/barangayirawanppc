@@ -137,6 +137,7 @@
                                         </button>
                                         <input ref="profileImageInput" class="profile-image-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" @change="handleProfileImageChange">
                                         <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">Choose Photo</button>
+                                        <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                         <div v-if="profileCropSourceUrl" class="profile-crop-tool">
                                             <div
                                                 class="profile-crop-frame"
@@ -823,6 +824,7 @@
                             <span>{{ currentReportTypeConfig.proofLabel }}</span>
                             <input type="file" accept="image/jpeg,image/png,image/jpg" multiple @change="handleReportProofFiles" required>
                         </label>
+                        <small v-if="currentReportTypeConfig.requireProof" class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                         <small v-if="reportProofFiles.length" style="color: #4f6b5d;">{{ reportProofFiles.length }} file(s) selected</small>
                         <label><span>Priority</span><select v-model="reportForm.priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
@@ -959,6 +961,7 @@ import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
+import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
@@ -1239,6 +1242,14 @@ const clearProfileImageSelection = () => {
 
 const handleProfileImageChange = (event) => {
     const file = event.target?.files?.[0] || null;
+    const error = getFileSizeError(file);
+
+    if (error) {
+        event.target.value = '';
+        clearProfileImageSelection();
+        setStatus(error, true);
+        return;
+    }
 
     if (profileImagePreview.value.startsWith('blob:')) {
         URL.revokeObjectURL(profileImagePreview.value);
@@ -2163,6 +2174,15 @@ const reportMapEmbedUrl = computed(() => {
 
 const handleReportProofFiles = (event) => {
     const incoming = Array.from(event.target.files || []);
+    const error = getFilesSizeError(incoming);
+
+    if (error) {
+        event.target.value = '';
+        reportProofFiles.value = [];
+        setStatus(error, true);
+        return;
+    }
+
     reportProofFiles.value = incoming.slice(0, 5);
 };
 

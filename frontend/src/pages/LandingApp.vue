@@ -235,13 +235,13 @@
 
                 <div class="landing-footer-bottom">
                     <div class="landing-footer-contact">
-                        <a href="tel:+639171234567" class="landing-footer-contact-item">
+                        <a href="tel:+639631064569" class="landing-footer-contact-item">
                             <i class="fa-solid fa-phone"></i>
-                            <span>+63 917 123 4567</span>
+                            <span>+63 963 106 4569</span>
                         </a>
-                        <a href="mailto:barangay.irawan@example.com" class="landing-footer-contact-item">
+                        <a href="mailto:barangayirawan@gmail.com" class="landing-footer-contact-item">
                             <i class="fa-solid fa-envelope"></i>
-                            <span>barangay.irawan@example.com</span>
+                            <span>barangayirawan@gmail.com</span>
                         </a>
                         <a href="https://www.facebook.com/barangay.irawan.2025" target="_blank" rel="noopener noreferrer" class="landing-footer-contact-item">
                             <i class="fa-brands fa-facebook"></i>
@@ -375,6 +375,7 @@
                                     <span>{{ guestReportTypeConfig.proofLabel }}</span>
                                     <input type="file" accept="image/jpeg,image/png,image/jpg" multiple @change="handleGuestReportProofFiles" required>
                                 </label>
+                                <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                 <small v-if="guestReportProofFiles.length" style="color: #4f6b5d;">{{ guestReportProofFiles.length }} file(s) selected</small>
 
                                 <div class="two-col-grid">
@@ -852,6 +853,7 @@
                                         <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
                                         <span class="file-name">{{ proofOfResidencyFile ? proofOfResidencyFile.name : 'No file chosen' }}</span>
                                     </div>
+                                    <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                     <p v-if="hasRegisterError('proofOfResidency')" class="field-error">{{ registerFieldErrors.proofOfResidency }}</p>
                                 </div>
 
@@ -999,8 +1001,6 @@
                                         <p>We may collect information about you in a variety of ways. The information we may collect on the site includes:</p>
                                         <ul>
                                             <li><strong>Personal Data:</strong> Name, email address, phone number, address, birth date, and identification documents.</li>
-                                            <li><strong>Barangay-Related Information:</strong> Resident status, household details, and civic participation records.</li>
-                                            <li><strong>Usage Data:</strong> Log files, IP addresses, browser type, pages visited, and time spent on the platform.</li>
                                         </ul>
                                     </section>
 
@@ -1024,13 +1024,13 @@
 
                                     <section class="privacy-section">
                                         <h3>5. Your Rights</h3>
-                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangay.irawan@email.com</strong> to exercise these rights.</p>
+                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangayirawan@gmail.com</strong> to exercise these rights.</p>
                                     </section>
 
                                     <section class="privacy-section">
                                         <h3>6. Contact Us</h3>
                                         <p>If you have questions about this Privacy Policy or our privacy practices, please contact us at:</p>
-                                        <p><strong>Barangay Irawan</strong><br>Email: barangay.irawan@email.com<br>Phone: (555) 123-4567</p>
+                                        <p><strong>Barangay Irawan</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
                                     </section>
 
                                     <section class="privacy-section privacy-last">
@@ -1062,8 +1062,6 @@
                                         <p>We may collect information about you in a variety of ways. The information we may collect on the site includes:</p>
                                         <ul>
                                             <li><strong>Personal Data:</strong> Name, email address, phone number, address, birth date, and identification documents.</li>
-                                            <li><strong>Barangay-Related Information:</strong> Resident status, household details, and civic participation records.</li>
-                                            <li><strong>Usage Data:</strong> Log files, IP addresses, browser type, pages visited, and time spent on the platform.</li>
                                         </ul>
                                     </section>
 
@@ -1087,13 +1085,13 @@
 
                                     <section class="privacy-section">
                                         <h3>5. Your Rights</h3>
-                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangay.irawan@email.com</strong> to exercise these rights.</p>
+                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangayirawan@gmail.com</strong> to exercise these rights.</p>
                                     </section>
 
                                     <section class="privacy-section">
                                         <h3>6. Contact Us</h3>
                                         <p>If you have questions about this Privacy Policy or our privacy practices, please contact us at:</p>
-                                        <p><strong>Barangay Irawan</strong><br>Email: barangay.irawan@email.com<br>Phone: (555) 123-4567</p>
+                                        <p><strong>Barangay Irawan</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
                                     </section>
 
                                     <section class="privacy-section privacy-last">
@@ -1123,12 +1121,13 @@ import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { REPORT_TYPE_CONFIG } from '@/shared/reportTypeConfig';
+import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
 
 // Composables
-const { loginForm, registerForm, proofOfResidencyFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload, getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail } = useLandingAuth();
+const { loginForm, registerForm, proofOfResidencyFile, otpForm, loginResident, registerResident, verifyOtp, resendOtp, handleFileUpload: setProofOfResidencyFile, getPendingOtpEmail, setPendingOtpEmail, clearPendingOtpEmail } = useLandingAuth();
 const { recaptchaReady, ensureRecaptchaReady, renderRecaptchaCheckbox, getRecaptchaToken, resetRecaptcha, cleanupRecaptchaWidget } = useRecaptcha();
 const { forgotPasswordForm, resetPasswordForm, forgotPasswordLoading, resetPasswordLoading, hydrateResetPasswordFromUrl, requestPasswordReset, submitPasswordReset } = usePasswordReset();
 
@@ -1855,6 +1854,22 @@ const handleLogin = async () => {
 
 const isRegisterLoading = ref(false);
 
+const handleFileUpload = (event) => {
+    const file = event.target?.files?.[0] || null;
+    const error = getFileSizeError(file);
+
+    if (error) {
+        event.target.value = '';
+        setProofOfResidencyFile({ target: { files: [] } });
+        registerFieldErrors.proofOfResidency = error;
+        setStatus(error, true);
+        return;
+    }
+
+    delete registerFieldErrors.proofOfResidency;
+    setProofOfResidencyFile(event);
+};
+
 const handleRegister = async () => {
     if (isRegisterLoading.value) return;
     clearRegisterErrors();
@@ -1966,6 +1981,15 @@ const isGuestReportLoading = ref(false);
 
 const handleGuestReportProofFiles = (event) => {
     const incoming = Array.from(event.target.files || []);
+    const error = getFilesSizeError(incoming);
+
+    if (error) {
+        event.target.value = '';
+        guestReportProofFiles.value = [];
+        setStatus(error, true);
+        return;
+    }
+
     guestReportProofFiles.value = incoming.slice(0, 5);
 };
 

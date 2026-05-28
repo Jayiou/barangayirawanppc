@@ -470,6 +470,7 @@
                                     <label><span>Available Evacuation Centers (comma separated)</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" placeholder="Barangay Hall, Covered Court"></label>
                                     <label><span>Advisory Message</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required placeholder="Safety reminders and evacuation instructions"></textarea></label>
                                     <label><span>Picture (optional)</span><input type="file" accept="image/*" @change="handleDisasterAdvisoryImageChange"></label>
+                                    <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                     <div v-if="disasterAdvisoryImagePreview" style="display:grid; gap:6px; margin-top:-8px;">
                                         <img :src="disasterAdvisoryImagePreview" alt="Disaster advisory preview" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; border:1px solid #dce6e1;">
                                         <small class="fine-print">{{ disasterAdvisoryImageFile ? disasterAdvisoryImageFile.name : 'Current advisory picture' }}</small>
@@ -1355,6 +1356,7 @@
                             <span>Profile Picture</span>
                             <input type="file" accept="image/*" @change="handleOfficialPictureChange">
                         </label>
+                        <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                         <div v-if="officialPicturePreview" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                             <div style="width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: #f4f4f4; display: grid; place-items: center; border: 1px solid #ddd;">
                                 <img :src="officialPicturePreview" alt="Official preview" style="width: 100%; height: 100%; object-fit: cover;" />
@@ -1379,7 +1381,8 @@
                         <input type="hidden" v-model="editForm._id">
                         <label><span>Title</span><input v-model="editForm.title" required></label>
                         <label><span>Description</span><textarea v-model="editForm.description" rows="4" required></textarea></label>
-                        <label><span>Image</span><input type="file" @change="onAnnouncementImageUpload" accept="image/*"></label>
+                        <label><span>Image</span><input type="file" @change="handleAnnouncementImageUpload" accept="image/*"></label>
+                        <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                         <div v-if="editForm.imagePath && !announcementImageFile" style="margin-top: -10px; font-size: 0.9rem; color: #666;">Current: {{ editForm.imagePath }}</div>
                         <label><span>Start Date</span><input v-model="editForm.startDate" type="datetime-local" required></label>
                         <label><span>End Date (Optional)</span><input v-model="editForm.endDate" type="datetime-local"></label>
@@ -1479,6 +1482,7 @@ import StatusActionButtons from '@/components/StatusActionButtons.vue';
 import StatusActionModal from '@/components/StatusActionModal.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth } from '@/shared/client';
+import { UPLOAD_SIZE_NOTE, getFileSizeError } from '@/shared/uploadLimits';
 import { useAdminAuth } from '@/composables/useAdminAuth';
 import { useAdminData } from '@/composables/useAdminData';
 import { useAnnouncements } from '@/composables/useAnnouncements';
@@ -2555,6 +2559,15 @@ const splitByComma = (value) => String(value || '')
 
 const handleDisasterAdvisoryImageChange = (event) => {
     const file = event.target.files?.[0] || null;
+    const error = getFileSizeError(file);
+
+    if (error) {
+        event.target.value = '';
+        disasterAdvisoryImageFile.value = null;
+        showToast(error, true);
+        return;
+    }
+
     disasterAdvisoryImageFile.value = file;
 
     if (disasterAdvisoryPreviewUrl) {
@@ -3710,11 +3723,35 @@ const handleSaveOfficial = async () => {
 
 const handleOfficialPictureChange = (event) => {
     const file = event.target.files?.[0] || null;
+    const error = getFileSizeError(file);
+
+    if (error) {
+        event.target.value = '';
+        officialPictureFile.value = null;
+        officialPicturePreview.value = '';
+        showToast(error, true);
+        return;
+    }
+
     officialPictureFile.value = file;
 
     if (file) {
         officialPicturePreview.value = URL.createObjectURL(file);
     }
+};
+
+const handleAnnouncementImageUpload = (event) => {
+    const file = event.target.files?.[0] || null;
+    const error = getFileSizeError(file);
+
+    if (error) {
+        event.target.value = '';
+        announcementImageFile.value = null;
+        showToast(error, true);
+        return;
+    }
+
+    onAnnouncementImageUpload(event);
 };
 
 const handleSaveAnnouncement = async () => {

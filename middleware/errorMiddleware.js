@@ -3,6 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const errorHandler = (err, req, res, next) => {
+    if (err?.name === 'MulterError' && err?.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+            success: false,
+            message: 'Upload failed. Maximum file size is 10MB.'
+        });
+    }
+
     if (err?.name === 'CastError') {
         const castLog = `[${new Date().toISOString()}] CastError: ${err.message}\nPath: ${err.path}\nValue: ${JSON.stringify(err.value)}\nKind: ${err.kind}\nRequest: ${req.method} ${req.url}\nBody: ${JSON.stringify(req.body)}\n---\n`;
         fs.appendFileSync(path.join(__dirname, '../app-debug.log'), castLog);

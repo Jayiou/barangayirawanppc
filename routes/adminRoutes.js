@@ -48,7 +48,7 @@ const deleteAdminSoundFile = (value) => {
 const upload = multer({
     storage,
     fileFilter: audioFileFilter,
-    limits: { fileSize: 8 * 1024 * 1024 } // 8MB
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 // Upload a custom admin alert sound (admin-only)
