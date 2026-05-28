@@ -390,13 +390,15 @@ const sendAdminEmailChangeVerificationEmail = async (toEmail, name, confirmation
     }
 };
 
-const sendStatusUpdateEmail = async (toEmail, name, status) => {
+const sendStatusUpdateEmail = async (toEmail, name, status, options = {}) => {
     try {
         const isApproved = status === 'approved';
         const statusColor = isApproved ? '#2e7d32' : '#d32f2f'; // Green or Red
         const statusMessage = isApproved 
             ? 'Congratulations! Your account registration has been <strong>APPROVED</strong> by the Barangay Admin. You may now login to the portal.'
             : 'We regret to inform you that your account registration has been <strong>REJECTED</strong>. Please ensure all your details and proof of residency are correct, and try registering again or visit the Barangay Hall for clarification.';
+        const loginLink = isApproved ? String(options.loginLink || '').trim() : '';
+        const loginTextLine = loginLink ? '\n\nLogin here: ' + loginLink : '';
         const forgotPasswordReminderText = isApproved
             ? '\n\nIf you forgot your password, click the Forgot Password button in the login form and provide your registered email to reset your password.'
             : '';
@@ -409,6 +411,14 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
                     </div>
                 `
             : '';
+        const loginButtonHtml = loginLink
+            ? `
+                    <div style="text-align: center; margin: 22px 0 8px;">
+                        <a href="${escapeHtml(loginLink)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #235b82; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: bold; word-break: break-word;">Go to Login</a>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0 0; text-align: center; word-break: break-all;">Or copy and paste this link in your browser: <br /><a href="${escapeHtml(loginLink)}" style="color: #235b82; text-decoration: underline; word-break: break-all;">${escapeHtml(loginLink)}</a></p>
+                `
+            : '';
 
         const mailOptions = {
             from: { name: FROM_NAME, email: FROM_EMAIL },
@@ -416,7 +426,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
             subject: `Barangay Irawan - Registration ${isApproved ? 'Approved' : 'Rejected'}`,
             replyTo: REPLY_TO,
             headers: defaultMailHeaders,
-            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}${forgotPasswordReminderText}\n\nThank you,\nBarangay Administration`,
+            text: `Hello ${name},\n\n${statusMessage.replace(/<[^>]+>/g, '')}${loginTextLine}${forgotPasswordReminderText}\n\nThank you,\nBarangay Administration`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                     <h2 style="color: #235b82; text-align: center;">Barangay Irawan</h2>
@@ -424,6 +434,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status) => {
                     <div style="padding: 15px; border-left: 5px solid ${statusColor}; background-color: #f9f9f9; margin: 20px 0;">
                         <p style="margin: 0; font-size: 16px;">${statusMessage}</p>
                     </div>
+                    ${loginButtonHtml}
                     ${forgotPasswordReminderHtml}
                     <p>Thank you,</p>
                     <p><strong>Barangay Administration</strong></p>

@@ -54,6 +54,22 @@ const normalizePublicUploadUrl = (value) => {
     return filename ? `/uploads/${encodeURI(filename)}` : '';
 };
 
+const getFrontendBaseUrl = (req) => {
+    const configuredOrigin = String(process.env.APP_URL || process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+    if (configuredOrigin) {
+        return configuredOrigin;
+    }
+
+    const requestOrigin = String(req?.headers?.origin || '').trim().replace(/\/$/, '');
+    if (requestOrigin) {
+        return requestOrigin;
+    }
+
+    const host = req?.get?.('host') || req?.headers?.host || 'localhost:5000';
+    const protocol = req?.protocol || 'http';
+    return `${protocol}://${host}`.replace(/\/$/, '');
+};
+
 const serializeResident = (resident) => {
     if (!resident) {
         return resident;
@@ -321,7 +337,8 @@ exports.updateResidentStatus = asyncHandler(async (req, res) => {
 
     // Send email notification to user about approval or rejection
     if (user.email && resident.firstName) {
-        sendStatusUpdateEmail(user.email, resident.firstName, status);
+        const loginLink = `${getFrontendBaseUrl(req)}/?auth=login`;
+        sendStatusUpdateEmail(user.email, resident.firstName, status, { loginLink });
     }
 
     // Send SMS notification to user about approval or rejection

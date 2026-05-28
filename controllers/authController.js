@@ -591,8 +591,20 @@ exports.login = asyncHandler(async (req, res) => {
         throw createHttpError(401, GENERIC_LOGIN_ERROR, { code: 'AUTH_INVALID_CREDENTIALS' });
     }
 
+    if (user.accountStatus === 'pending_otp') {
+        throw createHttpError(403, 'Your account is almost ready. Please verify your email first, then wait for admin approval before logging in.', {
+            code: 'AUTH_UNAVAILABLE'
+        });
+    }
+
+    if (user.accountStatus === 'pending_approval') {
+        throw createHttpError(403, 'Your registration has been received, but it is still waiting for admin approval. Please wait for the approval email before logging in.', {
+            code: 'AUTH_UNAVAILABLE'
+        });
+    }
+
     if (user.accountStatus !== 'approved' || !user.isActive) {
-        throw createHttpError(403, 'Login unavailable. Please check your email or contact the barangay office.', {
+        throw createHttpError(403, 'Your account is not available for login right now. Please contact the barangay office for assistance.', {
             code: 'AUTH_UNAVAILABLE'
         });
     }

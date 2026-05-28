@@ -257,7 +257,7 @@ test('login rejects inactive users before password comparison', async () => {
     assert.equal(res.statusCode, 403);
     assert.deepEqual(res.body, {
         success: false,
-        message: 'Login unavailable. Please check your email or contact the barangay office.'
+        message: 'Your account is not available for login right now. Please contact the barangay office for assistance.'
     });
 });
 
@@ -368,6 +368,35 @@ test('login returns a standardized auth error when the user does not exist', asy
     assert.deepEqual(res.body, {
         success: false,
         message: 'Invalid username or password'
+    });
+});
+
+test('login explains that pending approval accounts cannot sign in yet', async () => {
+    const req = {
+        body: {
+            username: 'juan',
+            password: 'Secret_123'
+        }
+    };
+    const res = createMockResponse();
+
+    User.findOne = async () => ({
+        _id: 'user-123',
+        username: 'juan',
+        password: 'hashed-password',
+        role: 'resident',
+        email: 'juan@example.com',
+        accountStatus: 'pending_approval',
+        isActive: false
+    });
+    bcrypt.compare = async () => true;
+
+    await authController.login(req, res);
+
+    assert.equal(res.statusCode, 403);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Your registration has been received, but it is still waiting for admin approval. Please wait for the approval email before logging in.'
     });
 });
 

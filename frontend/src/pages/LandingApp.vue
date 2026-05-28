@@ -1835,6 +1835,13 @@ const closeModal = () => {
     activeModal.value = '';
 };
 
+const clearAuthModalUrl = () => {
+    if (!globalThis.history?.replaceState) return;
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete('auth');
+    globalThis.history.replaceState({}, '', url.pathname + url.search);
+};
+
 const isLoginLoading = ref(false);
 
 const handleLogin = async () => {
@@ -2353,6 +2360,12 @@ onMounted(() => {
     if (hasReset) {
         activeModal.value = 'reset-password';
         setStatus('Create a new password to finish resetting your account.', false);
+    } else {
+        const params = new URLSearchParams(globalThis.location.search);
+        if (params.get('auth') === 'login') {
+            activeModal.value = 'login';
+            clearAuthModalUrl();
+        }
     }
 
     setupLocationMapLazyLoad();
