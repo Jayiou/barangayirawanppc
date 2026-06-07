@@ -4,8 +4,10 @@ const s3 = require('./s3');
 
 const getPublicUploadKey = (filename) => `public/${path.basename(String(filename || ''))}`;
 
+const isS3Configured = () => typeof s3.isConfigured === 'function' ? s3.isConfigured() : Boolean(process.env.S3_BUCKET);
+
 const persistPublicUpload = async (file) => {
-    if (!file?.filename || !s3.isConfigured()) {
+    if (!file?.filename || !isS3Configured()) {
         return;
     }
 

@@ -34,7 +34,18 @@ const getPresignedUrl = async (key, expiresInSeconds = 60 * 60 * 24 * 7) => {
   return url;
 };
 
+const getObject = async (key) => {
+  if (!bucket) throw new Error('S3_BUCKET not configured');
+  const s3 = getClient();
+  const cmd = new GetObjectCommand({ Bucket: bucket, Key: key });
+  return s3.send(cmd);
+};
+
+const isConfigured = () => Boolean(bucket);
+
 module.exports = {
+  getObject,
+  isConfigured,
   uploadBuffer,
   getPresignedUrl
 };
