@@ -6,6 +6,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendRequestStatusEmail } = require('../utils/mailer');
 const { logStatusChange } = require('../utils/statusLogger');
+const { persistPublicUpload } = require('../utils/publicUploadStorage');
+const { normalizePublicUploadUrl } = require('../utils/uploadPaths');
 const {
     getAvailableTimeSlots,
     isTimeSlotAvailable,
@@ -142,6 +144,23 @@ const getInactiveOfficialMessage = (official) => {
     return `This official is currently inactive: ${reason}`;
 };
 
+const serializeOfficial = (official) => {
+    if (!official) {
+        return official;
+    }
+
+    const output = official.toObject ? official.toObject() : { ...official };
+    const normalizedPicture = normalizePublicUploadUrl(output.picture);
+
+    if (normalizedPicture) {
+        output.picture = normalizedPicture;
+    } else {
+        delete output.picture;
+    }
+
+    return output;
+};
+
 const validateGuestAppointmentData = (payload) => {
     const required = ['firstName', 'lastName', 'contactNumber', 'email', 'address'];
 
@@ -165,7 +184,7 @@ const getAllOfficials = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Officials retrieved successfully',
-        data: officials
+        data: officials.map(serializeOfficial)
     });
 });
 
@@ -182,7 +201,7 @@ const getOfficial = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Official retrieved successfully',
-        data: official
+        data: serializeOfficial(official)
     });
 });
 
@@ -207,6 +226,7 @@ const createOfficial = asyncHandler(async (req, res) => {
     };
 
     if (req.file) {
+        await persistPublicUpload(req.file);
         officialData.picture = `/uploads/${req.file.filename}`;
     }
 
@@ -217,7 +237,7 @@ const createOfficial = asyncHandler(async (req, res) => {
     res.status(201).json({
         success: true,
         message: 'Official created successfully',
-        data: official
+        data: serializeOfficial(official)
     });
 });
 
@@ -242,6 +262,7 @@ const updateOfficial = asyncHandler(async (req, res) => {
     if (notes !== undefined) official.notes = notes;
     if (officeHours) official.officeHours = { ...official.officeHours, ...officeHours };
     if (req.file) {
+        await persistPublicUpload(req.file);
         official.picture = `/uploads/${req.file.filename}`;
     }
 
@@ -251,7 +272,7 @@ const updateOfficial = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Official updated successfully',
-        data: official
+        data: serializeOfficial(official)
     });
 });
 

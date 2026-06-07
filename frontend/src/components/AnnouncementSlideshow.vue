@@ -102,6 +102,7 @@
 <script setup>
 import { onMounted, ref, onBeforeUnmount, computed } from 'vue';
 import { apiFetch } from '@/shared/client';
+import { resolvePublicUploadUrl } from '@/shared/uploadUrls';
 
 const announcements = ref([]);
 const currentSlide = ref(0);
@@ -115,7 +116,7 @@ const normalizeAnnouncement = (announcement) => ({
     key: `announcement-${announcement._id || announcement.id || announcement.title || Math.random()}`,
     title: announcement.title || 'Barangay Announcement',
     description: announcement.description || '',
-    imagePath: announcement.imagePath || announcement.imageUrl || '',
+    imagePath: resolvePublicUploadUrl(announcement.imagePath || announcement.imageUrl || ''),
     displayDate: announcement.startDate || announcement.createdAt || '',
     isActive: announcement.isActive !== false,
     raw: announcement
@@ -126,7 +127,7 @@ const normalizeAdvisory = (advisory) => ({
     key: `advisory-${advisory._id || advisory.id || advisory.disasterType || Math.random()}`,
     title: advisory.title || advisory.disasterType?.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Disaster Advisory',
     description: advisory.advisoryMessage || advisory.description || '',
-    imagePath: advisory.imagePath || advisory.imageUrl || '',
+    imagePath: resolvePublicUploadUrl(advisory.imagePath || advisory.imageUrl || ''),
     displayDate: advisory.expectedImpactDate || advisory.createdAt || '',
     status: advisory.status || '',
     raw: advisory

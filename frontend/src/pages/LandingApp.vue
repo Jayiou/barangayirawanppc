@@ -124,8 +124,8 @@
                 <!-- Barangay Captain (Solo Row) -->
                 <div class="officials-row captain-row">
                     <article v-for="official in sortedOfficials.filter(o => o.position === 'Barangay Captain')" :key="official._id" class="official-card animate-section slide-up">
-                        <div class="official-avatar" :style="official.picture ? { backgroundImage: `url(${official.picture})` } : {}">
-                            <span v-if="!official.picture">{{ getOfficialInitials(official) }}</span>
+                        <div class="official-avatar" :style="resolvePublicUploadUrl(official.picture) ? { backgroundImage: `url(${resolvePublicUploadUrl(official.picture)})` } : {}">
+                            <span v-if="!resolvePublicUploadUrl(official.picture)">{{ getOfficialInitials(official) }}</span>
                         </div>
                         <div class="official-copy">
                             <strong>{{ official.name }}</strong>
@@ -137,8 +137,8 @@
                 <!-- Secretary & Treasurer (Dual Row) -->
                 <div class="officials-row dual-row">
                     <article v-for="official in sortedOfficials.filter(o => ['Barangay Secretary', 'Barangay Treasurer'].includes(o.position))" :key="official._id" class="official-card animate-section slide-up">
-                        <div class="official-avatar" :style="official.picture ? { backgroundImage: `url(${official.picture})` } : {}">
-                            <span v-if="!official.picture">{{ getOfficialInitials(official) }}</span>
+                        <div class="official-avatar" :style="resolvePublicUploadUrl(official.picture) ? { backgroundImage: `url(${resolvePublicUploadUrl(official.picture)})` } : {}">
+                            <span v-if="!resolvePublicUploadUrl(official.picture)">{{ getOfficialInitials(official) }}</span>
                         </div>
                         <div class="official-copy">
                             <strong>{{ official.name }}</strong>
@@ -150,8 +150,8 @@
                 <!-- Kagawads (3 Columns) -->
                 <div class="officials-row kagawad-row">
                     <article v-for="official in sortedOfficials.filter(o => o.position === 'Barangay Kagawad')" :key="official._id" class="official-card animate-section slide-up">
-                        <div class="official-avatar" :style="official.picture ? { backgroundImage: `url(${official.picture})` } : {}">
-                            <span v-if="!official.picture">{{ getOfficialInitials(official) }}</span>
+                        <div class="official-avatar" :style="resolvePublicUploadUrl(official.picture) ? { backgroundImage: `url(${resolvePublicUploadUrl(official.picture)})` } : {}">
+                            <span v-if="!resolvePublicUploadUrl(official.picture)">{{ getOfficialInitials(official) }}</span>
                         </div>
                         <div class="official-copy">
                             <strong>{{ official.name }}</strong>
@@ -163,8 +163,8 @@
                 <!-- Other (Dynamic Columns) -->
                 <div class="officials-row other-row">
                     <article v-for="official in sortedOfficials.filter(o => o.position === 'Other')" :key="official._id" class="official-card animate-section slide-up">
-                        <div class="official-avatar" :style="official.picture ? { backgroundImage: `url(${official.picture})` } : {}">
-                            <span v-if="!official.picture">{{ getOfficialInitials(official) }}</span>
+                        <div class="official-avatar" :style="resolvePublicUploadUrl(official.picture) ? { backgroundImage: `url(${resolvePublicUploadUrl(official.picture)})` } : {}">
+                            <span v-if="!resolvePublicUploadUrl(official.picture)">{{ getOfficialInitials(official) }}</span>
                         </div>
                         <div class="official-copy">
                             <strong>{{ official.name }}</strong>
@@ -957,6 +957,19 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="password-rules" aria-live="polite">
+                                    <p class="password-rules-title">Password must include:</p>
+                                    <ul class="password-rules-list">
+                                        <li
+                                            v-for="rule in resetPasswordRules"
+                                            :key="rule.key"
+                                            :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']"
+                                        >
+                                            <i :class="rule.passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
+                                            <span>{{ rule.label }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
                                 <button type="submit" class="auth-submit-btn">
                                     {{ resetPasswordLoading ? 'Updating...' : 'Update Password' }} <i class="fa-solid fa-key"></i>
                                 </button>
@@ -1119,9 +1132,11 @@ import BrandMark from '@/components/BrandMark.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
+import { resolvePublicUploadUrl } from '@/shared/uploadUrls';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { REPORT_TYPE_CONFIG } from '@/shared/reportTypeConfig';
 import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
+import { getPasswordRequirementRules, isStrongPassword } from '@/shared/passwordRules';
 import { useLandingAuth } from '@/composables/useLandingAuth';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 import { usePasswordReset } from '@/composables/usePasswordReset';
@@ -1518,24 +1533,15 @@ const passwordVisibility = reactive({
     resetConfirm: false
 });
 
-const PASSWORD_SPECIAL_CHAR_REGEX = /[^A-Za-z0-9]/;
-
-const isStrongPassword = (password) => {
-    const value = String(password || '');
-    return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && PASSWORD_SPECIAL_CHAR_REGEX.test(value);
-};
-
 const registerPasswordRules = computed(() => {
-    const password = registerForm.password || '';
-    return [
-        { key: 'min-length', label: 'At least 8 characters', passed: password.length >= 8 },
-        { key: 'uppercase', label: 'At least 1 uppercase letter (A-Z)', passed: /[A-Z]/.test(password) },
-        { key: 'number', label: 'At least 1 number (0-9)', passed: /\d/.test(password) },
-        { key: 'special', label: 'At least 1 special character', passed: PASSWORD_SPECIAL_CHAR_REGEX.test(password) }
-    ];
+    return getPasswordRequirementRules(registerForm.password);
 });
 
 const registerPasswordStrong = computed(() => isStrongPassword(registerForm.password));
+
+const resetPasswordRules = computed(() => {
+    return getPasswordRequirementRules(resetPasswordForm.password, resetPasswordForm.confirmPassword);
+});
 
 const togglePasswordVisibility = (field) => {
     passwordVisibility[field] = !passwordVisibility[field];
@@ -1954,8 +1960,8 @@ const handleForgotPassword = async () => {
 };
 
 const handleResetPassword = async () => {
-    if (resetPasswordForm.password && !isStrongPassword(resetPasswordForm.password)) {
-        setStatus('Use a stronger password before submitting the reset form.', true);
+    if (resetPasswordRules.value.some((rule) => !rule.passed)) {
+        setStatus('Please complete all password requirements.', true);
         return;
     }
 

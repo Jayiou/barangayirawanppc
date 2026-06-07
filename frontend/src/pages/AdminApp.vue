@@ -88,6 +88,15 @@
                             </button>
                         </div>
                     </label>
+                    <div class="password-rules profile-password-rules" aria-live="polite">
+                        <p class="password-rules-title">Password must include:</p>
+                        <ul class="password-rules-list">
+                            <li v-for="rule in resetPasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
+                                <i :class="rule.passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
+                                <span>{{ rule.label }}</span>
+                            </li>
+                        </ul>
+                    </div>
                     <button type="submit" class="primary-button" :disabled="resetPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="resetPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i> {{ resetPasswordLoading ? texts.admin.reset.saving : texts.admin.reset.save }}</button>
                     <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.reset.requestNew }}</button>
                 </template>
@@ -624,6 +633,7 @@
                                     <td v-if="currentView === 'residents'"><StatusBadge :status="item.userId?.accountStatus || 'pending'" /></td>
                                     <td v-if="currentView === 'residents'">
                                         <button class="icon-button" @click="openModal('resident', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                        <button class="icon-button" @click="deleteResident(item._id)" :disabled="deletingResidentId === item._id"><i class="fa-solid fa-trash"></i> Delete</button>
                                     </td>
 
                                     
@@ -788,6 +798,15 @@
                                             </button>
                                         </div>
                                     </label>
+                                    <div class="password-rules profile-password-rules" aria-live="polite">
+                                        <p class="password-rules-title">Password must include:</p>
+                                        <ul class="password-rules-list">
+                                            <li v-for="rule in adminChangePasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
+                                                <i :class="rule.passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
+                                                <span>{{ rule.label }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
                                     <button type="submit" class="primary-button" :disabled="changePasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px;">
                                         <i :class="changePasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i>
                                         {{ changePasswordLoading ? 'Updating Password...' : 'Update Password' }}
@@ -922,8 +941,8 @@
                                     </template>
                                     <tr v-for="item in pagedOfficialRows.items" :key="item._id" class="table-row hoverable">
                                         <td>
-                                            <div class="table-avatar" :style="item.picture ? { backgroundImage: `url(${item.picture})` } : {}">
-                                                <span v-if="!item.picture">{{ item.name?.split(' ').map(part => part.charAt(0)).join('').slice(0,2).toUpperCase() }}</span>
+                                            <div class="table-avatar" :style="resolvePublicUploadUrl(item.picture) ? { backgroundImage: `url(${resolvePublicUploadUrl(item.picture)})` } : {}">
+                                                <span v-if="!resolvePublicUploadUrl(item.picture)">{{ item.name?.split(' ').map(part => part.charAt(0)).join('').slice(0,2).toUpperCase() }}</span>
                                             </div>
                                         </td>
                                         <td><strong>{{ item.name }}</strong></td>
@@ -1051,6 +1070,7 @@
                                 <button v-if="canApproveRejectResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
                                 <button v-if="canSuspendResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
                                 <button v-if="canArchiveResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
+                                <button type="button" class="ghost-button danger" @click="deleteSelectedResidentAccount"><i class="fa-solid fa-trash-can"></i> Delete Account</button>
                             </div>
                         </aside>
                         <section class="resident-center-pane">
@@ -1483,6 +1503,8 @@ import StatusActionModal from '@/components/StatusActionModal.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth } from '@/shared/client';
 import { UPLOAD_SIZE_NOTE, getFileSizeError } from '@/shared/uploadLimits';
+import { resolvePublicUploadUrl } from '@/shared/uploadUrls';
+import { getPasswordRequirementRules } from '@/shared/passwordRules';
 import { useAdminAuth } from '@/composables/useAdminAuth';
 import { useAdminData } from '@/composables/useAdminData';
 import { useAnnouncements } from '@/composables/useAnnouncements';
@@ -1607,6 +1629,14 @@ const authPanelSubtitle = computed(() => {
     if (authView.value === 'forgot') return texts.admin.forgot.sub;
     if (authView.value === 'email-confirm') return 'Complete the email update request';
     return texts.admin.reset.sub;
+});
+
+const resetPasswordRules = computed(() => {
+    return getPasswordRequirementRules(resetPasswordForm.password, resetPasswordForm.confirmPassword);
+});
+
+const adminChangePasswordRules = computed(() => {
+    return getPasswordRequirementRules(changePasswordForm.newPassword, changePasswordForm.confirmPassword);
 });
 
 const { residents, documentRequests, reservations, manpowerRequests, reports, appointments, officials, announcements, disasterIncidents, dashboardStatus, dashboardError, isDataLoading, msg, loadAll } = useAdminData();
@@ -2701,6 +2731,24 @@ const deleteDisasterAdvisory = async (advisoryId) => {
     }
 };
 
+const deletingResidentId = ref('');
+
+const deleteResident = async (residentId) => {
+    if (!residentId) return;
+    if (!(await showConfirm('Delete this resident account permanently? This will also remove their linked user account.'))) return;
+
+    deletingResidentId.value = residentId;
+    try {
+        await apiFetch(`/residents/${residentId}`, { method: 'DELETE' });
+        showToast('Resident account deleted.');
+        await loadAll();
+    } catch (error) {
+        showToast(error.message || 'Failed to delete resident.', true);
+    } finally {
+        deletingResidentId.value = '';
+    }
+};
+
 const markDisasterAdvisoryStatus = async (advisory, status) => {
     if (!advisory?._id) return;
     try {
@@ -3460,7 +3508,7 @@ const openModal = async (type, item) => {
         editForm.status = item.status || 'active';
         editForm.notes = item.notes || '';
         officialPictureFile.value = null;
-        officialPicturePreview.value = item.picture || '';
+        officialPicturePreview.value = resolvePublicUploadUrl(item.picture);
     }
 
     activeModal.value = type;
@@ -3494,6 +3542,24 @@ const handleSave = async () => {
         activeModal.value = null;
     } catch (error) {
         msg(error.message || 'Operation failed', true);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const deleteSelectedResidentAccount = async () => {
+    if (!selectedItem.value?._id || isSubmitting.value) return;
+    if (!confirm('Delete this resident account and linked login permanently? This cannot be undone.')) return;
+
+    isSubmitting.value = true;
+    try {
+        await apiFetch(`/residents/${selectedItem.value._id}`, { method: 'DELETE' });
+        msg('Resident account deleted successfully.');
+        activeModal.value = null;
+        selectedItem.value = {};
+        await loadAll();
+    } catch (error) {
+        msg(error.message || 'Unable to delete resident account right now.', true);
     } finally {
         isSubmitting.value = false;
     }

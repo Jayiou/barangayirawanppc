@@ -2,7 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
-const { resolvePublicUploadFilePath } = require('../utils/uploadPaths');
+const { normalizePublicUploadUrl, resolvePublicUploadFilePath } = require('../utils/uploadPaths');
+const { persistPublicUpload } = require('../utils/publicUploadStorage');
 const Announcement = require('../models/Announcement');
 
 const parseAnnouncementDate = (value, fieldName, required = false) => {
@@ -35,6 +36,30 @@ const getBooleanValue = (value, fallback = true) => {
     return value === true || value === 'true';
 };
 
+const serializeAnnouncement = (announcement) => {
+    if (!announcement) {
+        return announcement;
+    }
+
+    const output = announcement.toObject ? announcement.toObject() : { ...announcement };
+    const normalizedImagePath = normalizePublicUploadUrl(output.imagePath || output.imageUrl);
+    const normalizedImageUrl = normalizePublicUploadUrl(output.imageUrl || output.imagePath);
+
+    if (normalizedImagePath) {
+        output.imagePath = normalizedImagePath;
+    } else {
+        delete output.imagePath;
+    }
+
+    if (normalizedImageUrl) {
+        output.imageUrl = normalizedImageUrl;
+    } else {
+        delete output.imageUrl;
+    }
+
+    return output;
+};
+
 const deleteAnnouncementImageFile = (imagePath) => {
     const filename = path.basename(String(imagePath || '').trim().split('?')[0].split('#')[0]);
     if (!filename) return;
@@ -61,7 +86,7 @@ exports.getAnnouncements = asyncHandler(async (req, res) => {
 
     res.json({
         success: true,
-        data: announcements
+        data: announcements.map(serializeAnnouncement)
     });
 });
 
@@ -72,7 +97,7 @@ exports.getAllAnnouncements = asyncHandler(async (req, res) => {
 
     res.json({
         success: true,
-        data: announcements
+        data: announcements.map(serializeAnnouncement)
     });
 });
 
@@ -107,6 +132,7 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     });
 
     if (req.file) {
+        await persistPublicUpload(req.file);
         announcement.imagePath = `/uploads/${req.file.filename}`;
     }
 
@@ -116,11 +142,11 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     res.status(201).json({
         success: true,
         message: 'Announcement created successfully',
-        data: announcement
+        data: serializeAnnouncement(announcement)
     });
 });
 
-const applyAnnouncementUpdates = (announcement, body, file) => {
+const applyAnnouncementUpdates = async (announcement, body, file) => {
     const { title, description, displayOrder, startDate, endDate, isActive } = body;
 
     if (title !== undefined && !String(title || '').trim()) {
@@ -150,6 +176,7 @@ const applyAnnouncementUpdates = (announcement, body, file) => {
     if (endDate !== undefined) announcement.endDate = nextEndDate;
     if (isActive !== undefined) announcement.isActive = getBooleanValue(isActive, true);
     if (file) {
+        await persistPublicUpload(file);
         const oldImagePath = announcement.imagePath;
         announcement.imagePath = `/uploads/${file.filename}`;
         deleteAnnouncementImageFile(oldImagePath);
@@ -162,7 +189,7 @@ exports.updateAnnouncement = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Announcement not found');
     }
 
-    applyAnnouncementUpdates(announcement, req.body, req.file);
+    await applyAnnouncementUpdates(announcement, req.body, req.file);
 
     await announcement.save();
     await announcement.populate('createdBy', 'username email');
@@ -170,7 +197,7 @@ exports.updateAnnouncement = asyncHandler(async (req, res) => {
     res.json({
         success: true,
         message: 'Announcement updated successfully',
-        data: announcement
+        data: serializeAnnouncement(announcement)
     });
 });
 
