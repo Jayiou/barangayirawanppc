@@ -62,8 +62,6 @@ const toggleQueue = async (ev) => {
 const editEvent = (ev) => {
   form.value = { title: ev.title, prefix: ev.prefix, eventDate: new Date(ev.eventDate).toISOString().slice(0,10), startTime: ev.startTime, endTime: ev.endTime, description: ev.description || '' };
 };
-
-export { formatDate };
 </script>
 
 <style scoped>

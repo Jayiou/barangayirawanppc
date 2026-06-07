@@ -59,7 +59,7 @@
                     <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ texts.nav.reports }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
-                    <button :class="{ active: currentView === 'health' }" type="button" :title="Health Center" :aria-label="Health Center" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span>Health</span></button>
+                    <button :class="{ active: currentView === 'health' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span>Health</span></button>
                 </nav>
             </header>
             <section class="hero-banner">
@@ -2700,7 +2700,7 @@ const loadHealthEvents = async () => {
     healthLoading.value = true;
     try {
         const res = await apiFetch('/api/health-events');
-        if (res?.success) healthEvents.value = res.data || [];
+        if (res && res.success) healthEvents.value = res.data || [];
     } catch (e) {
         setStatus('Failed to load health events', true);
     } finally {
