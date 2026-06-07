@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue';
 import { apiFetch } from '@/shared/client';
+import { PASSWORD_REQUIREMENTS_MESSAGE, isStrongPassword } from '@/shared/passwordRules';
 
 export function usePasswordReset() {
     const forgotPasswordForm = reactive({ email: '' });
@@ -67,8 +68,8 @@ export function usePasswordReset() {
             return { success: false, message: 'Please enter and confirm your new password.' };
         }
 
-        if (resetPasswordForm.password.length < 8) {
-            return { success: false, message: 'Password must be at least 8 characters long.' };
+        if (!isStrongPassword(resetPasswordForm.password)) {
+            return { success: false, message: PASSWORD_REQUIREMENTS_MESSAGE };
         }
 
         if (resetPasswordForm.password !== resetPasswordForm.confirmPassword) {

@@ -4,7 +4,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const { createRateLimiter } = require('../middleware/rateLimitMiddleware');
 
-const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword, requestAdminEmailChange, confirmAdminEmailChange } = require('../controllers/authController');
+const { register, login, getMe, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword, deleteAccount, requestAdminEmailChange, confirmAdminEmailChange } = require('../controllers/authController');
 
 const registerLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
@@ -30,6 +30,12 @@ const passwordResetLimiter = createRateLimiter({
     scope: 'auth:password-reset',
     message: 'Too many password reset attempts. Please try again later.'
 });
+const accountDeleteLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 3,
+    scope: 'auth:account-delete',
+    message: 'Too many account deletion attempts. Please try again later.'
+});
 
 router.post('/register', registerLimiter, upload.fields([
     { name: 'proofOfResidency', maxCount: 1 }
@@ -40,6 +46,7 @@ router.post('/login', loginLimiter, login);
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPassword);
 router.post('/change-password', authMiddleware, passwordResetLimiter, changePassword);
+router.delete('/delete-account', authMiddleware, accountDeleteLimiter, deleteAccount);
 router.post('/email-change-request', authMiddleware, passwordResetLimiter, requestAdminEmailChange);
 router.post('/email-change-confirm', passwordResetLimiter, confirmAdminEmailChange);
 router.post('/admin/email-change-request', authMiddleware, passwordResetLimiter, requestAdminEmailChange);

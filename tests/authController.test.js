@@ -351,6 +351,42 @@ test('changePassword rejects an incorrect current password', async () => {
     });
 });
 
+test('deleteAccount removes a resident account after password verification', async () => {
+    const req = {
+        user: { id: 'user-123' },
+        body: {
+            currentPassword: 'Secret_123'
+        }
+    };
+    const res = createMockResponse();
+    const residentRecord = {
+        deleted: false,
+        async deleteOne() {
+            this.deleted = true;
+        }
+    };
+    const userRecord = {
+        _id: 'user-123',
+        password: 'hashed-secret',
+        role: 'resident',
+        deleted: false,
+        async deleteOne() {
+            this.deleted = true;
+        }
+    };
+
+    User.findById = async () => userRecord;
+    Resident.findOne = async () => residentRecord;
+    bcrypt.compare = async (value, hash) => value === 'Secret_123' && hash === 'hashed-secret';
+
+    await authController.deleteAccount(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.message, 'Your account has been deleted successfully.');
+    assert.equal(residentRecord.deleted, true);
+    assert.equal(userRecord.deleted, true);
+});
+
 test('login returns a standardized auth error when the user does not exist', async () => {
     const req = {
         body: {

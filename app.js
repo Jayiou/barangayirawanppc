@@ -8,6 +8,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 const errorHandler = require('./middleware/errorMiddleware');
 const { resolvePublicUploadFilePath } = require('./utils/uploadPaths');
+const s3 = require('./utils/s3');
+const { getPublicUploadKey } = require('./utils/publicUploadStorage');
 
 const app = express();
 
@@ -170,7 +172,7 @@ app.use(express.static(frontendDirectory, {
         }
     }
 }));
-app.use('/uploads/:filename', (req, res, next) => {
+app.use('/uploads/:filename', async (req, res, next) => {
     if (req.params.filename.startsWith('proofOfResidency-')) {
         return res.status(403).json({
             success: false,
@@ -179,14 +181,33 @@ app.use('/uploads/:filename', (req, res, next) => {
     }
 
     const filePath = resolvePublicUploadFilePath(req.params.filename);
+    if (filePath && fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+    }
+
+    if (s3.isConfigured()) {
+        try {
+            const uploadObject = await s3.getObject(getPublicUploadKey(req.params.filename));
+            if (uploadObject.ContentType) {
+                res.setHeader('Content-Type', uploadObject.ContentType);
+            }
+            if (uploadObject.ContentLength) {
+                res.setHeader('Content-Length', String(uploadObject.ContentLength));
+            }
+            return uploadObject.Body.pipe(res);
+        } catch (error) {
+            if (error?.name !== 'NoSuchKey' && error?.$metadata?.httpStatusCode !== 404) {
+                return next(error);
+            }
+        }
+    }
+
     if (!filePath || !fs.existsSync(filePath)) {
         return res.status(404).json({
             success: false,
             message: 'File not found'
         });
     }
-
-    return res.sendFile(filePath);
 });
 
 app.use(cors({
@@ -235,6 +256,13 @@ try {
 app.use('/api/facility-reservations', require('./routes/facilityReservationRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+// Health center event and queue routes
+try {
+    app.use('/api/health-events', require('./routes/healthEventRoutes'));
+    app.use('/api/health-queues', require('./routes/healthQueueRoutes'));
+} catch (err) {
+    console.error('ERROR loading health routes:', err.message);
+}
 app.use('/api/disaster-incidents', require('./routes/disasterIncidentRoutes'));
 app.use('/api/disaster-advisories', require('./routes/disasterAdvisoryRoutes'));
 app.use('/api/sms-logs', require('./routes/smsRoutes'));

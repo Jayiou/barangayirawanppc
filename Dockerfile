@@ -16,10 +16,11 @@ COPY . .
 
 ENV NODE_ENV=production
 ENV PUBLIC_UPLOAD_DIR=/app/uploads/public
+ENV PRIVATE_PROOF_UPLOAD_DIR=/app/uploads/private/proofs
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_DOWNLOAD=1
 
-RUN mkdir -p /app/uploads/public
+RUN mkdir -p /app/uploads/public /app/uploads/private/proofs
 
 EXPOSE 5000
 CMD ["node", "server.js"]

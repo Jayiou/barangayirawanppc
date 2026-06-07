@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue';
 import { apiFetch, setAuth, clearAuth } from '@/shared/client';
+import { PASSWORD_REQUIREMENTS_MESSAGE, isStrongPassword } from '@/shared/passwordRules';
 
 const PENDING_OTP_EMAIL_KEY = 'barangayPendingOtpEmail';
 
@@ -25,11 +26,6 @@ const clearPendingOtpEmail = () => {
     } catch {
         // Some mobile/private browsers disable sessionStorage.
     }
-};
-
-const isStrongPassword = (password) => {
-    const value = String(password || '');
-    return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 };
 
 const normalizeContactNumber = (value) => {
@@ -118,7 +114,7 @@ export function useLandingAuth() {
         }
 
         if (!isStrongPassword(registerForm.password)) {
-            return { success: false, message: 'Password must include at least 1 uppercase letter, 1 number, and 1 special character.', fieldErrors: { password: 'Add at least 1 uppercase letter, 1 number, and 1 special character.' } };
+            return { success: false, message: PASSWORD_REQUIREMENTS_MESSAGE, fieldErrors: { password: PASSWORD_REQUIREMENTS_MESSAGE } };
         }
 
         if (registerForm.password !== registerForm.confirmPassword) {

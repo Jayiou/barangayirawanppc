@@ -3,13 +3,17 @@ const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 const fs = require('node:fs');
 const path = require('node:path');
+const { Readable } = require('node:stream');
 
 const app = require('../app');
 const User = require('../models/User');
 const Resident = require('../models/Resident');
+const s3 = require('../utils/s3');
 
 const originalUserFindById = User.findById;
 const originalResidentFindById = Resident.findById;
+const originalS3IsConfigured = s3.isConfigured;
+const originalS3GetObject = s3.getObject;
 
 const secret = 'resident-route-test-secret';
 
@@ -39,6 +43,8 @@ const stubUserRole = (role) => {
 test.afterEach(() => {
     User.findById = originalUserFindById;
     Resident.findById = originalResidentFindById;
+    s3.isConfigured = originalS3IsConfigured;
+    s3.getObject = originalS3GetObject;
 });
 
 test('resident detail by id rejects authenticated residents', async () => {
@@ -144,5 +150,42 @@ test('resident proof download allows admins when the private file exists', async
     } finally {
         await server.close();
         fs.rmSync(proofPath, { force: true });
+    }
+});
+
+test('resident proof download streams S3-backed proofs for admins', async () => {
+    stubUserRole('admin');
+
+    Resident.findById = () => ({
+        select: async () => ({
+            _id: 'resident-1',
+            proofOfResidency: 'proofs/proofOfResidency-route-test.txt'
+        })
+    });
+    s3.isConfigured = () => true;
+    s3.getObject = async (key) => {
+        assert.equal(key, 'proofs/proofOfResidency-route-test.txt');
+        return {
+            Body: Readable.from(['s3 proof test']),
+            ContentType: 'text/plain',
+            ContentLength: 13
+        };
+    };
+
+    const server = startServer();
+
+    try {
+        const response = await fetch(`${server.baseUrl}/api/residents/resident-1/proof`, {
+            headers: {
+                Authorization: `Bearer ${tokenFor('admin-user', 'admin')}`
+            }
+        });
+        const body = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('content-type'), 'text/plain');
+        assert.equal(body, 's3 proof test');
+    } finally {
+        await server.close();
     }
 });

@@ -1,7 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { Readable } = require('node:stream');
 
 const app = require('../app');
+const s3 = require('../utils/s3');
+
+const originalS3IsConfigured = s3.isConfigured;
+const originalS3GetObject = s3.getObject;
+
+test.afterEach(() => {
+    s3.isConfigured = originalS3IsConfigured;
+    s3.getObject = originalS3GetObject;
+});
 
 test('GET /health returns ok status', async () => {
     const server = app.listen(0);
@@ -86,6 +96,32 @@ test('public uploads route blocks proof of residency files', async () => {
             success: false,
             message: 'Proof of residency files are private'
         });
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test('public uploads route streams from S3 when local file is missing', async () => {
+    s3.isConfigured = () => true;
+    s3.getObject = async (key) => {
+        assert.equal(key, 'public/announcement-route-test.jpg');
+        return {
+            Body: Readable.from(['s3 public upload']),
+            ContentType: 'image/jpeg',
+            ContentLength: 16
+        };
+    };
+
+    const server = app.listen(0);
+    const { port } = server.address();
+
+    try {
+        const response = await fetch(`http://127.0.0.1:${port}/uploads/announcement-route-test.jpg`);
+        const body = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('content-type'), 'image/jpeg');
+        assert.equal(body, 's3 public upload');
     } finally {
         await new Promise((resolve) => server.close(resolve));
     }

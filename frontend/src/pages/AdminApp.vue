@@ -137,6 +137,8 @@
                 <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
                 <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
 
+                <button :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> Health Center</button>
+
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
                 <button :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
@@ -173,6 +175,7 @@
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
                     <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
+                    <button :class="{ active: currentView === 'health-events' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>Health</span></button>
                     <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
                     <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
                 </nav>
@@ -818,6 +821,24 @@
                 </div>
             </section>
 
+            <!-- Health Events Manager -->
+            <section class="app-view" :class="{ active: currentView === 'health-events' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <HealthEventsManager />
+                    </article>
+                </div>
+            </section>
+
+            <!-- Active Queue Dashboard -->
+            <section class="app-view" :class="{ active: currentView === 'health-queue' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <ActiveQueueDashboard />
+                    </article>
+                </div>
+            </section>
+
             <!-- Appointments View -->
             <section class="app-view" :class="{ active: currentView === 'appointments' }">
                 <div class="portal-grid">
@@ -913,6 +934,24 @@
                                 <h3>Manage barangay officials</h3>
                             </div>
                             <button class="primary-button" @click="openModal('official', {})"><i class="fa-solid fa-plus"></i> Add Official</button>
+                        </div>
+                        <!-- Admin BHW creation form -->
+                        <div style="margin-bottom: 16px; padding: 12px; border: 1px dashed #dce6e1; border-radius: 8px; background: #fbfdfc; display:flex; gap:12px; align-items:center;">
+                            <form @submit.prevent="createBhwAccount" style="display:flex; gap:8px; align-items:center; flex:1;">
+                                <label style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                                    <small class="fine-print">Create BHW Account</small>
+                                    <input v-model="bhwForm.username" placeholder="username" required />
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:6px; width:260px;">
+                                    <small class="fine-print">Email</small>
+                                    <input v-model="bhwForm.email" type="email" placeholder="email@example.com" required />
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:6px; width:180px;">
+                                    <small class="fine-print">Password (optional)</small>
+                                    <input v-model="bhwForm.password" type="password" placeholder="leave blank to auto-generate" />
+                                </label>
+                                <button type="submit" class="primary-button" :disabled="bhwLoading">{{ bhwLoading ? 'Creating...' : 'Create BHW' }}</button>
+                            </form>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">
@@ -1511,6 +1550,8 @@ import { useAnnouncements } from '@/composables/useAnnouncements';
 import { useAppointments } from '@/composables/useAppointments';
 import { useResidents } from '@/composables/useResidents';
 import { useReportNotifications } from '@/composables/useReportNotifications';
+import HealthEventsManager from '@/components/HealthEventsManager.vue';
+import ActiveQueueDashboard from '@/components/ActiveQueueDashboard.vue';
 
 // Composables
 const {
@@ -1550,7 +1591,7 @@ const {
 } = useAdminAuth();
 
 const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
-const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'manpower', 'reports', 'documents', 'disaster', 'sms-logs', 'profile']);
+const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'manpower', 'reports', 'documents', 'disaster', 'sms-logs', 'profile', 'health-events', 'health-queue']);
 
 const texts = {
     admin: {
@@ -1754,6 +1795,10 @@ const smsLogsLoading = ref(false);
 const smsFilterType = ref('');
 const smsCurrentPage = ref(1);
 const smsPagination = ref(null);
+// BHW creation form state
+const bhwForm = ref({ username: '', email: '', password: '' });
+const bhwLoading = ref(false);
+const bhwLastCreated = ref(null);
 const residentTab = ref('personal');
 const residentAccountStatus = computed(() => selectedItem.value?.userId?.accountStatus || editForm.status || 'pending_approval');
 const canApproveRejectResident = computed(() => !['approved', 'rejected'].includes(residentAccountStatus.value));
@@ -1941,6 +1986,32 @@ const showToast = (message, isError = false) => {
     toastTimer = setTimeout(() => {
         clearToast();
     }, 3500);
+};
+
+const createBhwAccount = async () => {
+    if (!bhwForm.value.username || !bhwForm.value.email) {
+        showToast('Username and email are required', true);
+        return;
+    }
+
+    bhwLoading.value = true;
+    try {
+        const payload = { username: bhwForm.value.username.trim(), email: bhwForm.value.email.trim(), password: bhwForm.value.password || undefined };
+        const res = await apiFetch('/api/admin/create-bhw', { method: 'POST', body: payload });
+        if (res?.success) {
+            showToast('BHW account created');
+            bhwLastCreated.value = res.data || null;
+            bhwForm.value = { username: '', email: '', password: '' };
+            // Optionally refresh data
+            await loadAll();
+        } else {
+            showToast(res?.message || 'Failed to create BHW account', true);
+        }
+    } catch (err) {
+        showToast(err?.message || 'Error creating BHW account', true);
+    } finally {
+        bhwLoading.value = false;
+    }
 };
 
 

@@ -31,6 +31,7 @@
                 <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span class="nav-label">{{ texts.nav.manpower }}</span></button>
                 <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ texts.nav.reports }}</span></button>
                 <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ texts.nav.disaster }}</span></button>
+                <button :class="{ active: currentView === 'health' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span class="nav-label">Health Center</span></button>
                 <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
             </nav>
 
@@ -58,12 +59,65 @@
                     <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
                     <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ texts.nav.reports }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
+                    <button :class="{ active: currentView === 'health' }" type="button" :title="Health Center" :aria-label="Health Center" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span>Health</span></button>
                 </nav>
             </header>
             <section class="hero-banner">
                 <div>
                     <span class="eyebrow">Resident Workspace</span>
                     <h2>{{ viewTitle }}</h2>
+                </div>
+            </section>
+
+            <!-- Health Center (Resident) View -->
+            <section class="app-view" :class="{ active: currentView === 'health' }">
+                <div class="portal-grid">
+                    <article class="content-card">
+                        <div class="section-head portal-table-head">
+                            <div>
+                                <span class="eyebrow">Health Center</span>
+                                <h3>Health events & queues</h3>
+                            </div>
+                        </div>
+
+                        <div v-if="healthLoading" style="padding:24px; text-align:center; color:#666;">Loading events…</div>
+
+                        <div v-else>
+                            <div v-if="!healthEvents.length" class="portal-empty-cell" style="padding:24px; text-align:center;">No health events available.</div>
+                            <div class="health-events-list" style="display:grid; gap:12px;">
+                                <div v-for="event in healthEvents" :key="event._id" class="health-event-card" style="border:1px solid #e6ece8; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <strong>{{ event.title }}</strong>
+                                        <div style="font-size:0.9rem; color:#666;">{{ event.prefix }} · {{ formatDate(event.eventDate) }} · {{ event.startTime || 'TBD' }} - {{ event.endTime || 'TBD' }}</div>
+                                        <div style="margin-top:6px;"><StatusBadge :status="event.status" /></div>
+                                    </div>
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <button class="ghost-button" @click="viewHealthQueue(event)">View Queue</button>
+                                        <button class="primary-button" :disabled="!event.isQueueOpen || joinLoading" @click="joinHealthQueue(event)">{{ joinLoading ? 'Joining...' : (event.isQueueOpen ? 'Join Queue' : 'Closed') }}</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="selectedHealthEvent" style="margin-top:16px;">
+                                <h4>Queue for: {{ selectedHealthEvent.title }}</h4>
+                                <div style="margin-bottom:8px;">Currently serving: {{ selectedHealthEvent.currentServing || 0 }}</div>
+                                <div class="portal-table-wrap">
+                                    <table class="data-table portal-record-table">
+                                        <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Status</th></tr></thead>
+                                        <tbody>
+                                            <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">No queue entries yet.</td></tr>
+                                            <tr v-for="q in healthQueue" :key="q._id">
+                                                <td>{{ q.queueCode }}</td>
+                                                <td>{{ q.firstName }} {{ q.lastName }}</td>
+                                                <td>{{ q.contactNumber }}</td>
+                                                <td><StatusBadge :status="q.status" /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
                 </div>
             </section>
             
@@ -306,6 +360,33 @@
                                     </div>
                                     <button type="submit" class="primary-button" :disabled="isChangingPassword">{{ isChangingPassword ? 'Updating Password...' : 'Update Password' }}</button>
                                 </form>
+                            </section>
+
+                            <section class="profile-panel profile-danger-panel">
+                                <div class="section-head profile-panel-head">
+                                    <div>
+                                        <span class="eyebrow">Danger Zone</span>
+                                        <h4>Delete My Account</h4>
+                                    </div>
+                                </div>
+
+                                <div class="stack profile-password-form">
+                                    <p class="fine-print" style="margin: 0; line-height: 1.6;">
+                                        Deleting your account will permanently remove your resident access and profile data. This cannot be undone.
+                                    </p>
+                                    <label>
+                                        <span>Current Password</span>
+                                        <div class="profile-password-input">
+                                            <input v-model="deleteAccountForm.currentPassword" :type="passwordVisibility.delete ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter current password" required>
+                                            <button type="button" :aria-label="passwordVisibility.delete ? 'Hide delete password' : 'Show delete password'" @click="togglePasswordVisibility('delete')">
+                                                <i :class="passwordVisibility.delete ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+                                            </button>
+                                        </div>
+                                    </label>
+                                    <button type="button" class="ghost-button danger" :disabled="isDeletingAccount" @click="handleDeleteAccount">
+                                        {{ isDeletingAccount ? 'Deleting Account...' : 'Delete My Account' }}
+                                    </button>
+                                </div>
                             </section>
                         </div>
                     </article>
@@ -822,10 +903,19 @@
                         </div>
                         <label v-if="currentReportTypeConfig.requireProof">
                             <span>{{ currentReportTypeConfig.proofLabel }}</span>
-                            <input type="file" accept="image/jpeg,image/png,image/jpg" multiple @change="handleReportProofFiles" required>
+                            <input type="file" accept="image/jpeg,image/png,image/jpg" @change="handleReportProofFiles" required>
                         </label>
                         <small v-if="currentReportTypeConfig.requireProof" class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
-                        <small v-if="reportProofFiles.length" style="color: #4f6b5d;">{{ reportProofFiles.length }} file(s) selected</small>
+                        <small v-if="reportProofFiles.length" style="color: #4f6b5d;">{{ reportProofSelectionLabel }}</small>
+                        <div v-if="reportProofPreviews.length" class="report-proof-preview-list">
+                            <div v-for="preview in reportProofPreviews" :key="preview.url" class="report-proof-preview-card">
+                                <img :src="preview.url" :alt="`Preview of ${preview.name}`">
+                                <div>
+                                    <strong>{{ preview.name }}</strong>
+                                    <small>{{ preview.size }}</small>
+                                </div>
+                            </div>
+                        </div>
                         <label><span>Priority</span><select v-model="reportForm.priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
                     </form>
@@ -962,6 +1052,7 @@ import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
+import { getPasswordRequirementRules } from '@/shared/passwordRules';
 import { usePortalAuth } from '@/composables/usePortalAuth';
 import { usePortalData } from '@/composables/usePortalData';
 import { usePortalForms } from '@/composables/usePortalForms';
@@ -972,7 +1063,7 @@ import { useDocuments } from '@/composables/useDocuments';
 const { user, initializing, ensureResident, logout } = usePortalAuth();
 
 const PORTAL_VIEW_STORAGE_KEY = 'barangayPortalCurrentView';
-const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'manpower', 'reports', 'disaster', 'profile']);
+const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'manpower', 'reports', 'disaster', 'profile', 'health']);
 
 const confirmLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
@@ -1011,6 +1102,15 @@ const reportSearch = ref('');
 const reportStatusFilter = ref('all');
 const reportDateFilter = ref('');
 const reportPage = ref(1);
+const reportProofPreviews = ref([]);
+
+// Health Center (resident) state
+const healthEvents = ref([]);
+const healthLoading = ref(false);
+const selectedHealthEvent = ref(null);
+const healthQueue = ref([]);
+const joinLoading = ref(false);
+const healthPollInterval = ref(null);
 
 const documentSearch = ref('');
 const documentStatusFilter = ref('all');
@@ -1048,10 +1148,11 @@ const defaultDocumentForm = () => ({ type: 'certificate', fields: getDocumentDef
 const documentForm = ref(defaultDocumentForm());
 const editingDocumentRequestId = ref(null);
 const changePasswordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
+const deleteAccountForm = ref({ currentPassword: '' });
 const emailChangeForm = ref({ newEmail: '', currentPassword: '' });
 const isChangingEmail = ref(false);
 const isConfirmingEmailChange = ref(false);
-const passwordVisibility = reactive({ emailCurrent: false, current: false, new: false, confirm: false });
+const passwordVisibility = reactive({ emailCurrent: false, current: false, new: false, confirm: false, delete: false });
 const profileImageFile = ref(null);
 const profileImageInput = ref(null);
 const profileImagePreview = ref('');
@@ -1065,8 +1166,6 @@ const zoneOptionsByPurok = {
     Sampalok: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'],
     Acacia: Array.from({ length: 10 }, (_, index) => `Zone ${index + 5}`)
 };
-const PASSWORD_SPECIAL_CHAR_REGEX = /[^A-Za-z0-9]/;
-
 const selectedPurokZones = computed(() => zoneOptionsByPurok[profile.purok] || []);
 const profilePurokZoneLabel = computed(() => {
     if (!profile.purok && !profile.zone) return 'N/A';
@@ -1203,14 +1302,7 @@ const endProfileCropDrag = (event) => {
 };
 
 const changePasswordRules = computed(() => {
-    const password = changePasswordForm.value.newPassword || '';
-    return [
-        { key: 'min-length', label: 'At least 8 characters', passed: password.length >= 8 },
-        { key: 'uppercase', label: 'At least 1 uppercase letter', passed: /[A-Z]/.test(password) },
-        { key: 'number', label: 'At least 1 number', passed: /\d/.test(password) },
-        { key: 'special', label: 'At least 1 special character', passed: PASSWORD_SPECIAL_CHAR_REGEX.test(password) },
-        { key: 'match', label: 'Confirm password matches', passed: Boolean(password) && password === changePasswordForm.value.confirmPassword }
-    ];
+    return getPasswordRequirementRules(changePasswordForm.value.newPassword, changePasswordForm.value.confirmPassword);
 });
 
 const togglePasswordVisibility = (field) => {
@@ -1445,9 +1537,17 @@ const submitDocumentRevisionRequest = async () => {
 };
 
 const setResidentView = (view) => {
+    if (currentView.value === 'health' && view !== 'health') {
+        stopHealthPoll();
+    }
+
     currentView.value = view;
     setStoredPortalView(view);
     document.activeElement?.blur();
+
+    if (view === 'health' && selectedHealthEvent.value) {
+        startHealthPoll();
+    }
 
     if (globalThis.matchMedia('(max-width: 760px)').matches) {
         sidebarOpen.value = false;
@@ -2153,10 +2253,14 @@ const openDocumentRequestEditor = (item) => {
 
 const closeModal = () => {
     const wasDocumentModal = activeModal.value === 'document';
+    const wasReportModal = activeModal.value === 'report';
     activeModal.value = null;
     editingDocumentRequestId.value = null;
     if (wasDocumentModal) {
         documentForm.value = defaultDocumentForm();
+    }
+    if (wasReportModal) {
+        clearReportProofPreviews();
     }
 };
 
@@ -2172,9 +2276,28 @@ const reportMapEmbedUrl = computed(() => {
     return `https://maps.google.com/maps?q=${reportForm.locationLatitude},${reportForm.locationLongitude}&z=16&output=embed`;
 });
 
+const formatFileSize = (bytes = 0) => {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const reportProofSelectionLabel = computed(() => {
+    const count = reportProofFiles.value.length;
+    if (!count) return '';
+    return count === 1 ? '1 file selected' : `${count} files selected`;
+});
+
+const clearReportProofPreviews = () => {
+    reportProofPreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url));
+    reportProofPreviews.value = [];
+};
+
 const handleReportProofFiles = (event) => {
-    const incoming = Array.from(event.target.files || []);
+    const incoming = Array.from(event.target.files || []).slice(0, 1);
     const error = getFilesSizeError(incoming);
+
+    clearReportProofPreviews();
 
     if (error) {
         event.target.value = '';
@@ -2183,7 +2306,12 @@ const handleReportProofFiles = (event) => {
         return;
     }
 
-    reportProofFiles.value = incoming.slice(0, 5);
+    reportProofFiles.value = incoming;
+    reportProofPreviews.value = incoming.map((file) => ({
+        name: file.name,
+        size: formatFileSize(file.size),
+        url: URL.createObjectURL(file)
+    }));
 };
 
 const isSafariBrowser = () => {
@@ -2374,6 +2502,36 @@ const handleChangePassword = async () => {
     }
 };
 
+const isDeletingAccount = ref(false);
+
+const handleDeleteAccount = async () => {
+    if (isDeletingAccount.value) return;
+
+    if (!deleteAccountForm.value.currentPassword) {
+        setStatus('Current password is required to delete your account.', true);
+        return;
+    }
+
+    if (!confirm('Delete your account permanently? This action cannot be undone.')) {
+        return;
+    }
+
+    isDeletingAccount.value = true;
+    try {
+        await apiFetch('/auth/delete-account', {
+            method: 'DELETE',
+            body: JSON.stringify({ currentPassword: deleteAccountForm.value.currentPassword })
+        });
+
+        deleteAccountForm.value.currentPassword = '';
+        logout();
+    } catch (error) {
+        setStatus(error.message || 'Unable to delete your account right now.', true);
+    } finally {
+        isDeletingAccount.value = false;
+    }
+};
+
 const syncResidentAuthUser = (updates = {}) => {
     if (!user.value) return;
 
@@ -2537,6 +2695,77 @@ const handleLoadFacilityAvailability = async () => {
     await loadFacilityAvailability(reservationForm.facilityName, reservationForm.reservationDate);
 };
 
+// Health Center functions (resident)
+const loadHealthEvents = async () => {
+    healthLoading.value = true;
+    try {
+        const res = await apiFetch('/api/health-events');
+        if (res?.success) healthEvents.value = res.data || [];
+    } catch (e) {
+        setStatus('Failed to load health events', true);
+    } finally {
+        healthLoading.value = false;
+    }
+};
+
+const loadHealthQueue = async (eventId) => {
+    if (!eventId) return;
+    try {
+        const res = await apiFetch(`/api/health-queues/${eventId}`);
+        if (res?.success) healthQueue.value = res.data || [];
+    } catch (e) {
+        setStatus('Failed to load queue', true);
+    }
+};
+
+const stopHealthPoll = () => {
+    if (healthPollInterval.value) {
+        clearInterval(healthPollInterval.value);
+        healthPollInterval.value = null;
+    }
+};
+
+const startHealthPoll = () => {
+    stopHealthPoll();
+    if (!selectedHealthEvent.value) return;
+    healthPollInterval.value = window.setInterval(async () => {
+        await loadHealthQueue(selectedHealthEvent.value._id);
+    }, 10000);
+};
+
+const viewHealthQueue = async (event) => {
+    if (!event) return;
+    selectedHealthEvent.value = event;
+    await loadHealthQueue(event._id);
+    startHealthPoll();
+};
+
+const joinHealthQueue = async (event) => {
+    if (!event) return;
+    const payload = {
+        requesterType: 'resident',
+        residentId: profile._id || null,
+        firstName: profile.firstName || user?.username || '',
+        lastName: profile.lastName || '',
+        contactNumber: profile.contactNumber || ''
+    };
+    joinLoading.value = true;
+    try {
+        const res = await apiFetch(`/api/health-queues/${event._id}/join`, { method: 'POST', body: payload });
+        if (res?.success) {
+            setStatus('Successfully joined queue');
+            await loadHealthQueue(event._id);
+            selectedHealthEvent.value = event;
+        } else {
+            setStatus(res?.message || 'Failed to join queue', true);
+        }
+    } catch (err) {
+        setStatus(err?.message || 'Error joining queue', true);
+    } finally {
+        joinLoading.value = false;
+    }
+};
+
 onMounted(async () => {
     const allowed = await ensureResident();
     if (!allowed) return;
@@ -2544,7 +2773,11 @@ onMounted(async () => {
     currentView.value = getStoredPortalView() || 'appointments';
     await loadAll();
     await loadMyDocuments();
+    await loadHealthEvents();
 });
 
-onUnmounted(() => {});
+onUnmounted(() => {
+    clearReportProofPreviews();
+    stopHealthPoll();
+});
 </script>

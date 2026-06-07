@@ -3,9 +3,12 @@ const Resident = require('../models/Resident');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('node:crypto');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const mailer = require('../utils/mailer');
+const s3 = require('../utils/s3');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -179,6 +182,25 @@ const verifyRecaptcha = async (token) => {
     }
 };
 
+const persistProofOfResidency = async (file) => {
+    if (!file?.filename) {
+        return '';
+    }
+
+    if (!s3.isConfigured()) {
+        return file.filename;
+    }
+
+    if (!file.path) {
+        throw createHttpError(500, 'Proof of residency file could not be prepared for storage.', { code: 'PROOF_STORAGE_ERROR' });
+    }
+
+    const key = `proofs/${path.basename(file.filename)}`;
+    const buffer = await fs.readFile(file.path);
+    await s3.uploadBuffer(key, buffer, file.mimetype || 'application/octet-stream');
+    return key;
+};
+
 // REGISTER
 exports.register = asyncHandler(async (req, res) => {
     // 1. Separate user core fields from resident details
@@ -188,7 +210,8 @@ exports.register = asyncHandler(async (req, res) => {
         householdMemberCount, householdId, medicalConditions, floodProneArea, evacuationPriority
     } = req.body;
 
-    const proofOfResidency = req.files?.proofOfResidency?.[0]?.filename || req.file?.filename || null;
+    const proofOfResidencyFile = req.files?.proofOfResidency?.[0] || req.file || null;
+    let proofOfResidency = proofOfResidencyFile?.filename || null;
     const normalizedContactNumber = normalizeContactNumber(contactNumber);
     const { message: purokZoneError, normalizedPurok, normalizedZone } = validatePurokZone(purok, zone);
 
@@ -257,6 +280,8 @@ exports.register = asyncHandler(async (req, res) => {
         }
         throw createHttpError(409, 'Email already exists. Please use another email address.', { code: 'AUTH_CONFLICT', fields: { email: 'This email address is already registered.' } });
     }
+
+    proofOfResidency = await persistProofOfResidency(proofOfResidencyFile);
 
     // 6. OTP generation
     const otpCode = generateOtp();
@@ -537,6 +562,40 @@ exports.changePassword = asyncHandler(async (req, res) => {
 
     res.json({
         message: 'Password updated successfully.'
+    });
+});
+
+exports.deleteAccount = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    const currentPassword = String(req.body?.currentPassword || '').trim();
+
+    if (!userId || !currentPassword) {
+        throw createHttpError(400, 'Current password is required.', { code: 'ACCOUNT_DELETE_VALIDATION_ERROR' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw createHttpError(404, 'User not found', { code: 'AUTH_NOT_FOUND' });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+        throw createHttpError(400, 'Current password is incorrect.', { code: 'ACCOUNT_DELETE_INVALID_CURRENT_PASSWORD' });
+    }
+
+    if (user.role === 'resident') {
+        const resident = await Resident.findOne({ userId: user._id });
+        if (resident) {
+            await resident.deleteOne();
+        }
+    }
+
+    await user.deleteOne();
+
+    res.json({
+        message: 'Your account has been deleted successfully.'
     });
 });
 

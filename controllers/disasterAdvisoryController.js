@@ -3,6 +3,7 @@ const Resident = require('../models/Resident');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendDisasterAdvisoryEmail } = require('../utils/mailer');
+const { persistPublicUpload } = require('../utils/publicUploadStorage');
 
 const ALLOWED_DISASTER_TYPES = new Set(['typhoon', 'flood', 'landslide']);
 
@@ -178,6 +179,7 @@ exports.getPublicDisasterAdvisories = asyncHandler(async (_req, res) => {
 exports.createDisasterAdvisory = asyncHandler(async (req, res) => {
     const payload = mapPayload(req.body, req.user.id);
     if (req.file) {
+        await persistPublicUpload(req.file);
         payload.imagePath = `/uploads/${req.file.filename}`;
     }
 
@@ -211,6 +213,7 @@ exports.createDisasterAdvisory = asyncHandler(async (req, res) => {
 exports.updateDisasterAdvisory = asyncHandler(async (req, res) => {
     const payload = mapPayload(req.body, req.user.id, { partial: true });
     if (req.file) {
+        await persistPublicUpload(req.file);
         payload.imagePath = `/uploads/${req.file.filename}`;
     }
 

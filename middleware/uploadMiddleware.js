@@ -1,13 +1,11 @@
 const multer = require('multer');
 const path = require('node:path');
-const { ensureDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
-
-const privateProofDirectory = path.join(__dirname, '../private/uploads/proofs/');
+const { ensureDirectory, privateProofUploadDirectory, publicUploadDirectory } = require('../utils/uploadPaths');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const destination = file.fieldname === 'proofOfResidency'
-            ? privateProofDirectory
+            ? privateProofUploadDirectory
             : publicUploadDirectory;
 
         ensureDirectory(destination);

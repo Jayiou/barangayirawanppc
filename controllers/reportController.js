@@ -6,6 +6,7 @@ const { isValidTransition } = require('../utils/statusWorkflows');
 const { logStatusChange } = require('../utils/statusLogger');
 const { sendRequestStatusEmail } = require('../utils/mailer');
 const { getReportTypeRule } = require('../utils/reportTypeConfig');
+const { persistPublicUploads } = require('../utils/publicUploadStorage');
 
 const reportFields = [
     'reportType',
@@ -276,6 +277,7 @@ const populateReport = (query) => query.populate({
 });
 
 exports.createReport = asyncHandler(async (req, res) => {
+    await persistPublicUploads(req.files);
     const pickedData = pickFields(req.body, reportFields);
     const normalized = normalizeReportPayload(pickedData, req.files);
 
@@ -320,6 +322,7 @@ exports.createReport = asyncHandler(async (req, res) => {
 });
 
 exports.createPublicReport = asyncHandler(async (req, res) => {
+    await persistPublicUploads(req.files);
     const pickedData = pickFields(req.body, [...reportFields, ...reportRequesterFields]);
     const normalized = normalizeReportPayload(pickedData, req.files);
 

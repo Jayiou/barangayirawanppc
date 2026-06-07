@@ -1,5 +1,6 @@
 import { ref, reactive } from 'vue';
 import { apiFetch, setAuth, clearAuth, getAuth } from '@/shared/client';
+import { PASSWORD_REQUIREMENTS_MESSAGE, isStrongPassword } from '@/shared/passwordRules';
 
 const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
 
@@ -179,6 +180,18 @@ export function useAdminAuth() {
             return;
         }
 
+        if (!isStrongPassword(resetPasswordForm.password)) {
+            loginStatus.value = PASSWORD_REQUIREMENTS_MESSAGE;
+            loginError.value = true;
+            return;
+        }
+
+        if (resetPasswordForm.password !== resetPasswordForm.confirmPassword) {
+            loginStatus.value = 'Passwords do not match.';
+            loginError.value = true;
+            return;
+        }
+
         resetPasswordLoading.value = true;
         try {
             const response = await apiFetch('/auth/reset-password', {
@@ -295,6 +308,16 @@ export function useAdminAuth() {
 
         if (!changePasswordForm.currentPassword || !changePasswordForm.newPassword || !changePasswordForm.confirmPassword) {
             setProfileStatus('Current password, new password, and confirmation are required.', true);
+            return;
+        }
+
+        if (!isStrongPassword(changePasswordForm.newPassword)) {
+            setProfileStatus(PASSWORD_REQUIREMENTS_MESSAGE, true);
+            return;
+        }
+
+        if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+            setProfileStatus('Passwords do not match.', true);
             return;
         }
 
