@@ -112,6 +112,28 @@ test('sendSmsNotification records a failed log when Twilio credentials are missi
     assert.equal(logger.warnMessages.length > 0, true);
 });
 
+test('sendSmsNotification returns mocked success when SMS_MOCK is enabled', async () => {
+    sms.configureSmsRuntime({
+        env: { SMS_MOCK: 'true' },
+        smsLogModel: FakeSmsLog,
+        logger
+    });
+
+    const result = await sms.sendSmsNotification({
+        phoneNumber: '+15550002222',
+        messageType: 'resident_update',
+        messageContent: 'Brgy Irawan: Hi Prince, this is a mock test message.'
+    });
+
+    assert.equal(result.sent, true);
+    assert.equal(result.mocked, true);
+    assert.equal(result.provider, 'mock');
+    assert.equal(FakeSmsLog.records.length, 1);
+    assert.equal(FakeSmsLog.records[0].status, 'mocked');
+    assert.equal(FakeSmsLog.records[0].provider, 'mock');
+    assert.equal(FakeSmsLog.records[0].providerStatus, 'mock');
+});
+
 test('sendStatusUpdateSMS records a failed log when Twilio returns an error', async () => {
     const fakeClient = {
         messages: {

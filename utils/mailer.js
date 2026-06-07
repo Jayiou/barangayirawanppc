@@ -107,6 +107,9 @@ const smtpPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
 const smtpSecure = smtpPort === 465;
 const hasSmtpCredentials = Boolean(process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS);
 const hasBrevoApi = Boolean(process.env.BREVO_API_KEY);
+const isEmailMockEnabled = () => String(process.env.EMAIL_MOCK || '').toLowerCase() === 'true';
+const isEmailConfigured = () => hasSmtpCredentials || hasBrevoApi;
+const shouldSkipEmailSend = () => !isEmailMockEnabled() && !isEmailConfigured();
 
 let smtpAuth = null;
 if (hasSmtpCredentials) {
@@ -266,6 +269,15 @@ const sendViaBrevo = (mailOptions) => {
 };
 
 const sendMail = async (mailOptions) => {
+    if (isEmailMockEnabled()) {
+        console.log(`[MAIL] Mock send to ${JSON.stringify(mailOptions.to)} subject: ${mailOptions.subject}`);
+        return { mocked: true, to: mailOptions.to, subject: mailOptions.subject };
+    }
+
+    if (!(hasSmtpCredentials || hasBrevoApi)) {
+        return { skipped: true };
+    }
+
     if (hasBrevoApi) {
         return sendViaBrevo(mailOptions);
     }
@@ -305,7 +317,7 @@ const sendOtpEmail = async (toEmail, otpCode, name) => {
         };
 
         // Don't crash if email config is missing during dev testing
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -343,7 +355,7 @@ const sendPasswordResetEmail = async (toEmail, name, resetLink) => {
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping password reset email because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -378,7 +390,7 @@ const sendAdminEmailChangeVerificationEmail = async (toEmail, name, confirmation
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping admin email-change verification email because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -442,7 +454,7 @@ const sendStatusUpdateEmail = async (toEmail, name, status, options = {}) => {
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -507,7 +519,7 @@ const sendDocumentStatusEmail = async (toEmail, name, documentType, status, admi
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping document email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -569,7 +581,7 @@ const sendRequestStatusEmail = async (toEmail, name, requestLabel, status, admin
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping request status email because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -633,7 +645,7 @@ const sendGeneratedDocumentEmail = async (toEmail, name, documentType, filePath,
         }
         
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping document email send because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -668,7 +680,7 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping custom resident email because no Brevo API key or SMTP credentials are configured');
             return;
         }
@@ -724,7 +736,7 @@ const sendDisasterAdvisoryEmail = async (toEmail, name, advisory, details = []) 
             `
         };
 
-        if (!(hasSmtpCredentials || hasBrevoApi)) {
+        if (shouldSkipEmailSend()) {
             console.log('Skipping disaster advisory email because no Brevo API key or SMTP credentials are configured');
             return;
         }

@@ -90,6 +90,7 @@ const toE164PhoneNumber = (value) => {
 };
 
 const isSmsEnabled = () => String(getEnv().SMS_ENABLED || '').toLowerCase() === 'true';
+const isSmsMockEnabled = () => String(getEnv().SMS_MOCK || '').toLowerCase() === 'true';
 
 const getTwilioConfig = () => {
     const env = getEnv();
@@ -193,7 +194,8 @@ const sendSmsNotification = async ({
     recipientId,
     referenceId = ''
 }) => {
-    if (!isSmsEnabled()) {
+    const smsMock = isSmsMockEnabled();
+    if (!smsMock && !isSmsEnabled()) {
         logAtLevel('log', 'SMS is disabled. Skipping SMS send.');
         return { sent: false, skipped: true, reason: 'disabled' };
     }
@@ -215,6 +217,29 @@ const sendSmsNotification = async ({
         });
         logAtLevel('warn', `[SMS] Invalid phone number for ${messageType}. Expected E.164, got: "${phoneNumber || ''}"`);
         return { sent: false, skipped: true, reason: 'invalid_recipient' };
+    }
+
+    if (smsMock) {
+        await saveSmsLog({
+            phoneNumber: finalPhoneNumber,
+            messageType,
+            messageContent: truncatedMessage,
+            recipientId,
+            referenceId,
+            status: 'mocked',
+            provider: 'mock',
+            providerMessageId: 'mocked',
+            providerStatus: 'mock'
+        });
+        logAtLevel('log', `[SMS] Mock SMS send for ${messageType} to ${finalPhoneNumber}`);
+        return {
+            sent: true,
+            mocked: true,
+            phoneNumber: finalPhoneNumber,
+            messageType,
+            messageContent: truncatedMessage,
+            provider: 'mock'
+        };
     }
 
     const twilioConfig = getTwilioConfig();
