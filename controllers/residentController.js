@@ -7,6 +7,9 @@ const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const { sendStatusUpdateEmail, sendPasswordResetEmail, sendCustomResidentEmail } = require('../utils/mailer');
 const { sendStatusUpdateSMS, sendSmsNotification } = require('../utils/sms');
+const s3 = require('../utils/s3');
+const { privateProofUploadDirectory } = require('../utils/uploadPaths');
+const { persistPublicUpload } = require('../utils/publicUploadStorage');
 
 const residentProfileFields = [
     'firstName',
@@ -203,13 +206,40 @@ exports.downloadResidentProof = asyncHandler(async (req, res) => {
         throw createHttpError(404, 'Proof of residency not found', { code: 'RESIDENT_PROOF_NOT_FOUND' });
     }
 
-    const filename = path.basename(resident.proofOfResidency);
-    const privatePath = path.join(__dirname, '../private/uploads/proofs', filename);
+    const storedProof = String(resident.proofOfResidency || '').trim();
+    if (storedProof.startsWith('proofs/')) {
+        if (!s3.isConfigured()) {
+            throw createHttpError(404, 'Proof of residency storage is not configured.', { code: 'RESIDENT_PROOF_NOT_FOUND' });
+        }
+
+        try {
+            const proofObject = await s3.getObject(storedProof);
+            if (proofObject.ContentType) {
+                res.setHeader('Content-Type', proofObject.ContentType);
+            }
+            if (proofObject.ContentLength) {
+                res.setHeader('Content-Length', String(proofObject.ContentLength));
+            }
+            return proofObject.Body.pipe(res);
+        } catch (error) {
+            if (error?.name === 'NoSuchKey' || error?.$metadata?.httpStatusCode === 404) {
+                throw createHttpError(404, 'Proof of residency file not found', { code: 'RESIDENT_PROOF_NOT_FOUND' });
+            }
+            throw error;
+        }
+    }
+
+    const filename = path.basename(storedProof);
+    const privatePath = path.join(privateProofUploadDirectory, filename);
     const legacyPublicPath = path.join(__dirname, '../public/uploads', filename);
     const proofPath = fs.existsSync(privatePath) ? privatePath : legacyPublicPath;
 
     if (!fs.existsSync(proofPath)) {
-        throw createHttpError(404, 'Proof of residency file not found', { code: 'RESIDENT_PROOF_NOT_FOUND' });
+        return res.status(404).json({
+            success: false,
+            message: 'Proof of residency file not found',
+            code: 'RESIDENT_PROOF_NOT_FOUND'
+        });
     }
 
     res.sendFile(proofPath);
@@ -232,6 +262,7 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const validationError = validateResidentData(residentData);
 
     if (req.file?.filename) {
+        await persistPublicUpload(req.file);
         residentData.profileImage = `/uploads/${encodeURI(path.basename(req.file.filename))}`;
     }
 
@@ -455,11 +486,18 @@ exports.adminResetResidentPassword = asyncHandler(async (req, res) => {
 
 // DELETE
 exports.deleteResident = asyncHandler(async (req, res) => {
-    const resident = await Resident.findByIdAndDelete(req.params.id);
+    const resident = await Resident.findById(req.params.id);
 
     if (!resident) {
         throw createHttpError(404, 'Resident profile not found', { code: 'RESIDENT_NOT_FOUND' });
     }
 
-    res.json({ message: "Resident deleted successfully" });
+    const linkedUser = resident.userId ? await User.findById(resident.userId) : null;
+
+    await resident.deleteOne();
+    if (linkedUser) {
+        await linkedUser.deleteOne();
+    }
+
+    res.json({ message: 'Resident account deleted successfully' });
 });
