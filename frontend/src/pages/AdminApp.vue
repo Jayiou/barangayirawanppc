@@ -108,7 +108,7 @@
 
     <div class="page-shell app-shell" v-else>
         <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
-        <dialog v-if="reportAlertVisible" class="report-alert-overlay" aria-modal="true" aria-live="assertive" open>
+        <dialog v-if="reportAlertVisible && !isBhwUser" class="report-alert-overlay" aria-modal="true" aria-live="assertive" open>
             <div class="report-alert-card">
                 <span class="report-alert-eyebrow">New Incident Report</span>
                 <h3>{{ reportAlertHeading }}</h3>
@@ -128,26 +128,26 @@
             
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <BrandMark initials="BI" eyebrow="Admin Portal" title="Barangay Irawan" />
+                <BrandMark initials="BI" :eyebrow="isBhwUser ? 'Health Worker Portal' : 'Admin Portal'" title="Barangay Irawan" />
             </div>
 
             <!-- Sidebar Navigation -->
                 <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
-                <button :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
-                <button :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
-                <button :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
-                <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
 
-                <button :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> Health Center</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> Health Center</button>
                 <button :class="{ active: currentView === 'health-queue' }" type="button" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i> Queue Monitor</button>
 
-                <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
-                <button :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
-                <button :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
-                <button :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
-                <button :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
-                <button :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ texts.admin.sidebar.smsLogs }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ texts.admin.sidebar.smsLogs }}</button>
                 <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ texts.admin.sidebar.profile }}</button>
             </nav>
 
@@ -168,19 +168,19 @@
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
                 <nav class="mobile-quick-nav" aria-label="Admin quick navigation">
-                    <button :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ texts.admin.sidebar.dashboard }}</span></button>
-                    <button :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ texts.admin.sidebar.announcements }}</span></button>
-                    <button :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ texts.admin.sidebar.residents }}</span></button>
-                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
-                    <button :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ texts.admin.sidebar.officials }}</span></button>
-                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>Facility</span></button>
-                    <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.admin.sidebar.manpower" :aria-label="texts.admin.sidebar.manpower" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
-                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
-                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
-                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
-                    <button :class="{ active: currentView === 'health-events' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>Health</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ texts.admin.sidebar.dashboard }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ texts.admin.sidebar.announcements }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ texts.admin.sidebar.residents }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ texts.admin.sidebar.officials }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>Facility</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" :title="texts.admin.sidebar.manpower" :aria-label="texts.admin.sidebar.manpower" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>Health</span></button>
                     <button :class="{ active: currentView === 'health-queue' }" type="button" :title="'Queue Monitor'" :aria-label="'Queue Monitor'" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i><span>Queue</span></button>
-                    <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
                     <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
                 </nav>
             </header>
@@ -1596,6 +1596,7 @@ const {
 
 const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
 const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'manpower', 'reports', 'documents', 'disaster', 'sms-logs', 'profile', 'health-events', 'health-queue']);
+const BHW_VIEWS = new Set(['health-queue', 'profile']);
 
 const texts = {
     admin: {
@@ -1699,6 +1700,9 @@ const toastMessage = ref('');
 const toastType = ref('success');
 let toastTimer = null;
 const currentView = ref('dashboard');
+const isBhwUser = computed(() => user.value?.role === 'bhw');
+const getDefaultAdminView = () => isBhwUser.value ? 'health-queue' : 'dashboard';
+const isAllowedAdminView = (view) => (isBhwUser.value ? BHW_VIEWS : ADMIN_VIEWS).has(view);
 const selectedDashboardCard = ref('reports');
 const analyticsRange = ref('monthly');
 const activeModal = ref(null);
@@ -1754,11 +1758,11 @@ const clearHoveredTrendIndex = () => {
 
 const getStoredAdminView = () => {
     const storedView = globalThis.sessionStorage?.getItem(ADMIN_VIEW_STORAGE_KEY) || '';
-    return ADMIN_VIEWS.has(storedView) ? storedView : '';
+    return isAllowedAdminView(storedView) ? storedView : '';
 };
 
 const setStoredAdminView = (view) => {
-    if (!ADMIN_VIEWS.has(view)) return;
+    if (!isAllowedAdminView(view)) return;
     globalThis.sessionStorage?.setItem(ADMIN_VIEW_STORAGE_KEY, view);
 };
 
@@ -1767,13 +1771,24 @@ const clearStoredAdminView = () => {
 };
 
 watch(currentView, (view) => {
-    if (!isAuthenticated.value || !ADMIN_VIEWS.has(view)) {
+    if (!isAuthenticated.value) {
+        return;
+    }
+
+    if (!isAllowedAdminView(view)) {
+        currentView.value = getDefaultAdminView();
         return;
     }
 
     setStoredAdminView(view);
     managementPage.value = 1;
     appointmentPage.value = 1;
+});
+
+watch(isBhwUser, () => {
+    if (isAuthenticated.value && !isAllowedAdminView(currentView.value)) {
+        currentView.value = getDefaultAdminView();
+    }
 });
 
 watch([managementSearch, managementStatusFilter, managementDateFilter, managementRequesterFilter], () => {
@@ -4265,6 +4280,10 @@ watch(dashboardStatus, (message) => {
 });
 
 watch(unreadReports, (newReports) => {
+    if (isBhwUser.value) {
+        return;
+    }
+
     if (newReports.length > 0) {
         reportAlertReports.value = [...newReports];
         reportAlertVisible.value = true;
@@ -4289,13 +4308,20 @@ onBeforeUnmount(() => {
 
 watch(isAuthenticated, async (authed) => {
     if (authed) {
-        currentView.value = getStoredAdminView() || 'dashboard';
+        currentView.value = getStoredAdminView() || getDefaultAdminView();
+
+        if (isBhwUser.value) {
+            isDataLoading.value = false;
+            msg('Health queue ready.', false);
+            stopNotificationPolling();
+            return;
+        }
+
         await Promise.all([
             loadAll(),
             loadSMSLogs()
         ]);
-        
-        // Start real-time report notifications
+
         startNotificationPolling();
     } else {
         stopNotificationPolling();

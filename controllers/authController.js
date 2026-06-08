@@ -716,7 +716,7 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findById(userId);
-    if (!user || !['admin', 'resident'].includes(user.role)) {
+    if (!user || !['admin', 'resident', 'bhw'].includes(user.role)) {
         throw createHttpError(403, 'Access denied', { code: 'AUTH_FORBIDDEN' });
     }
 
@@ -741,7 +741,7 @@ exports.requestAdminEmailChange = asyncHandler(async (req, res) => {
     await user.save();
 
     try {
-        const defaultRedirectPath = user.role === 'admin' ? '/admin' : '/portal';
+        const defaultRedirectPath = ['admin', 'bhw'].includes(user.role) ? '/admin' : '/portal';
         const confirmationLink = `${getAppOrigin(req)}${getSafeRedirectPath(req.body?.redirectPath || defaultRedirectPath)}?emailChangeToken=${encodeURIComponent(emailChangeToken)}&email=${encodeURIComponent(newEmail)}&redirect=email-change`;
         await mailer.sendAdminEmailChangeVerificationEmail(newEmail, user.username, confirmationLink);
     } catch (mailError) {

@@ -108,9 +108,9 @@ export function useAdminAuth() {
                 body: JSON.stringify(loginForm)
             });
 
-            if (response.user.role !== 'admin') {
+            if (!['admin', 'bhw'].includes(response.user.role)) {
                 clearAuth();
-                loginStatus.value = 'This entry page is for admin accounts only.';
+                loginStatus.value = 'This entry page is for admin and health worker accounts only.';
                 loginError.value = true;
                 return;
             }
@@ -366,7 +366,7 @@ export function useAdminAuth() {
 
         try {
             const me = await apiFetch('/auth/me');
-            if (me.role === 'admin') {
+            if (['admin', 'bhw'].includes(me.role)) {
                 setAuth(auth.token, me);
                 user.value = me;
                 isAuthenticated.value = true;
