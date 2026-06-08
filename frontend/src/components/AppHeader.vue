@@ -3,14 +3,12 @@
     <div class="header-left">
       <h1>{{ $t('navigation.dashboard') }}</h1>
     </div>
-    
+
     <div class="header-right">
-      <!-- Add Theme & Language Controls -->
       <ThemeLanguageControls />
-      
-      <!-- Other header items -->
-      <button class="header-btn">
-        <i class="fa-solid fa-user"></i> {{ $t('navigation.profile') }}
+      <button class="header-btn" type="button">
+        <i class="fa-solid fa-user"></i>
+        <span>{{ $t('navigation.profile') }}</span>
       </button>
     </div>
   </header>
@@ -18,9 +16,6 @@
 
 <script setup>
 import ThemeLanguageControls from '@/components/ThemeLanguageControls.vue';
-import { useI18n } from 'vue-i18n';
-
-const { t: $t } = useI18n();
 </script>
 
 <style scoped>
@@ -28,11 +23,12 @@ const { t: $t } = useI18n();
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   padding: 1rem 2rem;
   background-color: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow);
-  transition: all 0.3s ease;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .header-left h1 {
@@ -44,21 +40,41 @@ const { t: $t } = useI18n();
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
 }
 
 .header-btn {
-  padding: 0.5rem 1rem;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 700;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .header-btn:hover {
-  background-color: var(--text-secondary);
-  color: var(--bg-primary);
+  border-color: var(--accent, #257f49);
+  color: var(--accent-deep, #0d4a2a);
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 16px;
+  }
+
+  .header-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

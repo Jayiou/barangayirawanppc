@@ -1,31 +1,29 @@
-/* Dark Mode Styles */
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --text-primary: #000000;
-  --text-secondary: #666666;
-  --border-color: #e0e0e0;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --bg-secondary: #f6f8f7;
+  --text-primary: #14251c;
+  --text-secondary: #66736d;
+  --border-color: #dfe9e4;
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 html.dark {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --border-color: #444444;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --bg-primary: #101814;
+  --bg-secondary: #18241e;
+  --text-primary: #f2f7f3;
+  --text-secondary: #b7c7bf;
+  --border-color: rgba(255, 255, 255, 0.14);
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
-/* Common elements that should respect theme */
 html.dark {
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 html.dark input,
@@ -36,14 +34,8 @@ html.dark select {
   border-color: var(--border-color);
 }
 
-html.dark button {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-
 html.dark a {
-  color: #6db3f2;
+  color: #8fd7a4;
 }
 
 html.dark table {
@@ -53,7 +45,7 @@ html.dark table {
 }
 
 html.dark table th {
-  background-color: var(--bg-primary);
+  background-color: rgba(255, 255, 255, 0.04);
   border-color: var(--border-color);
 }
 

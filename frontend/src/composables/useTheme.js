@@ -1,59 +1,63 @@
-import { ref, computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
-const theme = ref(localStorage.getItem('theme') || 'system');
+const THEME_STORAGE_KEY = 'theme';
+const VALID_THEMES = new Set(['light', 'dark', 'system']);
 
-export function useTheme() {
-  const getSystemTheme = () => {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
+const getStoredTheme = () => {
+  const saved = globalThis.localStorage?.getItem(THEME_STORAGE_KEY) || 'system';
+  return VALID_THEMES.has(saved) ? saved : 'system';
+};
 
-  const currentTheme = computed(() => {
-    return theme.value === 'system' ? getSystemTheme() : theme.value;
-  });
+const theme = ref(getStoredTheme());
+let initialized = false;
+let systemThemeQuery = null;
 
-  const setTheme = (newTheme) => {
-    theme.value = newTheme;
-    localStorage.setItem('theme', newTheme);
+const getSystemTheme = () => {
+  if (!globalThis.matchMedia) return 'light';
+  return globalThis.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const currentTheme = computed(() => (theme.value === 'system' ? getSystemTheme() : theme.value));
+const isDark = computed(() => currentTheme.value === 'dark');
+
+const applyTheme = () => {
+  if (!globalThis.document) return;
+
+  const root = document.documentElement;
+  root.classList.toggle('dark', isDark.value);
+  root.dataset.theme = theme.value;
+  root.style.colorScheme = isDark.value ? 'dark' : 'light';
+};
+
+const setTheme = (newTheme) => {
+  const nextTheme = VALID_THEMES.has(newTheme) ? newTheme : 'system';
+  theme.value = nextTheme;
+  globalThis.localStorage?.setItem(THEME_STORAGE_KEY, nextTheme);
+  applyTheme();
+};
+
+const initTheme = () => {
+  if (initialized) {
     applyTheme();
-  };
-
-  const applyTheme = () => {
-    const htmlElement = document.documentElement;
-    const isDark = currentTheme.value === 'dark';
-    
-    if (isDark) {
-      htmlElement.classList.add('dark');
-      document.body.style.backgroundColor = '#1a1a1a';
-      document.body.style.color = '#ffffff';
-    } else {
-      htmlElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#ffffff';
-      document.body.style.color = '#000000';
-    }
-  };
-
-  // Watch for system theme changes
-  if (window.matchMedia) {
-    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    darkModeQuery.addEventListener('change', () => {
-      if (theme.value === 'system') {
-        applyTheme();
-      }
-    });
+    return;
   }
 
-  // Watch theme changes
-  watch(theme, () => {
-    applyTheme();
+  initialized = true;
+  systemThemeQuery = globalThis.matchMedia?.('(prefers-color-scheme: dark)') || null;
+  systemThemeQuery?.addEventListener?.('change', () => {
+    if (theme.value === 'system') applyTheme();
   });
 
-  // Apply theme on initialization
-  applyTheme();
+  watch(theme, applyTheme, { immediate: true });
+};
+
+export function useTheme() {
+  initTheme();
 
   return {
     theme: computed(() => theme.value),
     currentTheme,
     setTheme,
-    isDark: computed(() => currentTheme.value === 'dark')
+    isDark
   };
 }
