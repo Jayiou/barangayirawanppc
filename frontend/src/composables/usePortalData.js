@@ -39,6 +39,10 @@ export function usePortalData() {
         try {
             const data = await apiFetch('/residents/me');
             applyValues(profile, { ...profile, ...data, birthDate: data.birthDate ? String(data.birthDate).slice(0, 10) : '' });
+            // keep the resident _id accessible on the profile object for queue joins and other actions
+            if (data && (data._id || data.id)) {
+                profile._id = data._id || data.id;
+            }
             if (!profile.email && auth.user?.email) {
                 profile.email = auth.user.email;
             }
