@@ -1,0 +1,46 @@
+{
+  "common": {
+    "save": "I-save",
+    "cancel": "Kanselahin",
+    "delete": "Tanggalin",
+    "edit": "I-edit",
+    "add": "Magdagdag",
+    "submit": "Ipadala",
+    "close": "Isara",
+    "back": "Bumalik",
+    "next": "Susunod",
+    "search": "Maghanap",
+    "loading": "Lumiload...",
+    "error": "Kamalian",
+    "success": "Matagumpay",
+    "warning": "Babala",
+    "info": "Impormasyon",
+    "logout": "Mag-logout",
+    "login": "Mag-login"
+  },
+  "navigation": {
+    "home": "Tahanan",
+    "dashboard": "Dashboard",
+    "announcements": "Mga Anunsyo",
+    "appointments": "Mga Appointment",
+    "documents": "Mga Dokumento",
+    "residents": "Mga Residente",
+    "reports": "Mga Ulat",
+    "settings": "Mga Setting",
+    "profile": "Profile"
+  },
+  "theme": {
+    "light": "Light Mode",
+    "dark": "Dark Mode",
+    "system": "System"
+  },
+  "language": {
+    "english": "English",
+    "tagalog": "Tagalog"
+  },
+  "messages": {
+    "welcome": "Maligayang pagdating",
+    "confirmDelete": "Sigurado ka ba na gusto mong tanggalin ito?",
+    "noData": "Walang data na available"
+  }
+}
