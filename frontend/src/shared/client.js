@@ -31,18 +31,26 @@ export const apiFetch = async (path, options = {}) => {
     // Only set Content-Type if body is not FormData
     // FormData should let the browser set the Content-Type with boundary
     const headers = { ...options.headers };
-    
+
+    // Ensure body is JSON string when a plain object is passed
+    if (options.body && !(options.body instanceof FormData) && typeof options.body !== 'string') {
+        options.body = JSON.stringify(options.body);
+    }
+
     if (!(options.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     }
 
     if (auth.token) {
         headers.Authorization = `Bearer ${auth.token}`;
     }
 
+    // Build URL but avoid doubling the '/api' prefix when callers already include it.
+    const url = String(path || '').startsWith('/api') ? path : ('/api' + (String(path).startsWith('/') ? path : '/' + String(path)));
+
     let response;
     try {
-        response = await fetch(`/api${path}`, { ...options, headers });
+        response = await fetch(url, { ...options, headers });
     } catch {
         const error = new Error('Cannot connect to the server. Please check your connection and try again.');
         error.status = 0;
@@ -54,6 +62,11 @@ export const apiFetch = async (path, options = {}) => {
     const payload = contentType.includes('application/json') ? await response.json() : await response.text();
 
     if (!response.ok) {
+        // If token is invalid/expired, clear local auth so UI can re-login
+        if (response.status === 401) {
+            try { clearAuth(); } catch (e) { /* ignore */ }
+        }
+
         const error = new Error(typeof payload === 'object' && payload?.message ? payload.message : 'Request failed');
         error.status = response.status;
         error.code = typeof payload === 'object' && payload?.code ? payload.code : '';
