@@ -60,10 +60,18 @@ const healthQueueSchema = new mongoose.Schema({
     notifiedTurn: {
         type: Boolean,
         default: false
+    },
+    servedAt: {
+        type: Date
+    },
+    completedAt: {
+        type: Date
     }
 }, { timestamps: true });
 
 // Ensure unique queue numbers per event
 healthQueueSchema.index({ eventId: 1, queueNumber: 1 }, { unique: true });
+healthQueueSchema.index({ eventId: 1, status: 1, queueNumber: 1 });
+healthQueueSchema.index({ eventId: 1, residentId: 1 });
 
 module.exports = mongoose.model('HealthQueue', healthQueueSchema);

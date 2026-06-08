@@ -100,13 +100,31 @@
 
                             <div v-if="selectedHealthEvent" style="margin-top:16px;">
                                 <h4>Queue for: {{ selectedHealthEvent.title }}</h4>
-                                <div style="margin-bottom:8px;">Currently serving: {{ selectedHealthEvent.currentServing || 0 }}</div>
+                                <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:12px;">
+                                    <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
+                                        <div class="fine-print">Now serving</div>
+                                        <strong>{{ healthQueueSummary.current?.queueCode || selectedHealthEvent.currentServing || 'None' }}</strong>
+                                    </div>
+                                    <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
+                                        <div class="fine-print">Next</div>
+                                        <strong>{{ healthQueueSummary.next?.queueCode || 'None' }}</strong>
+                                    </div>
+                                    <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
+                                        <div class="fine-print">Waiting</div>
+                                        <strong>{{ healthQueueSummary.waiting || 0 }}</strong>
+                                    </div>
+                                </div>
+                                <div v-if="myHealthQueueEntry" style="margin-bottom:12px; border:1px solid #9ad3b2; background:#f3fbf6; border-radius:8px; padding:10px;">
+                                    <div class="fine-print">Your number</div>
+                                    <strong>{{ myHealthQueueEntry.queueCode }}</strong>
+                                    <span style="margin-left:8px;"><StatusBadge :status="myHealthQueueEntry.status" /></span>
+                                </div>
                                 <div class="portal-table-wrap">
                                     <table class="data-table portal-record-table">
                                         <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Status</th></tr></thead>
                                         <tbody>
                                             <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">No queue entries yet.</td></tr>
-                                            <tr v-for="q in healthQueue" :key="q._id">
+                                            <tr v-for="q in healthQueue" :key="q._id" :style="q.residentId === profile._id ? 'background:#f3fbf6;' : ''">
                                                 <td>{{ q.queueCode }}</td>
                                                 <td>{{ q.firstName }} {{ q.lastName }}</td>
                                                 <td>{{ q.contactNumber }}</td>
@@ -1109,6 +1127,7 @@ const healthEvents = ref([]);
 const healthLoading = ref(false);
 const selectedHealthEvent = ref(null);
 const healthQueue = ref([]);
+const healthQueueSummary = ref({});
 const joinLoading = ref(false);
 const healthPollInterval = ref(null);
 
@@ -1179,6 +1198,7 @@ const profileCropImageStyle = computed(() => ({
     transform: `scale(${profileCrop.zoom || 1})`
 }));
 const profileAvatarImageStyle = computed(() => (profileCropSourceUrl.value ? profileCropImageStyle.value : {}));
+const myHealthQueueEntry = computed(() => healthQueue.value.find((item) => item.residentId === profile._id) || null);
 
 const clampProfileCropValue = (value) => Math.min(100, Math.max(0, value));
 
@@ -2712,7 +2732,11 @@ const loadHealthQueue = async (eventId) => {
     if (!eventId) return;
     try {
         const res = await apiFetch(`/api/health-queues/${eventId}`);
-        if (res?.success) healthQueue.value = res.data || [];
+        if (res?.success) {
+            healthQueue.value = res.data || [];
+            healthQueueSummary.value = res.summary || {};
+            if (res.event) selectedHealthEvent.value = res.event;
+        }
     } catch (e) {
         setStatus('Failed to load queue', true);
     }

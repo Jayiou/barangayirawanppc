@@ -31,7 +31,9 @@
                             </button>
                         </div>
                     </label>
-                    <button type="button" @click="setAuthView('forgot')" style="margin-left: auto; border: none; background: transparent; color: #2c5d3f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.login.forgot }}</button>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                        <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #2c5d3f; font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline;">Forgot password?</button>
+                    </div>
                     <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? texts.admin.login.signingIn : texts.admin.login.login }}</button>
                 </template>
 
@@ -138,6 +140,7 @@
                 <button :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
 
                 <button :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> Health Center</button>
+                <button :class="{ active: currentView === 'health-queue' }" type="button" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i> Queue Monitor</button>
 
                 <button :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
                 <button :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
@@ -176,6 +179,7 @@
                     <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
                     <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
                     <button :class="{ active: currentView === 'health-events' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>Health</span></button>
+                    <button :class="{ active: currentView === 'health-queue' }" type="button" :title="'Queue Monitor'" :aria-label="'Queue Monitor'" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i><span>Queue</span></button>
                     <button :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
                     <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
                 </nav>
@@ -1599,7 +1603,7 @@ const texts = {
         login: {
             heading: 'Administrator Login',
             sub: 'Sign in to manage the barangay portal',
-            username: 'Username',
+            username: 'Username or Email',
             password: 'Password',
             signingIn: 'Signing in...',
             login: 'Log In',

@@ -1,30 +1,62 @@
 <template>
-  <div>
-    <h3>Health Events</h3>
-    <form @submit.prevent="createEvent" style="display:grid; gap:8px; max-width:560px;">
-      <label><span>Title</span><input v-model="form.title" required></label>
-      <label><span>Prefix (e.g. VAX)</span><input v-model="form.prefix" maxlength="5" required></input></label>
+  <div class="health-manager">
+    <div class="manager-head">
+      <div>
+        <span class="eyebrow">Health Center</span>
+        <h3>Events and queue access</h3>
+      </div>
+      <button class="ghost-button" type="button" @click="load" :disabled="loading">
+        <i :class="loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate-right'"></i>
+        Refresh
+      </button>
+    </div>
+
+    <form class="event-form" @submit.prevent="saveEvent">
+      <label><span>Title</span><input v-model.trim="form.title" required></label>
+      <label><span>Prefix</span><input v-model.trim="form.prefix" maxlength="5" required></label>
       <label><span>Date</span><input v-model="form.eventDate" type="date" required></label>
-      <div style="display:flex; gap:8px;"><label style="flex:1;"><span>Start Time</span><input v-model="form.startTime" type="time" required></label><label style="flex:1;"><span>End Time</span><input v-model="form.endTime" type="time" required></label></div>
-      <label><span>Description</span><textarea v-model="form.description"></textarea></label>
-      <div style="display:flex; gap:8px;"><button class="primary-button" type="submit">Create</button><button type="button" class="ghost-button" @click="resetForm">Reset</button></div>
+      <div class="time-grid">
+        <label><span>Start Time</span><input v-model="form.startTime" type="time" required></label>
+        <label><span>End Time</span><input v-model="form.endTime" type="time" required></label>
+      </div>
+      <label><span>Description</span><textarea v-model.trim="form.description" rows="3"></textarea></label>
+      <div class="form-actions">
+        <button class="primary-button" type="submit" :disabled="saving">
+          <i :class="saving ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-floppy-disk'"></i>
+          {{ editingId ? 'Save Changes' : 'Create Event' }}
+        </button>
+        <button type="button" class="ghost-button" @click="resetForm">Reset</button>
+      </div>
     </form>
 
-    <hr style="margin:16px 0;" />
+    <div class="event-toolbar">
+      <h4>Scheduled events</h4>
+      <span class="fine-print">{{ events.length }} total</span>
+    </div>
 
-    <h4>Events</h4>
-    <div v-if="loading">Loading...</div>
-    <div v-else>
-      <div v-for="ev in events" :key="ev._id" style="padding:8px; border:1px solid #e6eee9; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong>{{ ev.title }}</strong>
-          <div class="fine-print">{{ formatDate(ev.eventDate) }} · {{ ev.startTime }} - {{ ev.endTime }} · Prefix: {{ ev.prefix }}</div>
+    <div v-if="loading" class="empty-state">Loading health events...</div>
+    <div v-else-if="!events.length" class="empty-state">No health events available.</div>
+    <div v-else class="event-list">
+      <article v-for="ev in events" :key="ev._id" class="event-row">
+        <div class="event-main">
+          <div class="event-title">
+            <strong>{{ ev.title }}</strong>
+            <span class="queue-pill" :class="{ open: ev.isQueueOpen }">{{ ev.isQueueOpen ? 'Queue open' : 'Queue closed' }}</span>
+          </div>
+          <div class="fine-print">{{ formatDate(ev.eventDate) }} | {{ ev.startTime }} - {{ ev.endTime }} | Prefix: {{ ev.prefix }}</div>
+          <p v-if="ev.description" class="event-description">{{ ev.description }}</p>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="ghost-button" @click="toggleQueue(ev)">{{ ev.isQueueOpen ? 'Close Queue' : 'Open Queue' }}</button>
-          <button class="ghost-button" @click="editEvent(ev)">Edit</button>
+        <div class="event-actions">
+          <button class="ghost-button" type="button" @click="toggleQueue(ev)">
+            <i :class="ev.isQueueOpen ? 'fa-solid fa-lock' : 'fa-solid fa-unlock'"></i>
+            {{ ev.isQueueOpen ? 'Close' : 'Open' }}
+          </button>
+          <button class="ghost-button" type="button" @click="editEvent(ev)">
+            <i class="fa-solid fa-pen"></i>
+            Edit
+          </button>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </template>
@@ -35,24 +67,40 @@ import { apiFetch, formatDate } from '@/shared/client';
 
 const events = ref([]);
 const loading = ref(false);
-const form = ref({ title: '', prefix: '', eventDate: '', startTime: '', endTime: '', description: '' });
+const saving = ref(false);
+const editingId = ref('');
+const blankForm = () => ({ title: '', prefix: '', eventDate: '', startTime: '', endTime: '', description: '' });
+const form = ref(blankForm());
 
 const load = async () => {
   loading.value = true;
-  const res = await apiFetch('/api/health-events');
-  if (res?.success) events.value = res.data;
-  loading.value = false;
+  try {
+    const res = await apiFetch('/api/health-events');
+    if (res?.success) events.value = res.data || [];
+  } finally {
+    loading.value = false;
+  }
 };
 
 onMounted(load);
 
-const createEvent = async () => {
-  await apiFetch('/api/health-events', { method: 'POST', body: form.value });
-  resetForm();
-  await load();
+const saveEvent = async () => {
+  saving.value = true;
+  try {
+    const path = editingId.value ? `/api/health-events/${editingId.value}` : '/api/health-events';
+    const method = editingId.value ? 'PUT' : 'POST';
+    await apiFetch(path, { method, body: form.value });
+    resetForm();
+    await load();
+  } finally {
+    saving.value = false;
+  }
 };
 
-const resetForm = () => { form.value = { title: '', prefix: '', eventDate: '', startTime: '', endTime: '', description: '' }; };
+const resetForm = () => {
+  editingId.value = '';
+  form.value = blankForm();
+};
 
 const toggleQueue = async (ev) => {
   await apiFetch(`/api/health-events/${ev._id}/toggle-queue`, { method: 'POST', body: { open: !ev.isQueueOpen } });
@@ -60,10 +108,39 @@ const toggleQueue = async (ev) => {
 };
 
 const editEvent = (ev) => {
-  form.value = { title: ev.title, prefix: ev.prefix, eventDate: new Date(ev.eventDate).toISOString().slice(0,10), startTime: ev.startTime, endTime: ev.endTime, description: ev.description || '' };
+  editingId.value = ev._id;
+  form.value = {
+    title: ev.title,
+    prefix: ev.prefix,
+    eventDate: new Date(ev.eventDate).toISOString().slice(0, 10),
+    startTime: ev.startTime,
+    endTime: ev.endTime,
+    description: ev.description || ''
+  };
 };
 </script>
 
 <style scoped>
-.fine-print { color:#666; font-size:0.9rem; }
+.health-manager { display: grid; gap: 16px; }
+.manager-head, .event-toolbar, .event-row, .event-title, .event-actions, .form-actions {
+  display: flex;
+  align-items: center;
+}
+.manager-head, .event-toolbar, .event-row { justify-content: space-between; gap: 12px; }
+.manager-head h3 { margin: 0; }
+.event-form { display: grid; gap: 10px; max-width: 720px; }
+.time-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.form-actions, .event-actions, .event-title { gap: 8px; flex-wrap: wrap; }
+.event-list { display: grid; gap: 10px; }
+.event-row { border: 1px solid #e1ebe6; border-radius: 8px; padding: 12px; align-items: flex-start; }
+.event-main { display: grid; gap: 4px; min-width: 0; }
+.event-description { margin: 4px 0 0; color: #42554b; }
+.queue-pill { border-radius: 999px; padding: 3px 8px; background: #eef2f0; color: #52635a; font-size: 0.78rem; font-weight: 700; }
+.queue-pill.open { background: #dff4e7; color: #166338; }
+.empty-state { padding: 20px; text-align: center; color: #66736d; border: 1px dashed #d9e3de; border-radius: 8px; }
+.fine-print { color: #666; font-size: 0.9rem; }
+@media (max-width: 720px) {
+  .manager-head, .event-row { align-items: stretch; flex-direction: column; }
+  .time-grid { grid-template-columns: 1fr; }
+}
 </style>

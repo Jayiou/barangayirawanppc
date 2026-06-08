@@ -607,7 +607,10 @@ exports.login = asyncHandler(async (req, res) => {
         throw createHttpError(400, 'Username and password are required', { code: 'AUTH_VALIDATION_ERROR' });
     }
 
-    const user = await User.findOne({ username });
+    // Allow login with either username or email
+    const user = await User.findOne({
+        $or: [{ username }, { email: normalizeEmail(username) }]
+    });
 
     // Account lockout check
     if (user?.lockedUntil && Date.now() < user.lockedUntil.getTime()) {
