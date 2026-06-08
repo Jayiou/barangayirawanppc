@@ -93,7 +93,7 @@ export function useAdminAuth() {
         if (loginLoading.value) return;
         
         if (!loginForm.username || !loginForm.password) {
-            loginStatus.value = 'Please enter both username and password.';
+            loginStatus.value = 'Please enter both username/email and password.';
             loginError.value = true;
             return;
         }
