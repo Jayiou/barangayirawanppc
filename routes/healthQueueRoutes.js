@@ -4,8 +4,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const controller = require('../controllers/healthQueueController');
 
-// Joining the queue is available to authenticated users (residents/guests may be allowed)
-router.post('/:eventId/join', authMiddleware, controller.joinQueue);
+// Joining the queue is available to authenticated residents only
+router.post('/:eventId/join', authMiddleware, roleMiddleware('resident'), controller.joinQueue);
 router.get('/:eventId', authMiddleware, controller.listQueue);
 
 // Calling next should be restricted to BHW or admin

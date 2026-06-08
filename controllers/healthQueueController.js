@@ -9,7 +9,11 @@ const pad = (n, width = 3) => String(n).padStart(width, '0');
 
 const joinQueue = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
-    const { requesterType = 'resident', residentId, firstName, lastName, contactNumber, email } = req.body;
+    const { residentId, firstName, lastName, contactNumber, email } = req.body;
+
+    if (!residentId) {
+        throw createHttpError(400, 'residentId is required');
+    }
 
     if (!firstName || !lastName || !contactNumber) {
         throw createHttpError(400, 'firstName, lastName and contactNumber are required');
@@ -26,8 +30,8 @@ const joinQueue = asyncHandler(async (req, res) => {
 
     const entry = new HealthQueue({
         eventId,
-        requesterType,
-        residentId: requesterType === 'resident' ? residentId : undefined,
+        requesterType: 'resident',
+        residentId,
         firstName,
         lastName,
         contactNumber,
