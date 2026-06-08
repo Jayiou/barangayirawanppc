@@ -124,7 +124,7 @@
                                         <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Status</th></tr></thead>
                                         <tbody>
                                             <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">No queue entries yet.</td></tr>
-                                            <tr v-for="q in healthQueue" :key="q._id" :style="q.residentId === profile._id ? 'background:#f3fbf6;' : ''">
+                                            <tr v-for="q in healthQueue" :key="q._id" :style="isMyHealthQueueEntry(q) ? 'background:#f3fbf6;' : ''">
                                                 <td>{{ q.queueCode }}</td>
                                                 <td>{{ q.firstName }} {{ q.lastName }}</td>
                                                 <td>{{ q.contactNumber }}</td>
@@ -1198,7 +1198,14 @@ const profileCropImageStyle = computed(() => ({
     transform: `scale(${profileCrop.zoom || 1})`
 }));
 const profileAvatarImageStyle = computed(() => (profileCropSourceUrl.value ? profileCropImageStyle.value : {}));
-const myHealthQueueEntry = computed(() => healthQueue.value.find((item) => item.residentId === profile._id) || null);
+const getRecordId = (value) => {
+    if (!value) return '';
+    if (typeof value === 'object') return String(value._id || value.id || '');
+    return String(value);
+};
+const isSameRecordId = (left, right) => Boolean(getRecordId(left) && getRecordId(left) === getRecordId(right));
+const isMyHealthQueueEntry = (item) => isSameRecordId(item?.residentId, profile._id);
+const myHealthQueueEntry = computed(() => healthQueue.value.find((item) => isMyHealthQueueEntry(item)) || null);
 
 const clampProfileCropValue = (value) => Math.min(100, Math.max(0, value));
 
@@ -2766,20 +2773,26 @@ const viewHealthQueue = async (event) => {
 
 const joinHealthQueue = async (event) => {
     if (!event) return;
+    if (!profile._id) {
+        setStatus('Please complete your resident profile before joining a queue.', true);
+        return;
+    }
+
     const payload = {
         requesterType: 'resident',
-        residentId: profile._id || null,
+        residentId: profile._id,
         firstName: profile.firstName || user?.username || '',
         lastName: profile.lastName || '',
-        contactNumber: profile.contactNumber || ''
+        contactNumber: profile.contactNumber || '',
+        email: profile.email || user?.email || ''
     };
     joinLoading.value = true;
     try {
         const res = await apiFetch(`/api/health-queues/${event._id}/join`, { method: 'POST', body: payload });
         if (res?.success) {
-            setStatus('Successfully joined queue');
-            await loadHealthQueue(event._id);
             selectedHealthEvent.value = event;
+            await loadHealthQueue(event._id);
+            setStatus(res.message || (res.duplicate ? 'You are already in this queue.' : 'Successfully joined queue.'));
         } else {
             setStatus(res?.message || 'Failed to join queue', true);
         }

@@ -87,7 +87,7 @@ const joinQueue = asyncHandler(async (req, res) => {
         status: { $in: ACTIVE_QUEUE_STATUSES }
     }).sort({ queueNumber: 1 });
     if (existing) {
-        res.status(200).json({ success: true, message: 'You are already in this queue', data: existing });
+        res.status(200).json({ success: true, duplicate: true, message: `You are already in this queue. Your number is ${existing.queueCode}.`, data: existing });
         return;
     }
 
@@ -102,7 +102,7 @@ const joinQueue = asyncHandler(async (req, res) => {
         status: 'waiting'
     });
 
-    res.status(201).json({ success: true, message: 'Joined queue', data: entry });
+    res.status(201).json({ success: true, duplicate: false, message: `Joined queue. Your number is ${entry.queueCode}.`, data: entry });
 });
 
 const listQueue = asyncHandler(async (req, res) => {
