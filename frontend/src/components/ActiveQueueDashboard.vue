@@ -2,28 +2,28 @@
   <div class="queue-dashboard">
     <div class="dashboard-head">
       <div>
-        <span class="eyebrow">Monitoring</span>
-        <h3>Health queue dashboard</h3>
+        <span class="eyebrow">{{ t('components.activeQueueDashboard.monitoring') }}</span>
+        <h3>{{ t('components.activeQueueDashboard.healthQueueDashboard') }}</h3>
       </div>
       <div class="head-actions">
         <button class="ghost-button" type="button" @click="loadQueue" :disabled="!selectedEventId || loading">
           <i :class="loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate-right'"></i>
-          Refresh
+          {{ t('components.activeQueueDashboard.refresh') }}
         </button>
         <button class="primary-button" type="button" @click="callNext" :disabled="!canCallNext">
           <i class="fa-solid fa-bullhorn"></i>
-          Call Next
+          {{ t('components.activeQueueDashboard.callNext') }}
         </button>
       </div>
     </div>
 
     <div class="event-select-row">
       <label>
-        <span>Select event</span>
+        <span>{{ t('components.activeQueueDashboard.selectEvent') }}</span>
         <select v-model="selectedEventId" @change="loadQueue">
-          <option value="">Select health event</option>
+          <option value="">{{ t('components.activeQueueDashboard.selectHealthEvent') }}</option>
           <option v-for="ev in events" :key="ev._id" :value="ev._id">
-            {{ ev.title }} ({{ ev.prefix }}) - {{ ev.isQueueOpen ? 'Open' : 'Closed' }}
+            {{ ev.title }} ({{ ev.prefix }}) - {{ t(ev.isQueueOpen ? 'common.open' : 'common.closed') }}
           </option>
         </select>
       </label>
@@ -33,47 +33,47 @@
       </div>
     </div>
 
-    <div v-if="!selectedEventId" class="empty-state">Select an event to start monitoring the queue.</div>
+    <div v-if="!selectedEventId" class="empty-state">{{ t('components.activeQueueDashboard.selectEventHelp') }}</div>
     <template v-else>
       <div class="stats-grid">
-        <div class="stat-tile"><span>Waiting</span><strong>{{ summary.waiting || 0 }}</strong></div>
-        <div class="stat-tile"><span>Serving</span><strong>{{ currentCode }}</strong></div>
-        <div class="stat-tile"><span>Completed</span><strong>{{ summary.completed || 0 }}</strong></div>
-        <div class="stat-tile"><span>Total</span><strong>{{ summary.total || queue.length }}</strong></div>
+        <div class="stat-tile"><span>{{ t('components.activeQueueDashboard.waiting') }}</span><strong>{{ summary.waiting || 0 }}</strong></div>
+        <div class="stat-tile"><span>{{ t('components.activeQueueDashboard.nowServing') }}</span><strong>{{ currentCode }}</strong></div>
+        <div class="stat-tile"><span>{{ t('components.activeQueueDashboard.completed') }}</span><strong>{{ summary.completed || 0 }}</strong></div>
+        <div class="stat-tile"><span>{{ t('components.activeQueueDashboard.total') }}</span><strong>{{ summary.total || queue.length }}</strong></div>
       </div>
 
       <div class="now-grid">
         <section class="status-panel current">
-          <span class="eyebrow">Now Serving</span>
-          <strong>{{ summary.current?.queueCode || 'None' }}</strong>
+          <span class="eyebrow">{{ t('components.activeQueueDashboard.nowServing') }}</span>
+          <strong>{{ summary.current?.queueCode || t('common.none') }}</strong>
           <p>{{ personName(summary.current) }}</p>
         </section>
         <section class="status-panel">
-          <span class="eyebrow">Next In Line</span>
-          <strong>{{ summary.next?.queueCode || 'None' }}</strong>
+          <span class="eyebrow">{{ t('components.activeQueueDashboard.nextInLine') }}</span>
+          <strong>{{ summary.next?.queueCode || t('common.none') }}</strong>
           <p>{{ personName(summary.next) }}</p>
         </section>
         <section class="status-panel">
-          <span class="eyebrow">Queue State</span>
-          <strong>{{ currentEvent?.isQueueOpen ? 'Open' : 'Closed' }}</strong>
-          <p>{{ lastUpdated ? `Updated ${lastUpdated}` : 'Not refreshed yet' }}</p>
+          <span class="eyebrow">{{ t('components.activeQueueDashboard.queueState') }}</span>
+          <strong>{{ t(currentEvent?.isQueueOpen ? 'common.open' : 'common.closed') }}</strong>
+          <p>{{ lastUpdated ? `${t('components.activeQueueDashboard.updatedPrefix')} ${lastUpdated}` : t('components.activeQueueDashboard.updatedNotRefreshed') }}</p>
         </section>
       </div>
 
       <div class="queue-columns">
         <section class="queue-column">
           <div class="column-head">
-            <h4>Waiting</h4>
+            <h4>{{ t('components.activeQueueDashboard.waiting') }}</h4>
             <span>{{ waitingItems.length }}</span>
           </div>
-          <div v-if="!waitingItems.length" class="empty-state small">No waiting residents.</div>
+          <div v-if="!waitingItems.length" class="empty-state small">{{ t('components.activeQueueDashboard.noWaitingResidents') }}</div>
           <article v-for="item in waitingItems" :key="item._id" class="queue-item">
             <div>
               <strong>{{ item.queueCode }}</strong>
               <span>{{ item.firstName }} {{ item.lastName }}</span>
-              <small>{{ item.contactNumber }} | {{ item.email || 'No email' }}</small>
+              <small>{{ item.contactNumber }} | {{ item.email || t('common.noEmail') }}</small>
             </div>
-            <button class="ghost-button icon-action" type="button" title="Serve now" @click="updateQueueStatus(item, 'serving')">
+            <button class="ghost-button icon-action" type="button" :title="t('common.serveNow')" @click="updateQueueStatus(item, 'serving')">
               <i class="fa-solid fa-play"></i>
             </button>
           </article>
@@ -81,10 +81,10 @@
 
         <section class="queue-column">
           <div class="column-head">
-            <h4>Serving and done</h4>
+            <h4>{{ t('components.activeQueueDashboard.servingAndDone') }}</h4>
             <span>{{ activeOrDoneItems.length }}</span>
           </div>
-          <div v-if="!activeOrDoneItems.length" class="empty-state small">No served entries yet.</div>
+          <div v-if="!activeOrDoneItems.length" class="empty-state small">{{ t('components.activeQueueDashboard.noServedEntries') }}</div>
           <article v-for="item in activeOrDoneItems" :key="item._id" class="queue-item" :class="item.status">
             <div>
               <strong>{{ item.queueCode }}</strong>
@@ -92,10 +92,10 @@
               <small>{{ labelStatus(item.status) }}</small>
             </div>
             <div class="item-actions" v-if="item.status === 'serving'">
-              <button class="ghost-button icon-action" type="button" title="Mark complete" @click="updateQueueStatus(item, 'completed')">
+              <button class="ghost-button icon-action" type="button" :title="t('components.activeQueueDashboard.markComplete')" @click="updateQueueStatus(item, 'completed')">
                 <i class="fa-solid fa-check"></i>
               </button>
-              <button class="ghost-button icon-action" type="button" title="Mark no-show" @click="updateQueueStatus(item, 'no-show')">
+              <button class="ghost-button icon-action" type="button" :title="t('components.activeQueueDashboard.markNoShow')" @click="updateQueueStatus(item, 'no-show')">
                 <i class="fa-solid fa-user-slash"></i>
               </button>
             </div>
@@ -108,8 +108,10 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { apiFetch, formatDate } from '@/shared/client';
 
+const { t } = useI18n();
 const events = ref([]);
 const queue = ref([]);
 const summary = ref({});

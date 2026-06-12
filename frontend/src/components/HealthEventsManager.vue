@@ -2,40 +2,40 @@
   <div class="health-manager">
     <div class="manager-head">
       <div>
-        <span class="eyebrow">Health Center</span>
+        <span class="eyebrow">{{ t('common.healthCenter') }}</span>
         <h3>Events and queue access</h3>
       </div>
       <button class="ghost-button" type="button" @click="load" :disabled="loading">
         <i :class="loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate-right'"></i>
-        Refresh
+        {{ t('components.activeQueueDashboard.refresh') }}
       </button>
     </div>
 
     <form class="event-form" @submit.prevent="saveEvent">
-      <label><span>Title</span><input v-model.trim="form.title" required></label>
-      <label><span>Prefix</span><input v-model.trim="form.prefix" maxlength="5" required></label>
-      <label><span>Date</span><input v-model="form.eventDate" type="date" required></label>
+      <label><span>{{ t('common.ui.title') }}</span><input v-model.trim="form.title" required></label>
+      <label><span>{{ t('common.ui.prefix') }}</span><input v-model.trim="form.prefix" maxlength="5" required></label>
+      <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="form.eventDate" type="date" required></label>
       <div class="time-grid">
-        <label><span>Start Time</span><input v-model="form.startTime" type="time" required></label>
-        <label><span>End Time</span><input v-model="form.endTime" type="time" required></label>
+        <label><span>{{ t('landing.formLabels.startTime') }}</span><input v-model="form.startTime" type="time" required></label>
+        <label><span>{{ t('landing.formLabels.endTime') }}</span><input v-model="form.endTime" type="time" required></label>
       </div>
-      <label><span>Description</span><textarea v-model.trim="form.description" rows="3"></textarea></label>
+      <label><span>{{ t('landing.formLabels.description') }}</span><textarea v-model.trim="form.description" rows="3"></textarea></label>
       <div class="form-actions">
         <button class="primary-button" type="submit" :disabled="saving">
           <i :class="saving ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-floppy-disk'"></i>
           {{ editingId ? 'Save Changes' : 'Create Event' }}
         </button>
-        <button type="button" class="ghost-button" @click="resetForm">Reset</button>
+        <button type="button" class="ghost-button" @click="resetForm">{{ t('common.ui.reset') }}</button>
       </div>
     </form>
 
     <div class="event-toolbar">
-      <h4>Scheduled events</h4>
+      <h4>{{ t('common.ui.scheduledEvents') }}</h4>
       <span class="fine-print">{{ events.length }} total</span>
     </div>
 
-    <div v-if="loading" class="empty-state">Loading health events...</div>
-    <div v-else-if="!events.length" class="empty-state">No health events available.</div>
+    <div v-if="loading" class="empty-state">{{ t('common.ui.loadingHealthEvents') }}</div>
+    <div v-else-if="!events.length" class="empty-state">{{ t('common.noHealthEvents') }}</div>
     <div v-else class="event-list">
       <article v-for="ev in events" :key="ev._id" class="event-row">
         <div class="event-main">
@@ -53,7 +53,7 @@
           </button>
           <button class="ghost-button" type="button" @click="editEvent(ev)">
             <i class="fa-solid fa-pen"></i>
-            Edit
+            {{ t('common.ui.edit') }}
           </button>
         </div>
       </article>
@@ -63,8 +63,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { apiFetch, formatDate } from '@/shared/client';
 
+const { t } = useI18n();
 const events = ref([]);
 const loading = ref(false);
 const saving = ref(false);

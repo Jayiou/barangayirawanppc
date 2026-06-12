@@ -1,28 +1,29 @@
 <template>
+    <LanguageSwitcher floating />
     <div class="page-shell landing-shell">
         <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
 
         <header class="landing-topbar">
             <div class="landing-topbar-inner">
-                <BrandMark initials="BI" eyebrow="Management System" title="Barangay Irawan" />
-                <nav class="landing-nav" aria-label="Main navigation">
-                    <a href="#home">{{ texts.landing.nav.home }}</a>
-                    <a href="#announcements">{{ texts.landing.nav.announcements }}</a>
-                    <a href="#vmg">{{ texts.landing.nav.vmg }}</a>
-                    <a href="#services">{{ texts.landing.nav.services }}</a>
-                    <a href="#officials">{{ texts.landing.nav.officials }}</a>
-                    <a href="#location">{{ texts.landing.nav.location }}</a>
+                <BrandMark initials="BI" eyebrow="Management System" :title="t('common.barangayName')" />
+                <nav class="landing-nav" :aria-label="t('common.mainNavigation')">
+                    <a href="#home">{{ t('landing.nav.home') }}</a>
+                    <a href="#announcements">{{ t('landing.nav.announcements') }}</a>
+                    <a href="#vmg">{{ t('landing.nav.vmg') }}</a>
+                    <a href="#services">{{ t('landing.nav.services') }}</a>
+                    <a href="#officials">{{ t('landing.nav.officials') }}</a>
+                    <a href="#location">{{ t('landing.nav.location') }}</a>
                     <button type="button" class="landing-auth-btn" @click="openModal('login')">
                         <i class="fa-solid fa-right-to-bracket"></i>
-                        {{ texts.landing.nav.login }}
+                        {{ t('landing.nav.login') }}
                     </button>
                     <button type="button" class="landing-auth-btn" @click="openModal('register')">
                         <i class="fa-solid fa-user-plus"></i>
-                        {{ texts.landing.nav.register }}
+                        {{ t('landing.nav.register') }}
                     </button>
                     <button v-if="pendingOtpEmail" type="button" class="landing-auth-btn pending-otp-btn" @click="resumeOtpVerification">
                         <i class="fa-solid fa-shield-halved"></i>
-                        {{ texts.landing.nav.continueOtp }}
+                        {{ t('landing.nav.continueOtp') }}
                     </button>
                 </nav>
             </div>
@@ -32,11 +33,11 @@
             <section class="landing-hero" id="home">
                 <div class="landing-hero-overlay"></div>
                 <div class="landing-hero-content">
-                    <span class="eyebrow light animate-section slide-up">{{ texts.landing.hero.eyebrow }}</span>
-                    <h2 class="animate-section slide-up">{{ texts.landing.hero.title }}</h2>
-                    <h3 class="animate-section slide-up">{{ texts.landing.hero.subtitle }}</h3>
+                    <span class="eyebrow light animate-section slide-up">{{ t('landing.hero.eyebrow') }}</span>
+                    <h2 class="animate-section slide-up">{{ t('landing.hero.title') }}</h2>
+                    <h3 class="animate-section slide-up">{{ t('landing.hero.subtitle') }}</h3>
                     <p class="animate-section slide-up">
-                        {{ texts.landing.hero.copy }}
+                        {{ t('landing.hero.copy') }}
                     </p>
                 </div>
             </section>
@@ -55,7 +56,7 @@
                         <div class="vmg-wave outer top"></div>
                         <div class="vmg-overlay"></div>
                         <div class="vmg-copy">
-                            <h4>VISION</h4>
+                            <h4>{{ t('common.ui.vision') }}</h4>
                             <p><strong>BARANGAY IRAWAN:</strong><br>A PROGRESSIVE AGRICULTURAL TRADING CENTER OF PALAWAN, DEMONSTRATING A CLEAN AND GREEN ENVIRONMENT, INHABITED BY A COMPASSIONATE AND EMPOWERED CITIZENRY UNDER A PARTICIPATORY AND ACCOUNTABLE GOVERNANCE.</p>
                         </div>
                         <div class="vmg-wave bottom"></div>
@@ -68,8 +69,8 @@
                         <div class="vmg-wave outer top"></div>
                         <div class="vmg-overlay"></div>
                         <div class="vmg-copy">
-                            <h4>MISSION</h4>
-                            <p>WE AIM TO BE A PEACEFUL, GREEN AND PROGRESSIVE COMMUNITY.</p>
+                            <h4>{{ t('common.ui.mission') }}</h4>
+                            <p>{{ t('common.ui.missionStatement') }}</p>
                         </div>
                         <div class="vmg-wave bottom"></div>
                         <div class="vmg-wave outer bottom"></div>
@@ -81,8 +82,8 @@
                         <div class="vmg-wave outer top"></div>
                         <div class="vmg-overlay"></div>
                         <div class="vmg-copy">
-                            <h4>GOALS</h4>
-                            <p>TO GIVE ENOUGH SERVICES TO ALL THE RESIDENCES OF THIS BARANGAY, TO PROVIDE LIVELIHOOD PROGRAMS FOR BETTER LIVING AND CREATE MORE PROJECTS FOR THE BENEFITS OF THE CONSTITUENTS.</p>
+                            <h4>{{ t('common.ui.goals') }}</h4>
+                            <p>{{ t('common.ui.goalsStatement') }}</p>
                         </div>
                         <div class="vmg-wave bottom"></div>
                         <div class="vmg-wave outer bottom"></div>
@@ -91,8 +92,8 @@
             </section>
             <section class="landing-services-section animate-section slide-up" id="services">
                 <div class="landing-section-heading center">
-                    <h3>{{ texts.landing.sections.servicesTitle }}</h3>
-                    <p>{{ texts.landing.sections.servicesCopy }}</p>
+                    <h3>{{ t('landing.sections.servicesTitle') }}</h3>
+                    <p>{{ t('landing.sections.servicesCopy') }}</p>
                 </div>
 
                 <div class="landing-service-grid">
@@ -107,19 +108,19 @@
                         <div class="landing-service-icon">{{ service.icon }}</div>
                         <h4>{{ service.title }}</h4>
                         <p>{{ service.copy }}</p>
-                        <span v-if="service.action" class="landing-service-cta">{{ texts.landing.actions.requestOnline }}</span>
+                        <span v-if="service.action" class="landing-service-cta">{{ t('landing.actions.requestOnline') }}</span>
                     </component>
                 </div>
             </section>
 
             <section class="landing-officials-section animate-section slide-up" id="officials">
             <div class="landing-section-heading center">
-                <h3>{{ texts.landing.sections.officialsTitle }}</h3>
-                <p>{{ texts.landing.sections.officialsCopy }}</p>
+                <h3>{{ t('landing.sections.officialsTitle') }}</h3>
+                <p>{{ t('landing.sections.officialsCopy') }}</p>
             </div>
 
-            <div v-if="officialsLoading" class="officials-loading">{{ texts.landing.actions.loadingOfficials }}</div>
-            <div v-else-if="sortedOfficials.length === 0" class="empty-state">No officials are available right now. Please check back later.</div>
+            <div v-if="officialsLoading" class="officials-loading">{{ t('landing.actions.loadingOfficials') }}</div>
+            <div v-else-if="sortedOfficials.length === 0" class="empty-state">{{ t('common.noOfficials') }}</div>
             <div v-else class="officials-sections">
                 <!-- Barangay Captain (Solo Row) -->
                 <div class="officials-row captain-row">
@@ -178,10 +179,10 @@
             <section class="landing-location-band" id="location" ref="locationBandRef">
                 <div class="landing-location-inner">
                     <div class="landing-location-copy animate-section slide-up">
-                        <span class="eyebrow">Barangay Location</span>
-                        <h3>Visit Barangay Irawan Hall</h3>
+                        <span class="eyebrow">{{ t('landing.location.eyebrow') }}</span>
+                        <h3>{{ t('landing.location.title') }}</h3>
                         <p>
-                            View our exact location in Puerto Princesa and tap the map to open Google Maps for directions.
+                            {{ t('landing.location.copy') }}
                         </p>
                     </div>
 
@@ -190,7 +191,7 @@
                         href="https://www.google.com/maps/search/?api=1&query=Barangay+Hall+Irawan+Puerto+Princesa+Palawan"
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label="Open Barangay Irawan Hall in Google Maps"
+                        :aria-label="t('landing.location.openMapAriaLabel')"
                     >
                         <iframe
                             v-if="mapLoaded"
@@ -198,10 +199,10 @@
                             src="https://maps.google.com/maps?q=Barangay%20Hall%20Irawan%20Puerto%20Princesa%20Palawan&z=16&output=embed"
                             loading="lazy"
                             referrerpolicy="no-referrer-when-downgrade"
-                            title="Barangay Irawan Hall location map"
+                            :title="t('landing.location.mapTitle')"
                         ></iframe>
                         <div v-else class="landing-map-placeholder">
-                            <span>Tap to open the map</span>
+                            <span>{{ t('common.tapOpenMap') }}</span>
                         </div>
                         <div class="landing-map-overlay">
                             <span>{{ mapLoaded ? 'Open in Google Maps' : 'Load map' }}</span>
@@ -218,18 +219,18 @@
                     <div class="landing-footer-brand">
                         <div class="brand-mark small">BI</div>
                         <div>
-                            <strong>Barangay Irawan</strong>
-                            <div class="fine-print landing-footer-note">Puerto Princesa City</div>
+                            <strong>{{ t('common.barangayName') }}</strong>
+                            <div class="fine-print landing-footer-note">{{ t('landing.hero.subtitle') }}</div>
                         </div>
                     </div>
 
-                    <nav class="landing-footer-nav" aria-label="Footer navigation">
-                        <a href="#home">Home</a>
-                        <a href="#announcements">Announcement</a>
-                        <a href="#vmg">VMG</a>
-                        <a href="#services">Services</a>
-                        <a href="#officials">Officials</a>
-                        <a href="#location">Location</a>
+                    <nav class="landing-footer-nav" :aria-label="t('common.footerNavigation')">
+                        <a href="#home">{{ t('landing.nav.home') }}</a>
+                        <a href="#announcements">{{ t('common.ui.announcement') }}</a>
+                        <a href="#vmg">{{ t('landing.nav.vmg') }}</a>
+                        <a href="#services">{{ t('landing.nav.services') }}</a>
+                        <a href="#officials">{{ t('landing.nav.officials') }}</a>
+                        <a href="#location">{{ t('landing.nav.location') }}</a>
                     </nav>
                 </div>
 
@@ -249,7 +250,7 @@
                         </a>
                     </div>
 
-                    <div class="fine-print landing-footer-note">{{ texts.landing.footer.rights }}</div>
+                    <div class="fine-print landing-footer-note">{{ t('landing.footer.rights') }}</div>
                 </div>
             </div>
         </footer>
@@ -262,7 +263,7 @@
                 <div class="auth-modal-visual">
                     <div class="visual-overlay"></div>
                     <div class="visual-content">
-                        <BrandMark initials="BI" eyebrow="Barangay Irawan" :title="texts.landing.auth[activeModal]?.visualTitle || 'Resident Portal'" />
+                        <BrandMark initials="BI" eyebrow="Barangay Irawan" :title="activeModal ? t(`landing.auth.${activeModal}.visualTitle`) : 'Resident Portal'" />
                         <div class="visual-text">
                             <h3>{{ getVisualTitle(activeModal) }}</h3>
                             <p>{{ getVisualCopy(activeModal) }}</p>
@@ -291,34 +292,34 @@
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-flag"></i>
                                     <div>
-                                        <strong>{{ texts.landing.auth.guestReport.bannerTitle }}</strong>
-                                        <p>{{ texts.landing.auth.guestReport.bannerCopy }}</p>
+                                        <strong>{{ t('landing.auth.guestReport.bannerTitle') }}</strong>
+                                        <p>{{ t('landing.auth.guestReport.bannerCopy') }}</p>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-report-type">Report Type</label>
+                                        <label for="guest-report-type">{{ t('landing.formLabels.reportType') }}</label>
                                         <div class="custom-select">
                                             <select id="guest-report-type" v-model="guestReportForm.reportType" required>
-                                                <option value="noise_complaint">Noise Complaint</option>
-                                                <option value="disturbance">Disturbance</option>
-                                                <option value="sanitation">Sanitation</option>
-                                                <option value="infrastructure">Infrastructure</option>
-                                                <option value="public_safety">Public Safety</option>
-                                                <option value="other">Other</option>
+                                                <option value="noise_complaint">{{ t('common.ui.noiseComplaint') }}</option>
+                                                <option value="disturbance">{{ t('common.ui.disturbance') }}</option>
+                                                <option value="sanitation">{{ t('common.ui.sanitation') }}</option>
+                                                <option value="infrastructure">{{ t('common.ui.infrastructure') }}</option>
+                                                <option value="public_safety">{{ t('common.ui.publicSafety') }}</option>
+                                                <option value="other">{{ t('common.ui.other') }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-report-priority">Priority</label>
+                                        <label for="guest-report-priority">{{ t('landing.formLabels.priority') }}</label>
                                         <div class="custom-select">
                                             <select id="guest-report-priority" v-model="guestReportForm.priority" required>
-                                                <option value="low">Low</option>
-                                                <option value="medium">Medium</option>
-                                                <option value="high">High</option>
-                                                <option value="emergency">Emergency</option>
+                                                <option value="low">{{ t('common.ui.low') }}</option>
+                                                <option value="medium">{{ t('common.ui.medium') }}</option>
+                                                <option value="high">{{ t('common.ui.high') }}</option>
+                                                <option value="emergency">{{ t('common.ui.emergency') }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
@@ -326,17 +327,17 @@
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-report-description">Description</label>
-                                    <textarea id="guest-report-description" v-model="guestReportForm.description" rows="4" placeholder="Describe what happened" required></textarea>
+                                    <label for="guest-report-description">{{ t('landing.formLabels.description') }}</label>
+                                    <textarea id="guest-report-description" v-model="guestReportForm.description" rows="4" :placeholder="t('landing.placeholders.describeIncident')" required></textarea>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-report-location">Location</label>
-                                        <input id="guest-report-location" v-model="guestReportForm.locationText" type="text" placeholder="Where did it happen?" required>
+                                        <label for="guest-report-location">{{ t('landing.nav.location') }}</label>
+                                        <input id="guest-report-location" v-model="guestReportForm.locationText" type="text" :placeholder="t('landing.placeholders.incidentLocation')" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-report-incident-date">Date</label>
+                                        <label for="guest-report-incident-date">{{ t('landing.formLabels.incidentDate') }}</label>
                                         <input
                                             id="guest-report-incident-date"
                                             v-model="guestReportForm.incidentDate"
@@ -349,22 +350,16 @@
                                 </div>
 
                                 <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
-                                    <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
+                                    <span style="font-weight: 600; color: #3a4e43;">{{ t('landing.formLabels.currentLocationOptional') }}</span>
                                     <button type="button" class="ghost-button" @click="captureGuestCurrentLocation" :disabled="guestLocatingPosition">
                                         {{ guestLocatingPosition ? 'Getting location...' : 'Use My Current Location' }}
                                     </button>
-                                    <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;">
-                                        <strong style="color: #3a4e43;">How it works:</strong><br>
-                                        1️⃣ Click the button above<br>
-                                        2️⃣ A popup will appear asking for permission<br>
-                                        3️⃣ Tap <strong>Allow</strong><br>
-                                        💡 Safari tip: if no popup appears, go to iPhone Settings → Privacy & Security → Location Services → Safari Websites → <strong>While Using the App</strong>.
-                                    </small>
+                                    <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;" v-html="t('landing.auth.guestReport.safariTip')"></small>
                                     <small v-if="guestHasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ guestReportForm.locationLatitude }}, {{ guestReportForm.locationLongitude }} (±{{ guestReportForm.locationAccuracy || 'N/A' }}m)</small>
                                     <iframe
                                         v-if="guestReportMapEmbedUrl"
                                         :src="guestReportMapEmbedUrl"
-                                        title="Guest report location preview map"
+                                        :title="t('landing.location.guestReportMapTitle')"
                                         style="width: 100%; height: 180px; border: 1px solid #dce6e1; border-radius: 8px;"
                                         loading="lazy"
                                         referrerpolicy="no-referrer-when-downgrade"
@@ -380,39 +375,39 @@
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-report-first-name">First Name</label>
+                                        <label for="guest-report-first-name">{{ t('landing.formLabels.firstName') }}</label>
                                         <input id="guest-report-first-name" v-model="guestReportForm.firstName" type="text" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-report-last-name">Last Name</label>
+                                        <label for="guest-report-last-name">{{ t('landing.formLabels.lastName') }}</label>
                                         <input id="guest-report-last-name" v-model="guestReportForm.lastName" type="text" required>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-report-contact">Contact Number</label>
+                                        <label for="guest-report-contact">{{ t('landing.formLabels.contactNumber') }}</label>
                                         <input id="guest-report-contact" v-model="guestReportForm.contactNumber" type="tel" placeholder="09xxxxxxxxx" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-report-email">Gmail Address</label>
+                                        <label for="guest-report-email">{{ t('landing.formLabels.gmailAddress') }}</label>
                                         <input id="guest-report-email" v-model="guestReportForm.email" type="email" placeholder="yourname@gmail.com" required>
                                     </div>
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-report-address">Current Address</label>
-                                    <input id="guest-report-address" v-model="guestReportForm.address" type="text" placeholder="City / municipality / barangay" required>
+                                    <label for="guest-report-address">{{ t('landing.formLabels.currentAddress') }}</label>
+                                    <input id="guest-report-address" v-model="guestReportForm.address" type="text" :placeholder="t('common.ui.cityMunicipalityBarangay')" required>
                                 </div>
 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestReportForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="guestReportForm.agreePrivacy"> {{ t('landing.formLabels.agreePrivacy') }} <a href="#" @click.prevent="showPrivacy(activeModal)">{{ t('landing.privacy.title') }}</a>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="isGuestReportLoading || !guestReportForm.agreePrivacy">
-                                    {{ isGuestReportLoading ? texts.landing.auth.guestReport.submitting : texts.landing.auth.guestReport.submit }} <i :class="isGuestReportLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                    {{ isGuestReportLoading ? t('landing.auth.guestReport.submitting') : t('landing.auth.guestReport.submit') }} <i :class="isGuestReportLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
 
@@ -420,17 +415,17 @@
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-calendar-check"></i>
                                     <div>
-                                        <strong>{{ texts.landing.auth.guestAppointment.bannerTitle }}</strong>
-                                        <p>{{ texts.landing.auth.guestAppointment.bannerCopy }}</p>
+                                        <strong>{{ t('landing.auth.guestAppointment.bannerTitle') }}</strong>
+                                        <p>{{ t('landing.auth.guestAppointment.bannerCopy') }}</p>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-appointment-official">Barangay Official</label>
+                                        <label for="guest-appointment-official">{{ t('landing.formLabels.appointmentOfficial') }}</label>
                                         <div class="custom-select">
                                             <select id="guest-appointment-official" v-model="guestAppointmentForm.officialId" required @change="handleGuestAppointmentOfficialChange">
-                                                <option disabled value="">Select official</option>
+                                                <option disabled value="">{{ t('common.ui.selectOfficial') }}</option>
                                                 <option v-for="official in sortedOfficials" :key="official._id" :value="official._id" :disabled="official.status !== 'active'">
                                                     {{ getGuestAppointmentOfficialLabel(official) }}
                                                 </option>
@@ -440,23 +435,23 @@
                                         <small v-if="guestAppointmentInactiveMessage" class="fine-print">{{ guestAppointmentInactiveMessage }}</small>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-appointment-date">Appointment Date</label>
+                                        <label for="guest-appointment-date">{{ t('landing.formLabels.appointmentDate') }}</label>
                                         <input id="guest-appointment-date" v-model="guestAppointmentForm.appointmentDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="loadGuestAppointmentSlots">
                                     </div>
                                 </div>
 
                                 <div class="facility-slot-picker" v-if="guestAppointmentForm.officialId && guestAppointmentForm.appointmentDate && !selectedGuestAppointmentOfficialInactive">
                                     <div class="facility-slot-head">
-                                        <span>Available Time Slot</span>
+                                        <span>{{ t('landing.formLabels.availableTimeSlot') }}</span>
                                         <small>{{ guestAppointmentSlotsAvailable.length }} available</small>
                                     </div>
-                                    <div v-if="isGuestAppointmentSlotsLoading" class="facility-slot-note">Loading appointment schedule...</div>
-                                    <div v-else-if="!guestAppointmentSlotsAvailable.length" class="facility-slot-note">No appointment slots are available for the selected official and date.</div>
+                                    <div v-if="isGuestAppointmentSlotsLoading" class="facility-slot-note">{{ t('common.ui.loadingAppointmentSchedule') }}</div>
+                                    <div v-else-if="!guestAppointmentSlotsAvailable.length" class="facility-slot-note">{{ t('common.ui.noAppointmentSlots') }}</div>
                                     <div v-else class="input-group">
-                                        <label for="guest-appointment-slot">Time Slot</label>
+                                        <label for="guest-appointment-slot">{{ t('common.ui.timeSlot') }}</label>
                                         <div class="custom-select">
                                             <select id="guest-appointment-slot" v-model="guestAppointmentSelectedSlot" required @change="applyGuestAppointmentSlot">
-                                                <option disabled value="">Select time</option>
+                                                <option disabled value="">{{ t('landing.formLabels.timeSlotSelect') }}</option>
                                                 <option v-for="slot in guestAppointmentSlotsAvailable" :key="`${slot.startTime}-${slot.endTime}`" :value="`${slot.startTime}|${slot.endTime}`">{{ slot.label || `${slot.startTime} - ${slot.endTime}` }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
@@ -465,45 +460,45 @@
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-appointment-purpose">Purpose</label>
-                                    <textarea id="guest-appointment-purpose" v-model="guestAppointmentForm.purpose" rows="3" placeholder="Briefly describe your appointment concern" required></textarea>
+                                    <label for="guest-appointment-purpose">{{ t('landing.formLabels.purpose') }}</label>
+                                    <textarea id="guest-appointment-purpose" v-model="guestAppointmentForm.purpose" rows="3" :placeholder="t('landing.formLabels.purposeShort')" required></textarea>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-appointment-first-name">First Name</label>
+                                        <label for="guest-appointment-first-name">{{ t('landing.formLabels.firstName') }}</label>
                                         <input id="guest-appointment-first-name" v-model="guestAppointmentForm.firstName" type="text" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-appointment-last-name">Last Name</label>
+                                        <label for="guest-appointment-last-name">{{ t('landing.formLabels.lastName') }}</label>
                                         <input id="guest-appointment-last-name" v-model="guestAppointmentForm.lastName" type="text" required>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-appointment-contact">Contact Number</label>
+                                        <label for="guest-appointment-contact">{{ t('landing.formLabels.contactNumber') }}</label>
                                         <input id="guest-appointment-contact" v-model="guestAppointmentForm.contactNumber" type="tel" placeholder="09xxxxxxxxx" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-appointment-email">Gmail Address</label>
+                                        <label for="guest-appointment-email">{{ t('landing.formLabels.gmailAddress') }}</label>
                                         <input id="guest-appointment-email" v-model="guestAppointmentForm.email" type="email" placeholder="yourname@gmail.com" required>
                                     </div>
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-appointment-address">Current Address</label>
-                                    <input id="guest-appointment-address" v-model="guestAppointmentForm.address" type="text" placeholder="City / municipality / barangay" required>
+                                    <label for="guest-appointment-address">{{ t('landing.formLabels.currentAddress') }}</label>
+                                    <input id="guest-appointment-address" v-model="guestAppointmentForm.address" type="text" :placeholder="t('common.ui.cityMunicipalityBarangay')" required>
                                 </div>
 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestAppointmentForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="guestAppointmentForm.agreePrivacy"> {{ t('landing.formLabels.agreePrivacy') }} <a href="#" @click.prevent="showPrivacy(activeModal)">{{ t('landing.privacy.title') }}</a>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="!canSubmitGuestAppointment">
-                                    {{ isGuestAppointmentLoading ? texts.landing.auth.guestAppointment.submitting : texts.landing.auth.guestAppointment.submit }} <i :class="isGuestAppointmentLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                    {{ isGuestAppointmentLoading ? t('landing.auth.guestAppointment.submitting') : t('landing.auth.guestAppointment.submit') }} <i :class="isGuestAppointmentLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
 
@@ -511,14 +506,14 @@
                                 <div class="guest-request-banner">
                                     <i class="fa-solid fa-building-circle-check"></i>
                                     <div>
-                                        <strong>{{ texts.landing.auth.guestReservation.bannerTitle }}</strong>
-                                        <p>{{ texts.landing.auth.guestReservation.bannerCopy }}</p>
+                                        <strong>{{ t('landing.auth.guestReservation.bannerTitle') }}</strong>
+                                        <p>{{ t('landing.auth.guestReservation.bannerCopy') }}</p>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-facility-name">Facility Type</label>
+                                        <label for="guest-facility-name">{{ t('landing.formLabels.facilityType') }}</label>
                                         <div class="custom-select">
                                             <select id="guest-facility-name" v-model="guestReservationForm.facilityName" required @change="loadGuestFacilityAvailability">
                                                 <option v-for="option in FACILITY_ITEM_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -527,33 +522,33 @@
                                         </div>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-facility-date">Reservation Date</label>
+                                        <label for="guest-facility-date">{{ t('landing.formLabels.reservationDate') }}</label>
                                             <input id="guest-facility-date" v-model="guestReservationForm.reservationDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="loadGuestFacilityAvailability">
                                     </div>
                                 </div>
 
                                 <div class="facility-slot-picker" v-if="guestReservationForm.facilityName && guestReservationForm.reservationDate">
                                     <div class="facility-slot-head">
-                                        <span>Facility Time Slot</span>
+                                        <span>{{ t('landing.formLabels.facilityTimeSlot') }}</span>
                                         <small>Open {{ guestFacilityTimeOptions.operatingHoursLabel }}</small>
                                     </div>
-                                    <div v-if="isGuestFacilityAvailabilityLoading" class="facility-slot-note">Loading facility schedule...</div>
+                                    <div v-if="isGuestFacilityAvailabilityLoading" class="facility-slot-note">{{ t('common.ui.loadingFacilitySchedule') }}</div>
                                     <div v-else class="facility-slot-grid">
                                         <div class="input-group">
-                                            <label for="guest-facility-start">Start Time</label>
+                                            <label for="guest-facility-start">{{ t('landing.formLabels.startTime') }}</label>
                                             <div class="custom-select">
                                                 <select id="guest-facility-start" v-model="guestReservationForm.startTime" required @change="guestReservationForm.endTime = ''; loadGuestFacilityAvailabilityForTime()">
-                                                    <option disabled value="">Select start</option>
+                                                    <option disabled value="">{{ t('common.ui.selectStart') }}</option>
                                                     <option v-for="slot in guestFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                                 </select>
                                                 <i class="fa-solid fa-chevron-down"></i>
                                             </div>
                                         </div>
                                         <div class="input-group">
-                                            <label for="guest-facility-end">End Time</label>
+                                            <label for="guest-facility-end">{{ t('landing.formLabels.endTime') }}</label>
                                             <div class="custom-select">
                                                 <select id="guest-facility-end" v-model="guestReservationForm.endTime" required :disabled="!guestReservationForm.startTime" @change="loadGuestFacilityAvailabilityForTime()">
-                                                    <option disabled value="">Select end</option>
+                                                    <option disabled value="">{{ t('common.ui.selectEnd') }}</option>
                                                     <option v-for="slot in guestFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                                 </select>
                                                 <i class="fa-solid fa-chevron-down"></i>
@@ -566,82 +561,82 @@
                                         <small>{{ guestReservationInventoryPeakSummary.note }}</small>
                                     </div>
                                     <div class="facility-reserved-list" v-else-if="guestFacilityTimeOptions.reservedSlots.length">
-                                        <span>Reserved ranges</span>
+                                        <span>{{ t('landing.formLabels.reservedRanges') }}</span>
                                         <small v-for="slot in guestFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="getFacilityReservationQuantity(slot) > 0">x{{ getFacilityReservationQuantity(slot) }}</span></small>
                                     </div>
                                     <!-- Standard flow helper text removed -->
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-facility-purpose">Purpose</label>
+                                    <label for="guest-facility-purpose">{{ t('landing.formLabels.purpose') }}</label>
                                     <input id="guest-facility-purpose" v-model="guestReservationForm.purpose" type="text" placeholder="Wedding, meeting, celebration, etc." required>
                                 </div>
 
                                     <div class="two-col-grid" v-if="guestReservationRequiresQuantity">
                                         <div class="input-group">
-                                            <label for="guest-facility-quantity">Quantity</label>
+                                            <label for="guest-facility-quantity">{{ t('landing.formLabels.quantity') }}</label>
                                             <input id="guest-facility-quantity" v-model.number="guestReservationForm.quantity" type="number" min="1" :max="guestReservationQuantityMax" placeholder="0" :disabled="guestReservationInventoryUnavailable">
                                             <small v-if="guestReservationInventoryMessage" class="fine-print">{{ guestReservationInventoryMessage }}</small>
                                         </div>
                                     </div>
 
                                 <div class="input-group">
-                                    <label for="guest-facility-details">Reservation Details</label>
-                                    <textarea id="guest-facility-details" v-model="guestReservationForm.reservationDetails" rows="4" placeholder="Add event notes or setup requirements"></textarea>
+                                    <label for="guest-facility-details">{{ t('landing.formLabels.reservationPurpose') }}</label>
+                                    <textarea id="guest-facility-details" v-model="guestReservationForm.reservationDetails" rows="4" :placeholder="t('landing.formLabels.reservationDetails')"></textarea>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-facility-first-name">First Name</label>
+                                        <label for="guest-facility-first-name">{{ t('landing.formLabels.firstName') }}</label>
                                         <input id="guest-facility-first-name" v-model="guestReservationForm.firstName" type="text" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-facility-last-name">Last Name</label>
+                                        <label for="guest-facility-last-name">{{ t('landing.formLabels.lastName') }}</label>
                                         <input id="guest-facility-last-name" v-model="guestReservationForm.lastName" type="text" required>
                                     </div>
                                 </div>
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="guest-facility-contact">Contact Number</label>
+                                        <label for="guest-facility-contact">{{ t('landing.formLabels.contactNumber') }}</label>
                                         <input id="guest-facility-contact" v-model="guestReservationForm.contactNumber" type="tel" placeholder="09xxxxxxxxx" required>
                                     </div>
                                     <div class="input-group">
-                                        <label for="guest-facility-email">Gmail Address</label>
+                                        <label for="guest-facility-email">{{ t('landing.formLabels.gmailAddress') }}</label>
                                         <input id="guest-facility-email" v-model="guestReservationForm.email" type="email" placeholder="yourname@gmail.com" required>
                                     </div>
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="guest-facility-address">Current Address</label>
-                                    <input id="guest-facility-address" v-model="guestReservationForm.address" type="text" placeholder="City / municipality / barangay" required>
+                                    <label for="guest-facility-address">{{ t('landing.formLabels.currentAddress') }}</label>
+                                    <input id="guest-facility-address" v-model="guestReservationForm.address" type="text" :placeholder="t('common.ui.cityMunicipalityBarangay')" required>
                                 </div>
 
                                 <div class="input-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" v-model="guestReservationForm.agreePrivacy"> {{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a>
+                                        <input type="checkbox" v-model="guestReservationForm.agreePrivacy"> {{ t('landing.formLabels.agreePrivacy') }} <a href="#" @click.prevent="showPrivacy(activeModal)">{{ t('landing.privacy.title') }}</a>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="!canSubmitGuestReservation">
-                                    {{ isGuestReservationLoading ? texts.landing.auth.guestReservation.submitting : texts.landing.auth.guestReservation.submit }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
+                                    {{ isGuestReservationLoading ? t('landing.auth.guestReservation.submitting') : t('landing.auth.guestReservation.submit') }} <i :class="isGuestReservationLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                 </button>
                             </form>
 
                             <!-- Login Form -->
                             <form v-if="activeModal === 'login'" class="modern-form" @submit.prevent="handleLogin">
                                 <div class="input-group">
-                                    <label for="login-username">{{ texts.landing.auth.login.username }}</label>
+                                    <label for="login-username">{{ t('landing.auth.login.username') }}</label>
                                     <div class="input-wrapper">
                                         <i class="fa-regular fa-user"></i>
-                                        <input id="login-username" name="username" v-model="loginForm.username" type="text" autocomplete="username" :placeholder="texts.landing.auth.login.usernamePlaceholder" required>
+                                        <input id="login-username" name="username" v-model="loginForm.username" type="text" autocomplete="username" :placeholder="t('landing.auth.login.usernamePlaceholder')" required>
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="login-password">{{ texts.landing.auth.login.password }}</label>
+                                    <label for="login-password">{{ t('landing.auth.login.password') }}</label>
                                     <div class="input-wrapper has-toggle">
                                         <i class="fa-solid fa-lock"></i>
-                                        <input id="login-password" name="password" v-model="loginForm.password" :type="passwordVisibility.login ? 'text' : 'password'" autocomplete="off" :placeholder="texts.landing.auth.login.passwordPlaceholder" required>
+                                        <input id="login-password" name="password" v-model="loginForm.password" :type="passwordVisibility.login ? 'text' : 'password'" autocomplete="off" :placeholder="t('landing.auth.login.passwordPlaceholder')" required>
                                         <button
                                             type="button"
                                             class="password-toggle-btn"
@@ -653,96 +648,96 @@
                                     </div>
                                 </div>
                                 <button type="submit" class="auth-submit-btn" :disabled="isLoginLoading">
-                                    {{ isLoginLoading ? texts.landing.auth.login.signingIn : texts.landing.auth.login.button }} <i :class="isLoginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrow-right'"></i>
+                                    {{ isLoginLoading ? t('landing.auth.login.signingIn') : t('landing.auth.login.button') }} <i :class="isLoginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrow-right'"></i>
                                 </button>
                                 <button type="button" class="auth-secondary-btn" @click="openModal('forgot-password')">
-                                    {{ texts.landing.auth.login.forgot }}
+                                    {{ t('landing.auth.login.forgot') }}
                                 </button>
                             </form>
 
                             <!-- Registration Form -->
                             <form v-else-if="activeModal === 'register'" class="modern-form register-form" @submit.prevent="handleRegister">
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 1</span>
-                                    <h4>Personal Information</h4>
+                                    <span class="eyebrow">{{ t('common.ui.section1') }}</span>
+                                    <h4>{{ t('common.ui.personalInformation') }}</h4>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('firstName')">
-                                        <label for="reg-firstname">First Name <span class="required-mark">*</span></label>
+                                        <label for="reg-firstname">{{ t('landing.formLabels.firstName') }} <span class="required-mark">*</span></label>
                                         <input id="reg-firstname" name="firstName" v-model="registerForm.firstName" type="text" autocomplete="given-name" placeholder="Juan" required :aria-invalid="hasRegisterError('firstName')">
                                         <p v-if="hasRegisterError('firstName')" class="field-error">{{ registerFieldErrors.firstName }}</p>
                                     </div>
                                     <div class="input-group">
-                                        <label for="reg-middlename">Middle Name</label>
+                                        <label for="reg-middlename">{{ t('portal.profile.labels.middleName') }}</label>
                                         <input id="reg-middlename" name="middleName" v-model="registerForm.middleName" type="text" autocomplete="additional-name" placeholder="Santos">
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('lastName')">
-                                        <label for="reg-lastname">Last Name <span class="required-mark">*</span></label>
+                                        <label for="reg-lastname">{{ t('landing.formLabels.lastName') }} <span class="required-mark">*</span></label>
                                         <input id="reg-lastname" name="lastName" v-model="registerForm.lastName" type="text" autocomplete="family-name" placeholder="Dela Cruz" required :aria-invalid="hasRegisterError('lastName')">
                                         <p v-if="hasRegisterError('lastName')" class="field-error">{{ registerFieldErrors.lastName }}</p>
                                     </div>
                                     <div class="input-group">
                                         <label class="checkbox-label compact-checkbox">
                                             <input type="checkbox" v-model="registerHasSuffix">
-                                            <span>May suffix?</span>
+                                            <span>{{ t('common.ui.hasSuffix') }}</span>
                                         </label>
                                         <input v-if="registerHasSuffix" id="reg-suffix" name="suffix" v-model="registerForm.suffix" type="text" placeholder="Jr., Sr., III">
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('sex')">
-                                        <label for="reg-sex">Gender <span class="required-mark">*</span></label>
+                                        <label for="reg-sex">{{ t('common.ui.gender') }} <span class="required-mark">*</span></label>
                                         <div class="custom-select">
                                             <select id="reg-sex" name="sex" v-model="registerForm.sex" required :aria-invalid="hasRegisterError('sex')">
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
+                                                <option value="male">{{ t('common.ui.male') }}</option>
+                                                <option value="female">{{ t('common.ui.female') }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
                                         <p v-if="hasRegisterError('sex')" class="field-error">{{ registerFieldErrors.sex }}</p>
                                     </div>
                                     <div :class="registerInputClass('birthDate')">
-                                        <label for="reg-birthdate">Birth Date <span class="required-mark">*</span></label>
+                                        <label for="reg-birthdate">{{ t('common.ui.birthDate') }} <span class="required-mark">*</span></label>
                                         <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required :aria-invalid="hasRegisterError('birthDate')">
                                         <p v-if="hasRegisterError('birthDate')" class="field-error">{{ registerFieldErrors.birthDate }}</p>
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="reg-civil-status">Civil Status</label>
+                                        <label for="reg-civil-status">{{ t('portal.profile.labels.civilStatus') }}</label>
                                         <div class="custom-select">
                                             <select id="reg-civil-status" v-model="registerForm.civilStatus">
-                                                <option value="single">Single</option>
-                                                <option value="married">Married</option>
-                                                <option value="widowed">Widowed</option>
-                                                <option value="separated">Separated</option>
+                                                <option value="single">{{ t('common.ui.single') }}</option>
+                                                <option value="married">{{ t('common.ui.married') }}</option>
+                                                <option value="widowed">{{ t('common.ui.widowed') }}</option>
+                                                <option value="separated">{{ t('common.ui.separated') }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
                                         </div>
                                     </div>
                                     <div class="input-group">
-                                        <label for="reg-citizenship">Citizenship</label>
-                                        <input id="reg-citizenship" v-model="registerForm.citizenship" type="text" placeholder="Filipino">
+                                        <label for="reg-citizenship">{{ t('common.ui.citizenship') }}</label>
+                                        <input id="reg-citizenship" v-model="registerForm.citizenship" type="text" :placeholder="t('language.filipino')">
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label for="reg-occupation">Occupation</label>
-                                    <input id="reg-occupation" v-model="registerForm.occupation" type="text" placeholder="Occupation">
+                                    <label for="reg-occupation">{{ t('portal.profile.labels.occupation') }}</label>
+                                    <input id="reg-occupation" v-model="registerForm.occupation" type="text" :placeholder="t('portal.profile.labels.occupation')">
                                 </div>
 
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 2</span>
-                                    <h4>Contact and Address</h4>
+                                    <span class="eyebrow">{{ t('common.ui.section2') }}</span>
+                                    <h4>{{ t('common.ui.contactAndAddress') }}</h4>
                                 </div>
                                 <div class="input-group">
-                                    <label for="reg-address">Barangay <span class="required-mark">*</span></label>
+                                    <label for="reg-address">{{ t('portal.profile.labels.barangay') }} <span class="required-mark">*</span></label>
                                     <input id="reg-address" name="address" v-model="registerForm.address" type="text" autocomplete="address-line1" readonly required>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('contactNumber')">
-                                        <label for="reg-contact">Contact Number <span class="required-mark">*</span></label>
+                                        <label for="reg-contact">{{ t('landing.formLabels.contactNumber') }} <span class="required-mark">*</span></label>
                                         <div class="phone-input-wrapper">
                                             <span class="phone-country-badge" aria-hidden="true">
                                                 <span class="phone-country-flag">🇵🇭</span>
@@ -753,17 +748,17 @@
                                         <p v-if="hasRegisterError('contactNumber')" class="field-error">{{ registerFieldErrors.contactNumber }}</p>
                                     </div>
                                     <div :class="registerInputClass('email')">
-                                        <label for="reg-email">Email Address <span class="required-mark">*</span></label>
+                                        <label for="reg-email">{{ t('common.ui.emailAddress') }} <span class="required-mark">*</span></label>
                                         <input id="reg-email" name="email" v-model="registerForm.email" type="email" autocomplete="email" placeholder="juan@example.com" required :aria-invalid="hasRegisterError('email')">
                                         <p v-if="hasRegisterError('email')" class="field-error">{{ registerFieldErrors.email }}</p>
                                     </div>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('purok')">
-                                        <label for="reg-purok">Purok <span class="required-mark">*</span></label>
+                                        <label for="reg-purok">{{ t('portal.profile.labels.purok') }} <span class="required-mark">*</span></label>
                                         <div class="custom-select">
                                             <select id="reg-purok" name="purok" v-model="registerForm.purok" required :aria-invalid="hasRegisterError('purok')">
-                                                <option value="" disabled>Select Purok</option>
+                                                <option value="" disabled>{{ t('common.ui.selectPurok') }}</option>
                                                 <option v-for="purok in purokOptions" :key="purok" :value="purok">{{ purok }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
@@ -771,10 +766,10 @@
                                         <p v-if="hasRegisterError('purok')" class="field-error">{{ registerFieldErrors.purok }}</p>
                                     </div>
                                     <div v-if="availableZoneOptions.length" :class="registerInputClass('zone')">
-                                        <label for="reg-zone">Zone <span class="required-mark">*</span></label>
+                                        <label for="reg-zone">{{ t('portal.profile.labels.zone') }} <span class="required-mark">*</span></label>
                                         <div class="custom-select">
                                             <select id="reg-zone" name="zone" v-model="registerForm.zone" required :aria-invalid="hasRegisterError('zone')">
-                                                <option value="" disabled>Select Zone</option>
+                                                <option value="" disabled>{{ t('common.ui.selectZone') }}</option>
                                                 <option v-for="zone in availableZoneOptions" :key="zone" :value="zone">{{ zone }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down"></i>
@@ -784,20 +779,20 @@
                                 </div>
 
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 3</span>
-                                    <h4>Account Information</h4>
+                                    <span class="eyebrow">{{ t('common.ui.section3') }}</span>
+                                    <h4>{{ t('portal.profile.accountInformationHeading') }}</h4>
                                 </div>
                                 <div :class="registerInputClass('username')">
-                                    <label for="reg-username">Username <span class="required-mark">*</span></label>
+                                    <label for="reg-username">{{ t('landing.auth.login.username') }} <span class="required-mark">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="fa-regular fa-user"></i>
-                                        <input id="reg-username" name="new-username" v-model="registerForm.username" type="text" autocomplete="username" placeholder="Choose a username" required :aria-invalid="hasRegisterError('username')">
+                                        <input id="reg-username" name="new-username" v-model="registerForm.username" type="text" autocomplete="username" :placeholder="t('common.ui.chooseUsername')" required :aria-invalid="hasRegisterError('username')">
                                     </div>
                                     <p v-if="hasRegisterError('username')" class="field-error">{{ registerFieldErrors.username }}</p>
                                 </div>
                                 <div class="two-col-grid">
                                     <div :class="registerInputClass('password')">
-                                        <label for="reg-password">Password <span class="required-mark">*</span></label>
+                                        <label for="reg-password">{{ t('landing.auth.login.password') }} <span class="required-mark">*</span></label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
                                             <input id="reg-password" name="new-password" v-model="registerForm.password" :type="passwordVisibility.register ? 'text' : 'password'" autocomplete="off" placeholder="Min. 8 characters" minlength="8" required :aria-invalid="hasRegisterError('password')">
@@ -813,10 +808,10 @@
                                         <p v-if="hasRegisterError('password')" class="field-error">{{ registerFieldErrors.password }}</p>
                                     </div>
                                     <div :class="registerInputClass('confirmPassword')">
-                                        <label for="reg-confirm">Confirm Password <span class="required-mark">*</span></label>
+                                        <label for="reg-confirm">{{ t('common.confirmPassword') }} <span class="required-mark">*</span></label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
-                                            <input id="reg-confirm" name="confirm-password" v-model="registerForm.confirmPassword" :type="passwordVisibility.registerConfirm ? 'text' : 'password'" autocomplete="off" placeholder="Repeat password" minlength="8" required :aria-invalid="hasRegisterError('confirmPassword')">
+                                            <input id="reg-confirm" name="confirm-password" v-model="registerForm.confirmPassword" :type="passwordVisibility.registerConfirm ? 'text' : 'password'" autocomplete="off" :placeholder="t('common.ui.repeatPassword')" minlength="8" required :aria-invalid="hasRegisterError('confirmPassword')">
                                             <button
                                                 type="button"
                                                 class="password-toggle-btn"
@@ -829,7 +824,7 @@
                                         <p v-if="hasRegisterError('confirmPassword')" class="field-error">{{ registerFieldErrors.confirmPassword }}</p>
                                     </div>
                                     <div class="password-rules" aria-live="polite">
-                                        <p class="password-rules-title">Password must include:</p>
+                                        <p class="password-rules-title">{{ t('common.passwordMustInclude') }}</p>
                                         <ul class="password-rules-list">
                                             <li
                                                 v-for="rule in registerPasswordRules"
@@ -843,14 +838,14 @@
                                     </div>
                                 </div>
                                 <div class="section-head compact-head">
-                                    <span class="eyebrow">Section 5</span>
-                                    <h4>Verification Documents</h4>
+                                    <span class="eyebrow">{{ t('common.ui.section5') }}</span>
+                                    <h4>{{ t('common.ui.verificationDocuments') }}</h4>
                                 </div>
                                 <div :class="['input-group', 'file-upload-group', { 'has-error': hasRegisterError('proofOfResidency') }]">
-                                    <label for="reg-proof">Proof of Residency (Valid ID / Doc) <span class="required-mark">*</span></label>
+                                    <label for="reg-proof">{{ t('common.ui.proofOfResidencyDocument') }} <span class="required-mark">*</span></label>
                                     <div class="file-upload-wrapper">
                                         <input id="reg-proof" name="proofOfResidency" type="file" @change="handleFileUpload" accept="image/*,application/pdf" required class="file-input">
-                                        <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Choose File</div>
+                                        <div class="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> {{ t('common.ui.chooseFile') }}</div>
                                         <span class="file-name">{{ proofOfResidencyFile ? proofOfResidencyFile.name : 'No file chosen' }}</span>
                                     </div>
                                     <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
@@ -862,32 +857,32 @@
                                     <p v-if="hasRegisterError('recaptcha')" class="field-error">{{ registerFieldErrors.recaptcha }}</p>
                                 </div>
                                 <div class="legal-text">
-                                    Protected by reCAPTCHA and subject to the Google 
-                                    <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a> and 
-                                    <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a>.
+                                    {{ t('common.ui.protectedByRecaptcha') }}
+                                    <a href="https://policies.google.com/privacy" target="_blank">{{ t('landing.privacy.title') }}</a> {{ t('common.ui.and') }}
+                                    <a href="https://policies.google.com/terms" target="_blank">{{ t('common.ui.termsOfService') }}</a>.
                                 </div>
                                 
                                 <div class="input-group">
                                     <label class="checkbox-label privacy-consent-label">
                                         <input type="checkbox" v-model="registerForm.agreePrivacy">
-                                        <span>{{ texts.landing.auth.register.privacy }} <a href="#" @click.prevent="showPrivacy(activeModal)">Privacy Policy</a></span>
+                                        <span>{{ t('landing.auth.register.privacy') }} <a href="#" @click.prevent="showPrivacy(activeModal)">{{ t('landing.privacy.title') }}</a></span>
                                     </label>
                                 </div>
 
                                 <button type="submit" class="auth-submit-btn" :disabled="isRegisterLoading || !registerForm.agreePrivacy">
-                                    {{ isRegisterLoading ? texts.landing.auth.register.submitting : texts.landing.auth.register.submit }} <i :class="isRegisterLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-user-plus'"></i>
+                                    {{ isRegisterLoading ? t('landing.auth.register.submitting') : t('landing.auth.register.submit') }} <i :class="isRegisterLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-user-plus'"></i>
                                 </button>
                             </form>
 
                             <!-- OTP Form -->
                             <form v-else-if="activeModal === 'otp'" class="modern-form otp-form" @submit.prevent="handleVerifyOtp">
-                                <p class="otp-instruction">We've sent a 6-digit verification code to your email. Check your inbox (or spam folder).</p>
+                                <p class="otp-instruction">{{ t('landing.auth.otp.instruction') }}</p>
                                 <div class="input-group">
-                                    <label for="otp-email">Email Address</label>
+                                    <label for="otp-email">{{ t('common.ui.emailAddress') }}</label>
                                     <input id="otp-email" name="email" v-model="otpForm.email" type="email" autocomplete="email" required placeholder="juan@example.com">
                                 </div>
                                 <div class="input-group">
-                                    <label for="otp-code">6-Digit OTP Code</label>
+                                    <label for="otp-code">{{ t('common.ui.otpCode') }}</label>
                                     <input id="otp-code" name="otp" v-model="otpForm.code" type="text" autocomplete="one-time-code" required maxlength="6" class="otp-input" placeholder="• • • • • •">
                                 </div>
                                 <button type="submit" class="auth-submit-btn" :disabled="isOtpLoading">
@@ -897,40 +892,40 @@
                                     {{ isResendOtpLoading ? 'Resending...' : 'Resend OTP' }}
                                 </button>
                                 <button type="button" class="auth-secondary-btn" @click="activeModal = 'login'" :disabled="isOtpLoading">
-                                    Cancel & Go to Login
+                                    {{ t('landing.auth.otp.cancel') }}
                                 </button>
                             </form>
 
                             <form v-else-if="activeModal === 'forgot-password'" class="modern-form" @submit.prevent="handleForgotPassword">
                                 <p class="otp-instruction">
-                                    Enter the email address linked to your account. We will send a reset link if it exists.
+                                    {{ t('landing.auth.forgot.instruction') }}
                                 </p>
                                 <div class="input-group">
-                                    <label for="forgot-email">Email Address</label>
+                                    <label for="forgot-email">{{ t('common.ui.emailAddress') }}</label>
                                     <input id="forgot-email" name="email" v-model="forgotPasswordForm.email" type="email" autocomplete="email" required placeholder="juan@example.com">
                                 </div>
                                 <button type="submit" class="auth-submit-btn">
                                     {{ forgotPasswordLoading ? 'Sending...' : 'Send Reset Link' }} <i class="fa-solid fa-paper-plane"></i>
                                 </button>
                                 <button type="button" class="auth-secondary-btn" @click="activeModal = 'login'" :disabled="forgotPasswordLoading">
-                                    Back to Login
+                                    {{ t('admin.emailConfirm.back') }}
                                 </button>
                             </form>
 
                             <form v-else-if="activeModal === 'reset-password'" class="modern-form" @submit.prevent="handleResetPassword">
                                 <p class="otp-instruction">
-                                    Set a new password for your account. The reset link expires after 30 minutes.
+                                    {{ t('common.ui.resetPasswordHelp') }}
                                 </p>
                                 <div class="input-group">
-                                    <label for="reset-email">Email Address</label>
+                                    <label for="reset-email">{{ t('common.ui.emailAddress') }}</label>
                                     <input id="reset-email" name="email" v-model="resetPasswordForm.email" type="email" autocomplete="email" required placeholder="juan@example.com">
                                 </div>
                                 <div class="two-col-grid">
                                     <div class="input-group">
-                                        <label for="reset-password">New Password</label>
+                                        <label for="reset-password">{{ t('common.newPassword') }}</label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
-                                            <input id="reset-password" name="password" v-model="resetPasswordForm.password" :type="passwordVisibility.reset ? 'text' : 'password'" autocomplete="off" placeholder="New password" minlength="8" required>
+                                            <input id="reset-password" name="password" v-model="resetPasswordForm.password" :type="passwordVisibility.reset ? 'text' : 'password'" autocomplete="off" :placeholder="t('common.ui.newPassword')" minlength="8" required>
                                             <button
                                                 type="button"
                                                 class="password-toggle-btn"
@@ -942,10 +937,10 @@
                                         </div>
                                     </div>
                                     <div class="input-group">
-                                        <label for="reset-confirm">Confirm Password</label>
+                                        <label for="reset-confirm">{{ t('common.confirmPassword') }}</label>
                                         <div class="input-wrapper has-toggle">
                                             <i class="fa-solid fa-lock"></i>
-                                            <input id="reset-confirm" name="confirm-password" v-model="resetPasswordForm.confirmPassword" :type="passwordVisibility.resetConfirm ? 'text' : 'password'" autocomplete="off" placeholder="Repeat password" minlength="8" required>
+                                            <input id="reset-confirm" name="confirm-password" v-model="resetPasswordForm.confirmPassword" :type="passwordVisibility.resetConfirm ? 'text' : 'password'" autocomplete="off" :placeholder="t('common.ui.repeatPassword')" minlength="8" required>
                                             <button
                                                 type="button"
                                                 class="password-toggle-btn"
@@ -958,7 +953,7 @@
                                     </div>
                                 </div>
                                 <div class="password-rules" aria-live="polite">
-                                    <p class="password-rules-title">Password must include:</p>
+                                    <p class="password-rules-title">{{ t('common.passwordMustInclude') }}</p>
                                     <ul class="password-rules-list">
                                         <li
                                             v-for="rule in resetPasswordRules"
@@ -974,7 +969,7 @@
                                     {{ resetPasswordLoading ? 'Updating...' : 'Update Password' }} <i class="fa-solid fa-key"></i>
                                 </button>
                                 <button type="button" class="auth-secondary-btn" @click="activeModal = 'login'" :disabled="resetPasswordLoading">
-                                    Back to Login
+                                    {{ t('admin.emailConfirm.back') }}
                                 </button>
                             </form>
 
@@ -983,21 +978,21 @@
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
                                 <p class="otp-instruction">
-                                    Thank you! Your email is verified. Please wait for <strong>Barangay Administrator approval</strong> before you can log in.
+                                    <span v-html="t('landing.auth.pending.verifiedMessage')"></span>
                                 </p>
                                 <div class="pending-info-card">
-                                    <p><i class="fa-solid fa-info-circle"></i> Your registration is now under review by the barangay admin.</p>
-                                    <p><i class="fa-solid fa-envelope"></i> We will notify you by email once your account has been approved.</p>
+                                    <p><i class="fa-solid fa-info-circle"></i> {{ t('common.ui.registrationReview') }}</p>
+                                    <p><i class="fa-solid fa-envelope"></i> {{ t('common.ui.approvalEmailNotice') }}</p>
                                 </div>
                                 <button type="button" class="auth-submit-btn" @click="closeModal">
-                                    Back to Homepage <i class="fa-solid fa-house"></i>
+                                    {{ t('common.ui.backToHomepage') }} <i class="fa-solid fa-house"></i>
                                 </button>
                             </div>
 
                             <!-- Privacy Policy Modal -->
                             <div v-else-if="activeModal === 'privacy'" class="modern-form privacy-policy-view">
                                 <div class="privacy-header">
-                                    <h2>Privacy Policy</h2>
+                                    <h2>{{ t('landing.privacy.title') }}</h2>
                                     <button type="button" class="privacy-close-btn" @click="closeModal">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
@@ -1005,55 +1000,55 @@
 
                                 <div class="privacy-content">
                                     <section class="privacy-section">
-                                        <h3>1. Introduction</h3>
-                                        <p>Barangay Irawan is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Barangay Management System.</p>
+                                        <h3>{{ t('landing.privacy.sections.introduction.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.introduction.copy') }}</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>2. Information We Collect</h3>
-                                        <p>We may collect information about you in a variety of ways. The information we may collect on the site includes:</p>
+                                        <h3>{{ t('landing.privacy.sections.informationWeCollect.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.informationWeCollect.copy') }}</p>
                                         <ul>
-                                            <li><strong>Personal Data:</strong> Name, email address, phone number, address, birth date, and identification documents.</li>
+                                            <li><strong>{{ t('common.ui.personalData') }}</strong> {{ t('common.ui.personalDataList') }}</li>
                                         </ul>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>3. How We Use Your Information</h3>
-                                        <p>The information we collect is used for the following purposes:</p>
+                                        <h3>{{ t('landing.privacy.sections.howWeUse.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.howWeUse.copy') }}</p>
                                         <ul>
-                                            <li>Processing document requests and applications.</li>
-                                            <li>Managing appointments and facility reservations.</li>
-                                            <li>Handling incident reports and complaints.</li>
-                                            <li>Communicating barangay announcements and updates.</li>
-                                            <li>Improving and personalizing your experience.</li>
-                                            <li>Complying with legal obligations.</li>
+                                            <li>{{ t('common.ui.processDocuments') }}</li>
+                                            <li>{{ t('common.ui.manageBookings') }}</li>
+                                            <li>{{ t('common.ui.handleReports') }}</li>
+                                            <li>{{ t('common.ui.communicateUpdates') }}</li>
+                                            <li>{{ t('common.ui.improveExperience') }}</li>
+                                            <li>{{ t('common.ui.legalCompliance') }}</li>
                                         </ul>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>4. Data Protection &amp; Security</h3>
-                                        <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the Internet is 100% secure.</p>
+                                        <h3>{{ t('common.ui.dataProtectionHeading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.security.copy') }}</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>5. Your Rights</h3>
-                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangayirawan@gmail.com</strong> to exercise these rights.</p>
+                                        <h3>{{ t('landing.privacy.sections.yourRights.heading') }}</h3>
+                                        <p>{{ t('common.ui.rightsLead') }} <strong>barangayirawan@gmail.com</strong> {{ t('common.ui.exerciseRights') }}</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>6. Contact Us</h3>
-                                        <p>If you have questions about this Privacy Policy or our privacy practices, please contact us at:</p>
-                                        <p><strong>Barangay Irawan</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
+                                        <h3>{{ t('landing.privacy.sections.contactUs.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.contactUs.copy') }}</p>
+                                        <p><strong>{{ t('common.barangayName') }}</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
                                     </section>
 
                                     <section class="privacy-section privacy-last">
-                                        <p class="privacy-updated">Last Updated: May 2026</p>
+                                        <p class="privacy-updated">{{ t('landing.privacy.lastUpdated') }}</p>
                                     </section>
                                 </div>
 
                                 <div class="privacy-footer">
                                     <button type="button" class="auth-submit-btn" @click="openModal('register')">
-                                        I Understand <i class="fa-solid fa-check"></i>
+                                        {{ t('landing.privacy.iUnderstand') }} <i class="fa-solid fa-check"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1061,60 +1056,60 @@
                             <!-- Privacy Overlay (preserve underlying modal DOM) -->
                             <div v-if="privacyOverlay" class="modern-form privacy-policy-view privacy-overlay">
                                 <div class="privacy-header">
-                                    <h2>Privacy Policy</h2>
+                                    <h2>{{ t('landing.privacy.title') }}</h2>
                                 </div>
 
                                 <div class="privacy-content">
                                     <section class="privacy-section">
-                                        <h3>1. Introduction</h3>
+                                        <h3>{{ t('landing.privacy.sections.introduction.heading') }}</h3>
                                         <p>Barangay Irawan ("we," "us," "our," or "the Barangay") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Barangay Management System.</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>2. Information We Collect</h3>
-                                        <p>We may collect information about you in a variety of ways. The information we may collect on the site includes:</p>
+                                        <h3>{{ t('landing.privacy.sections.informationWeCollect.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.informationWeCollect.copy') }}</p>
                                         <ul>
-                                            <li><strong>Personal Data:</strong> Name, email address, phone number, address, birth date, and identification documents.</li>
+                                            <li><strong>{{ t('common.ui.personalData') }}</strong> {{ t('common.ui.personalDataList') }}</li>
                                         </ul>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>3. How We Use Your Information</h3>
-                                        <p>The information we collect is used for the following purposes:</p>
+                                        <h3>{{ t('landing.privacy.sections.howWeUse.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.howWeUse.copy') }}</p>
                                         <ul>
-                                            <li>Processing document requests and applications.</li>
-                                            <li>Managing appointments and facility reservations.</li>
-                                            <li>Handling incident reports and complaints.</li>
-                                            <li>Communicating barangay announcements and updates.</li>
-                                            <li>Improving and personalizing your experience.</li>
-                                            <li>Complying with legal obligations.</li>
+                                            <li>{{ t('common.ui.processDocuments') }}</li>
+                                            <li>{{ t('common.ui.manageBookings') }}</li>
+                                            <li>{{ t('common.ui.handleReports') }}</li>
+                                            <li>{{ t('common.ui.communicateUpdates') }}</li>
+                                            <li>{{ t('common.ui.improveExperience') }}</li>
+                                            <li>{{ t('common.ui.legalCompliance') }}</li>
                                         </ul>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>4. Data Protection &amp; Security</h3>
-                                        <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the Internet is 100% secure.</p>
+                                        <h3>{{ t('common.ui.dataProtectionHeading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.security.copy') }}</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>5. Your Rights</h3>
-                                        <p>You have the right to access, correct, update, or request deletion of your personal information. Contact us at <strong>barangayirawan@gmail.com</strong> to exercise these rights.</p>
+                                        <h3>{{ t('landing.privacy.sections.yourRights.heading') }}</h3>
+                                        <p>{{ t('common.ui.rightsLead') }} <strong>barangayirawan@gmail.com</strong> {{ t('common.ui.exerciseRights') }}</p>
                                     </section>
 
                                     <section class="privacy-section">
-                                        <h3>6. Contact Us</h3>
-                                        <p>If you have questions about this Privacy Policy or our privacy practices, please contact us at:</p>
-                                        <p><strong>Barangay Irawan</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
+                                        <h3>{{ t('landing.privacy.sections.contactUs.heading') }}</h3>
+                                        <p>{{ t('landing.privacy.sections.contactUs.copy') }}</p>
+                                        <p><strong>{{ t('common.barangayName') }}</strong><br>Email: barangayirawan@gmail.com<br>Phone: +63 963 106 4569</p>
                                     </section>
 
                                     <section class="privacy-section privacy-last">
-                                        <p class="privacy-updated">Last Updated: May 2026</p>
+                                        <p class="privacy-updated">{{ t('landing.privacy.lastUpdated') }}</p>
                                     </section>
                                 </div>
 
                                 <div class="privacy-footer">
                                     <button type="button" class="auth-submit-btn" @click.prevent="hidePrivacyOverlay">
-                                        I Understand <i class="fa-solid fa-check"></i>
+                                        {{ t('landing.privacy.iUnderstand') }} <i class="fa-solid fa-check"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1128,7 +1123,9 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BrandMark from '@/components/BrandMark.vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import AnnouncementSlideshow from '@/components/AnnouncementSlideshow.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch } from '@/shared/client';
@@ -1182,6 +1179,8 @@ const limitGuestIncidentDateToToday = () => {
         setStatus('Date cannot be in the future.', true);
     }
 };
+
+const { t } = useI18n();
 
 // Local state
 const activeModal = ref('');

@@ -5,10 +5,8 @@ if (typeof globalThis.__setBootStatus === 'function') {
 
 import { createApp } from 'vue';
 import LandingApp from './pages/LandingApp.vue';
-import i18n from './i18n';
-import { useTheme } from './composables/useTheme';
+import i18n from './i18n.js';
 import './styles.css';
-import './theme.css';
 
 const reportError = (message, error = '') => {
     console.error(`[main-landing.js] ${message}`, error);
@@ -27,14 +25,9 @@ function initApp() {
             throw new Error('#app element not found in DOM');
         }
 
-        // Initialize theme
-        useTheme();
-
         const app = createApp(LandingApp);
-        
-        // Use i18n
         app.use(i18n);
-        
+
         app.mount('#app');
         globalThis.__APP_MOUNTED = true;
 

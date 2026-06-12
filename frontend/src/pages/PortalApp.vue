@@ -1,7 +1,8 @@
 <template>
+    <LanguageSwitcher floating />
     <div v-if="initializing" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; flex-direction: column;">
         <div style="width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-        <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">Initializing portal...</p>
+        <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">{{ t('portal.initializing') }}</p>
         <style>
             @keyframes spin { to { transform: rotate(360deg); } }
         </style>
@@ -11,7 +12,7 @@
             <button
                 class="resident-sidebar-toggle"
                 type="button"
-                :aria-label="sidebarOpen ? 'Close sidebar' : 'Open sidebar'"
+                :aria-label="sidebarOpen ? t('common.closeSidebar') : t('common.openSidebar')"
                 @click="sidebarOpen = !sidebarOpen"
             >
                 <i class="fa-solid fa-bars"></i>
@@ -19,31 +20,31 @@
 
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <BrandMark initials="BI" eyebrow="Resident Portal" title="Barangay Irawan" />
+                <BrandMark initials="BI" eyebrow="Resident Portal" :title="t('common.barangayName')" />
             </div>
 
             <!-- Sidebar Navigation -->
-            <nav class="sidebar-nav">
-                <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">{{ texts.nav.appointments }}</span></button>
+                <nav class="sidebar-nav">
+                <button :class="{ active: currentView === 'appointments' }" type="button" :title="t('portal.nav.appointments')" :aria-label="t('portal.nav.appointments')" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span class="nav-label">{{ t('portal.nav.appointments') }}</span></button>
 
-                <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">{{ texts.nav.documents }}</span></button>
-                <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">{{ texts.nav.reservations }}</span></button>
-                <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span class="nav-label">{{ texts.nav.manpower }}</span></button>
-                <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ texts.nav.reports }}</span></button>
-                <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ texts.nav.disaster }}</span></button>
-                <button :class="{ active: currentView === 'health' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span class="nav-label">Health Center</span></button>
-                <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.nav.profile" :aria-label="texts.nav.profile" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ texts.nav.profile }}</span></button>
+                <button :class="{ active: currentView === 'documents' }" type="button" :title="t('portal.nav.documents')" :aria-label="t('portal.nav.documents')" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span class="nav-label">{{ t('portal.nav.documents') }}</span></button>
+                <button :class="{ active: currentView === 'reservations' }" type="button" :title="t('portal.nav.reservations')" :aria-label="t('portal.nav.reservations')" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span class="nav-label">{{ t('portal.nav.reservations') }}</span></button>
+                <button :class="{ active: currentView === 'manpower' }" type="button" :title="t('portal.nav.manpower')" :aria-label="t('portal.nav.manpower')" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span class="nav-label">{{ t('portal.nav.manpower') }}</span></button>
+                <button :class="{ active: currentView === 'reports' }" type="button" :title="t('portal.nav.reports')" :aria-label="t('portal.nav.reports')" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span class="nav-label">{{ t('portal.nav.reports') }}</span></button>
+                <button :class="{ active: currentView === 'disaster' }" type="button" :title="t('portal.nav.disaster')" :aria-label="t('portal.nav.disaster')" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span class="nav-label">{{ t('portal.nav.disaster') }}</span></button>
+                <button :class="{ active: currentView === 'health' }" type="button" :title="t('portal.health.headerTitle')" :aria-label="t('portal.health.headerTitle')" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span class="nav-label">{{ t('portal.health.headerTitle') }}</span></button>
+                <button :class="{ active: currentView === 'profile' }" type="button" :title="t('portal.nav.profile')" :aria-label="t('portal.nav.profile')" @click="setResidentView('profile')"><i class="fa-solid fa-user"></i><span class="nav-label">{{ t('portal.nav.profile') }}</span></button>
             </nav>
 
             <!-- Sidebar Footer -->
             <div class="sidebar-footer">
-                <span class="footer-eyebrow">Logged In As</span>
+                <span class="footer-eyebrow">{{ t('common.loggedInAs') }}</span>
                 <div class="user-info" v-if="user">
                     <strong class="user-name">{{ user.username }}</strong>
                     <div class="user-email">{{ user.email }}</div>
                 </div>
-                <div v-else class="fine-print">Checking session...</div>
-                <button type="button" class="logout-btn" title="Log Out" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i><span class="nav-label">Log Out</span></button>
+                <div v-else class="fine-print">{{ t('common.checkingSession') }}</div>
+                <button type="button" class="logout-btn" title="{{ t('common.logOut') }}" @click="confirmLogout"><i class="fa-solid fa-right-from-bracket"></i><span class="nav-label">{{ t('common.logOut') }}</span></button>
             </div>
         </aside>
 
@@ -52,19 +53,19 @@
         <main class="app-main">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = !sidebarOpen"><i class="fa-solid fa-bars"></i></button>
-                <nav class="mobile-quick-nav" aria-label="Resident quick navigation">
-                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="texts.nav.appointments" :aria-label="texts.nav.appointments" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
-                    <button :class="{ active: currentView === 'documents' }" type="button" :title="texts.nav.documents" :aria-label="texts.nav.documents" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span>{{ texts.nav.documents }}</span></button>
-                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="texts.nav.reservations" :aria-label="texts.nav.reservations" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span>Facility</span></button>
-                    <button :class="{ active: currentView === 'manpower' }" type="button" :title="texts.nav.manpower" :aria-label="texts.nav.manpower" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
-                    <button :class="{ active: currentView === 'reports' }" type="button" :title="texts.nav.reports" :aria-label="texts.nav.reports" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ texts.nav.reports }}</span></button>
-                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="texts.nav.disaster" :aria-label="texts.nav.disaster" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
-                    <button :class="{ active: currentView === 'health' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span>Health</span></button>
+                <nav class="mobile-quick-nav" :aria-label="t('common.residentQuickNavigation')">
+                    <button :class="{ active: currentView === 'appointments' }" type="button" :title="t('portal.nav.appointments')" :aria-label="t('portal.nav.appointments')" @click="setResidentView('appointments')"><i class="fa-solid fa-calendar-check"></i><span>{{ t('portal.nav.appointments') }}</span></button>
+                    <button :class="{ active: currentView === 'documents' }" type="button" :title="t('portal.nav.documents')" :aria-label="t('portal.nav.documents')" @click="setResidentView('documents')"><i class="fa-solid fa-file"></i><span>{{ t('portal.nav.documents') }}</span></button>
+                    <button :class="{ active: currentView === 'reservations' }" type="button" :title="t('portal.nav.reservations')" :aria-label="t('portal.nav.reservations')" @click="setResidentView('reservations')"><i class="fa-solid fa-building"></i><span>{{ t('portal.nav.reservations') }}</span></button>
+                    <button :class="{ active: currentView === 'manpower' }" type="button" :title="t('portal.nav.manpower')" :aria-label="t('portal.nav.manpower')" @click="setResidentView('manpower')"><i class="fa-solid fa-people-group"></i><span>{{ t('portal.nav.manpower') }}</span></button>
+                    <button :class="{ active: currentView === 'reports' }" type="button" :title="t('portal.nav.reports')" :aria-label="t('portal.nav.reports')" @click="setResidentView('reports')"><i class="fa-solid fa-flag"></i><span>{{ t('portal.nav.reports') }}</span></button>
+                    <button :class="{ active: currentView === 'disaster' }" type="button" :title="t('portal.nav.disaster')" :aria-label="t('portal.nav.disaster')" @click="setResidentView('disaster')"><i class="fa-solid fa-house-flood-water"></i><span>{{ t('portal.nav.disaster') }}</span></button>
+                    <button :class="{ active: currentView === 'health' }" type="button" :title="t('portal.health.headerTitle')" :aria-label="t('portal.health.headerTitle')" @click="setResidentView('health')"><i class="fa-solid fa-heart-pulse"></i><span>{{ t('portal.health.headerTitle') }}</span></button>
                 </nav>
             </header>
             <section class="hero-banner">
                 <div>
-                    <span class="eyebrow">Resident Workspace</span>
+                    <span class="eyebrow">{{ t('common.residentWorkspace') }}</span>
                     <h2>{{ viewTitle }}</h2>
                 </div>
             </section>
@@ -75,15 +76,15 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">Health Center</span>
-                                <h3>Health events & queues</h3>
+                                <span class="eyebrow">{{ t('common.healthCenter') }}</span>
+                                <h3>{{ t('common.healthEventsQueues') }}</h3>
                             </div>
                         </div>
 
-                        <div v-if="healthLoading" style="padding:24px; text-align:center; color:#666;">Loading events…</div>
+                        <div v-if="healthLoading" style="padding:24px; text-align:center; color:#666;">{{ t('common.loadingEvents') }}</div>
 
                         <div v-else>
-                            <div v-if="!healthEvents.length" class="portal-empty-cell" style="padding:24px; text-align:center;">No health events available.</div>
+                            <div v-if="!healthEvents.length" class="portal-empty-cell" style="padding:24px; text-align:center;">{{ t('common.noHealthEvents') }}</div>
                             <div class="health-events-list" style="display:grid; gap:12px;">
                                 <div v-for="event in healthEvents" :key="event._id" class="health-event-card" style="border:1px solid #e6ece8; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                                     <div>
@@ -92,7 +93,7 @@
                                         <div style="margin-top:6px;"><StatusBadge :status="event.status" /></div>
                                     </div>
                                     <div style="display:flex; gap:8px; align-items:center;">
-                                        <button class="ghost-button" @click="viewHealthQueue(event)">View Queue</button>
+                                        <button class="ghost-button" @click="viewHealthQueue(event)">{{ t('common.viewQueue') }}</button>
                                         <button class="primary-button" :disabled="!event.isQueueOpen || joinLoading" @click="joinHealthQueue(event)">{{ joinLoading ? 'Joining...' : (event.isQueueOpen ? 'Join Queue' : 'Closed') }}</button>
                                     </div>
                                 </div>
@@ -102,28 +103,28 @@
                                 <h4>Queue for: {{ selectedHealthEvent.title }}</h4>
                                 <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:12px;">
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
-                                        <div class="fine-print">Now serving</div>
+                                        <div class="fine-print">{{ t('common.nowServing') }}</div>
                                         <strong>{{ healthQueueSummary.current?.queueCode || selectedHealthEvent.currentServing || 'None' }}</strong>
                                     </div>
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
-                                        <div class="fine-print">Next</div>
+                                        <div class="fine-print">{{ t('common.next') }}</div>
                                         <strong>{{ healthQueueSummary.next?.queueCode || 'None' }}</strong>
                                     </div>
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
-                                        <div class="fine-print">Waiting</div>
+                                        <div class="fine-print">{{ t('common.waiting') }}</div>
                                         <strong>{{ healthQueueSummary.waiting || 0 }}</strong>
                                     </div>
                                 </div>
                                 <div v-if="myHealthQueueEntry" style="margin-bottom:12px; border:1px solid #9ad3b2; background:#f3fbf6; border-radius:8px; padding:10px;">
-                                    <div class="fine-print">Your number</div>
+                                    <div class="fine-print">{{ t('common.yourNumber') }}</div>
                                     <strong>{{ myHealthQueueEntry.queueCode }}</strong>
                                     <span style="margin-left:8px;"><StatusBadge :status="myHealthQueueEntry.status" /></span>
                                 </div>
                                 <div class="portal-table-wrap">
                                     <table class="data-table portal-record-table">
-                                        <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Status</th></tr></thead>
+                                        <thead><tr><th>{{ t('common.code') }}</th><th>{{ t('common.name') }}</th><th>{{ t('common.contact') }}</th><th>{{ t('common.status') }}</th></tr></thead>
                                         <tbody>
-                                            <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">No queue entries yet.</td></tr>
+                                            <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">{{ t('portal.health.noQueueEntries') }}</td></tr>
                                             <tr v-for="q in healthQueue" :key="q._id" :style="isMyHealthQueueEntry(q) ? 'background:#f3fbf6;' : ''">
                                                 <td>{{ q.queueCode }}</td>
                                                 <td>{{ q.firstName }} {{ q.lastName }}</td>
@@ -146,17 +147,17 @@
                 <div class="portal-grid">
                     <article class="content-card profile-card">
                         <div class="profile-hero">
-                            <button type="button" class="profile-avatar-preview profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Upload profile picture">
-                                <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar" :style="profileAvatarImageStyle" />
+                            <button type="button" class="profile-avatar-preview profile-avatar-preview--action" @click="openProfileImagePicker" :aria-label="t('portal.profile.uploadProfilePicture')">
+                                <img v-if="profileAvatarSrc" :src="profileAvatarSrc" :alt="t('portal.profile.profileAvatar')" :style="profileAvatarImageStyle" />
                                 <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
                                 <span class="profile-avatar-edit-badge" aria-hidden="true">
                                     <i class="fa-solid fa-pen"></i>
                                 </span>
                             </button>
-                            <div class="profile-identity">
-                                <span class="eyebrow">{{ texts.profile.eyebrow }}</span>
+                                <div class="profile-identity">
+                                <span class="eyebrow">{{ t('portal.profile.eyebrow') }}</span>
                                 <h3>{{ displayName }}</h3>
-                                <p class="profile-email">{{ profile.email || user?.email || 'No email on file' }}</p>
+                                <p class="profile-email">{{ profile.email || user?.email || t('common.noEmailOnFile') }}</p>
                             </div>
                         </div>
 
@@ -164,7 +165,7 @@
                             <section class="profile-panel">
                                 <div class="section-head profile-panel-head">
                                     <div>
-                                        <h4>Account Information</h4>
+                                        <h4>{{ t('portal.profile.accountInformationHeading') }}</h4>
                                     </div>
                                     <button type="button" class="ghost-button" @click="toggleProfileEdit">{{ isEditingProfile ? 'Cancel Edit' : 'Edit Profile' }}</button>
                                 </div>
@@ -172,19 +173,19 @@
                                 <template v-if="!isEditingProfile">
                                     <dl class="profile-info-list">
                                         <div class="profile-info-item">
-                                            <dt>Birthday</dt>
+                                            <dt>{{ t('portal.profile.labels.birthday') }}</dt>
                                             <dd>{{ formatDate(profile.birthDate) }}</dd>
                                         </div>
                                         <div class="profile-info-item">
-                                            <dt>Contact Number</dt>
+                                            <dt>{{ t('landing.formLabels.contactNumber') }}</dt>
                                             <dd>{{ profile.contactNumber || 'N/A' }}</dd>
                                         </div>
                                         <div class="profile-info-item">
-                                            <dt>Civil Status</dt>
+                                            <dt>{{ t('portal.profile.labels.civilStatus') }}</dt>
                                             <dd>{{ normalizeLabel(profile.civilStatus) }}</dd>
                                         </div>
                                         <div class="profile-info-item">
-                                            <dt>Barangay</dt>
+                                            <dt>{{ t('portal.profile.labels.barangay') }}</dt>
                                             <dd>{{ profile.address || 'N/A' }}</dd>
                                         </div>
                                         <div class="profile-info-item">
@@ -192,7 +193,7 @@
                                             <dd>{{ profilePurokZoneLabel }}</dd>
                                         </div>
                                         <div class="profile-info-item">
-                                            <dt>Occupation</dt>
+                                            <dt>{{ t('portal.profile.labels.occupation') }}</dt>
                                             <dd>{{ profile.occupation || 'N/A' }}</dd>
                                         </div>
                                     </dl>
@@ -200,15 +201,15 @@
 
                                 <form v-else class="stack profile-edit-form" @submit.prevent="handleSaveProfile">
                                     <div class="form-span-2 profile-image-field">
-                                        <button type="button" class="profile-avatar-preview profile-avatar-preview--edit profile-avatar-preview--action" @click="openProfileImagePicker" aria-label="Change profile picture">
-                                            <img v-if="profileAvatarSrc" :src="profileAvatarSrc" alt="Profile avatar preview" :style="profileAvatarImageStyle" />
+                                        <button type="button" class="profile-avatar-preview profile-avatar-preview--edit profile-avatar-preview--action" @click="openProfileImagePicker" :aria-label="t('common.ui.changeProfilePicture')">
+                                            <img v-if="profileAvatarSrc" :src="profileAvatarSrc" :alt="t('portal.profile.profileAvatarPreview')" :style="profileAvatarImageStyle" />
                                             <div v-else class="avatar-placeholder">{{ getInitials(profile) }}</div>
                                             <span class="profile-avatar-edit-badge" aria-hidden="true">
                                                 <i class="fa-solid fa-pen"></i>
                                             </span>
                                         </button>
                                         <input ref="profileImageInput" class="profile-image-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" @change="handleProfileImageChange">
-                                        <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">Choose Photo</button>
+                                        <button type="button" class="ghost-button profile-image-upload-button" @click="openProfileImagePicker">{{ t('portal.profile.buttons.choosePhoto') }}</button>
                                         <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                         <div v-if="profileCropSourceUrl" class="profile-crop-tool">
                                             <div
@@ -227,31 +228,31 @@
                                                 <img :src="profileCropSourceUrl" alt="Profile crop preview" :style="profileCropImageStyle" draggable="false">
                                                 <div class="profile-crop-overlay" aria-hidden="true"></div>
                                             </div>
-                                            <small class="profile-password-note">Drag the photo until the circle covers the part you want to keep.</small>
+                                            <small class="profile-password-note">{{ t('common.ui.cropPhotoHelp') }}</small>
                                         </div>
                                     </div>
                                     <div class="form-grid two-column profile-name-grid">
                                         <label>
-                                            <span>{{ texts.profile.labels.firstName }}</span>
+                                            <span>{{ t('portal.profile.labels.firstName') }}</span>
                                             <input v-model="profile.firstName" type="text" required>
                                         </label>
                                         <label>
-                                            <span>{{ texts.profile.labels.middleName }}</span>
-                                            <input v-model="profile.middleName" type="text" placeholder="Middle name">
+                                            <span>{{ t('portal.profile.labels.middleName') }}</span>
+                                            <input v-model="profile.middleName" type="text" :placeholder="t('common.ui.middleName')">
                                         </label>
                                         <label>
-                                            <span>{{ texts.profile.labels.lastName }}</span>
+                                            <span>{{ t('portal.profile.labels.lastName') }}</span>
                                             <input v-model="profile.lastName" type="text" required>
                                         </label>
                                         <label>
-                                            <span>{{ texts.profile.labels.suffix }}</span>
+                                            <span>{{ t('portal.profile.labels.suffix') }}</span>
                                             <input v-model="profile.suffix" type="text" placeholder="Jr., Sr., III">
                                         </label>
                                     </div>
                                     <div class="form-grid two-column">
-                                        <label><span>Birthday</span><input v-model="profile.birthDate" type="date" required></label>
+                                        <label><span>{{ t('portal.profile.labels.birthday') }}</span><input v-model="profile.birthDate" type="date" required></label>
                                         <label>
-                                            <span>Contact Number</span>
+                                            <span>{{ t('landing.formLabels.contactNumber') }}</span>
                                             <div class="phone-input-wrapper">
                                                 <span class="phone-country-badge" aria-hidden="true">
                                                     <span class="phone-country-flag">🇵🇭</span>
@@ -261,37 +262,37 @@
                                             </div>
                                         </label>
                                         <label>
-                                            <span>Civil Status</span>
+                                            <span>{{ t('portal.profile.labels.civilStatus') }}</span>
                                             <select v-model="profile.civilStatus">
-                                                <option value="single">Single</option>
-                                                <option value="married">Married</option>
-                                                <option value="widowed">Widowed</option>
-                                                <option value="separated">Separated</option>
+                                                <option value="single">{{ t('common.ui.single') }}</option>
+                                                <option value="married">{{ t('common.ui.married') }}</option>
+                                                <option value="widowed">{{ t('common.ui.widowed') }}</option>
+                                                <option value="separated">{{ t('common.ui.separated') }}</option>
                                             </select>
                                         </label>
-                                        <label><span>Barangay</span><input v-model="profile.address" type="text" required></label>
+                                        <label><span>{{ t('portal.profile.labels.barangay') }}</span><input v-model="profile.address" type="text" required></label>
                                         <label>
-                                            <span>Purok</span>
+                                            <span>{{ t('portal.profile.labels.purok') }}</span>
                                             <select v-model="profile.purok" required>
-                                                <option value="">Select Purok</option>
+                                                <option value="">{{ t('common.ui.selectPurok') }}</option>
                                                 <option v-for="purok in purokOptions" :key="purok" :value="purok">{{ purok }}</option>
                                             </select>
                                         </label>
                                         <label v-if="selectedPurokZones.length">
-                                            <span>Zone</span>
+                                            <span>{{ t('portal.profile.labels.zone') }}</span>
                                             <select v-model="profile.zone" required>
-                                                <option value="">Select Zone</option>
+                                                <option value="">{{ t('common.ui.selectZone') }}</option>
                                                 <option v-for="zone in selectedPurokZones" :key="zone" :value="zone">{{ zone }}</option>
                                             </select>
                                         </label>
                                         <label v-else>
-                                            <span>Zone</span>
-                                            <input v-model="profile.zone" type="text" placeholder="Enter Zone" required>
+                                            <span>{{ t('portal.profile.labels.zone') }}</span>
+                                            <input v-model="profile.zone" type="text" :placeholder="t('common.ui.enterZone')" required>
                                         </label>
-                                        <label class="form-span-2"><span>Occupation</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
+                                        <label class="form-span-2"><span>{{ t('portal.profile.labels.occupation') }}</span><input v-model="profile.occupation" type="text" placeholder="Ex. Teacher, Entrepreneur"></label>
                                     </div>
                                     <div class="profile-form-actions">
-                                        <button type="button" class="ghost-button" @click="cancelProfileEdit">Discard Changes</button>
+                                        <button type="button" class="ghost-button" @click="cancelProfileEdit">{{ t('portal.profile.buttons.discardChanges') }}</button>
                                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Changes' }}</button>
                                     </div>
                                 </form>
@@ -300,26 +301,26 @@
                             <section class="profile-panel">
                                 <div class="section-head profile-panel-head">
                                     <div>
-                                        <span class="eyebrow">About Account</span>
-                                        <h4>Change Gmail</h4>
+                                        <span class="eyebrow">{{ t('common.ui.aboutAccount') }}</span>
+                                        <h4>{{ t('common.ui.changeGmail') }}</h4>
                                     </div>
                                 </div>
 
                                 <form class="stack profile-password-form" @submit.prevent="handleRequestEmailChange">
                                     <label>
-                                        <span>Current Gmail</span>
+                                        <span>{{ t('portal.profile.labels.currentGmail') }}</span>
                                         <input :value="user?.email || profile.email || ''" type="email" readonly>
                                     </label>
                                     <label v-if="user?.pendingEmail">
-                                        <span>Pending Gmail</span>
+                                        <span>{{ t('portal.profile.labels.pendingGmail') }}</span>
                                         <input :value="user.pendingEmail" type="email" readonly>
                                     </label>
                                     <label>
-                                        <span>New Gmail</span>
+                                        <span>{{ t('portal.profile.labels.newGmail') }}</span>
                                         <input v-model="emailChangeForm.newEmail" type="email" autocomplete="email" placeholder="juan@example.com" required>
                                     </label>
                                     <label>
-                                        <span>Current Password</span>
+                                        <span>{{ t('common.currentPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="emailChangeForm.currentPassword" :type="passwordVisibility.emailCurrent ? 'text' : 'password'" autocomplete="current-password" required>
                                             <button type="button" :aria-label="passwordVisibility.emailCurrent ? 'Hide current password' : 'Show current password'" @click="togglePasswordVisibility('emailCurrent')">
@@ -334,14 +335,14 @@
                             <section class="profile-panel">
                                 <div class="section-head profile-panel-head">
                                     <div>
-                                        <span class="eyebrow">About Account</span>
-                                        <h4>Change Password</h4>
+                                        <span class="eyebrow">{{ t('common.ui.aboutAccount') }}</span>
+                                        <h4>{{ t('common.ui.changePassword') }}</h4>
                                     </div>
                                 </div>
 
                                 <form class="stack profile-password-form" @submit.prevent="handleChangePassword">
                                     <label>
-                                        <span>Current Password</span>
+                                        <span>{{ t('common.currentPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.currentPassword" :type="passwordVisibility.current ? 'text' : 'password'" autocomplete="current-password" required>
                                             <button type="button" :aria-label="passwordVisibility.current ? 'Hide current password' : 'Show current password'" @click="togglePasswordVisibility('current')">
@@ -350,7 +351,7 @@
                                         </div>
                                     </label>
                                     <label>
-                                        <span>New Password</span>
+                                        <span>{{ t('common.newPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.newPassword" :type="passwordVisibility.new ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
                                             <button type="button" :aria-label="passwordVisibility.new ? 'Hide new password' : 'Show new password'" @click="togglePasswordVisibility('new')">
@@ -359,7 +360,7 @@
                                         </div>
                                     </label>
                                     <label>
-                                        <span>Confirm New Password</span>
+                                        <span>{{ t('portal.profile.labels.confirmNewPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.confirmPassword" :type="passwordVisibility.confirm ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
                                             <button type="button" :aria-label="passwordVisibility.confirm ? 'Hide confirmed password' : 'Show confirmed password'" @click="togglePasswordVisibility('confirm')">
@@ -368,7 +369,7 @@
                                         </div>
                                     </label>
                                     <div class="password-rules profile-password-rules" aria-live="polite">
-                                        <p class="password-rules-title">Password must include:</p>
+                                        <p class="password-rules-title">{{ t('common.passwordMustInclude') }}</p>
                                         <ul class="password-rules-list">
                                             <li v-for="rule in changePasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
                                                 <i :class="rule.passed ? 'fa-solid fa-check' : 'fa-solid fa-xmark'"></i>
@@ -383,19 +384,19 @@
                             <section class="profile-panel profile-danger-panel">
                                 <div class="section-head profile-panel-head">
                                     <div>
-                                        <span class="eyebrow">Danger Zone</span>
-                                        <h4>Delete My Account</h4>
+                                        <span class="eyebrow">{{ t('common.ui.dangerZone') }}</span>
+                                        <h4>{{ t('common.deleteMyAccount') }}</h4>
                                     </div>
                                 </div>
 
                                 <div class="stack profile-password-form">
                                     <p class="fine-print" style="margin: 0; line-height: 1.6;">
-                                        Deleting your account will permanently remove your resident access and profile data. This cannot be undone.
+                                        {{ t('common.ui.deleteAccountWarning') }}
                                     </p>
                                     <label>
-                                        <span>Current Password</span>
+                                        <span>{{ t('common.currentPassword') }}</span>
                                         <div class="profile-password-input">
-                                            <input v-model="deleteAccountForm.currentPassword" :type="passwordVisibility.delete ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter current password" required>
+                                            <input v-model="deleteAccountForm.currentPassword" :type="passwordVisibility.delete ? 'text' : 'password'" autocomplete="current-password" :placeholder="t('common.ui.enterCurrentPassword')" required>
                                             <button type="button" :aria-label="passwordVisibility.delete ? 'Hide delete password' : 'Show delete password'" @click="togglePasswordVisibility('delete')">
                                                 <i :class="passwordVisibility.delete ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
                                             </button>
@@ -417,42 +418,42 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">{{ texts.appointments.eyebrow }}</span>
-                                <h3>{{ texts.appointments.heading }}</h3>
+                                <span class="eyebrow">{{ t('portal.appointments.eyebrow') }}</span>
+                                <h3>{{ t('portal.appointments.heading') }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'appointment'">{{ texts.appointments.requestButton }}</button>
+                            <button class="primary-button" @click="activeModal = 'appointment'">{{ t('portal.appointments.requestButton') }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="appointmentSearch" type="search" :placeholder="texts.appointments.searchPlaceholder">
+                        <input class="portal-search-input" v-model="appointmentSearch" type="search" :placeholder="t('portal.appointments.searchPlaceholder')">
                         <div class="table-filter-bar portal-record-filters">
                             <select v-model="appointmentStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
+                                <option value="completed">{{ t('portal.appointments.statusCompleted') }}</option>
+                                <option value="cancelled">{{ t('portal.appointments.statusCancelled') }}</option>
                             </select>
                             <label class="date-filter-field">
                                 <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                                <input v-model="appointmentDateFilter" type="date" :aria-label="t('common.ui.filterAppointmentsDate')">
                             </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
-                                    <tr><th>Date</th><th>Official</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
+                                    <tr><th>{{ t('landing.formLabels.incidentDate') }}</th><th>{{ t('portal.appointments.tableOfficial') }}</th><th>{{ t('landing.formLabels.purpose') }}</th><th>{{ t('common.status') }}</th><th>{{ t('portal.appointments.tableActions') }}</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!pagedAppointments.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.appointments.empty }}</td></tr>
+                                    <tr v-if="!pagedAppointments.items.length"><td colspan="5" class="portal-empty-cell">{{ t('portal.appointments.empty') }}</td></tr>
                                     <tr v-for="item in pagedAppointments.items" :key="item._id">
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
                                         <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
                                         <td>{{ item.purpose }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <button class="ghost-button table-action" @click="openRecordDetail('appointment', item)">View</button>
-                                            <button v-if="canCancelAppointment(item)" class="ghost-button table-action danger" @click="cancelResidentAppointment(item)">Cancel</button>
-                                            <button v-if="canDeleteRecord('appointment', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('appointment', item)">Delete</button>
+                                            <button class="ghost-button table-action" @click="openRecordDetail('appointment', item)">{{ t('common.ui.view') }}</button>
+                                            <button v-if="canCancelAppointment(item)" class="ghost-button table-action danger" @click="cancelResidentAppointment(item)">{{ t('common.cancel') }}</button>
+                                            <button v-if="canDeleteRecord('appointment', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('appointment', item)">{{ t('common.ui.delete') }}</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -461,8 +462,8 @@
                         <div v-if="filteredAppointments.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedAppointments.page }} of {{ pagedAppointments.pages }} · {{ filteredAppointments.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedAppointments.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointments.page >= pagedAppointments.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointments.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedAppointments.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointments.page >= pagedAppointments.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointments.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -475,43 +476,43 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">{{ texts.documents.eyebrow }}</span>
-                                <h3>{{ texts.documents.heading }}</h3>
+                                <span class="eyebrow">{{ t('portal.documents.eyebrow') }}</span>
+                                <h3>{{ t('portal.documents.heading') }}</h3>
                             </div>
-                            <button class="primary-button" @click="openDocumentRequestModal()">{{ texts.documents.requestButton }}</button>
+                            <button class="primary-button" @click="openDocumentRequestModal()">{{ t('portal.documents.requestButton') }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="texts.documents.searchPlaceholder">
+                        <input class="portal-search-input" v-model="documentSearch" type="search" :placeholder="t('portal.documents.searchPlaceholder')">
                         <div class="table-filter-bar portal-record-filters">
                             <select v-model="documentStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
-                                <option value="approved">Approved</option>
-                                <option value="ready_for_pickup">Ready for pickup</option>
-                                <option value="completed">Completed</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="processing">{{ t('portal.documents.statusProcessing') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="ready_for_pickup">{{ t('portal.documents.statusReadyForPickup') }}</option>
+                                <option value="completed">{{ t('portal.appointments.statusCompleted') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
                             </select>
                             <label class="date-filter-field">
                                 <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <input v-model="documentDateFilter" type="date" aria-label="Filter documents by date">
+                                <input v-model="documentDateFilter" type="date" :aria-label="t('common.ui.filterDocumentsDate')">
                             </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
                                 <thead>
-                                    <tr><th>Date</th><th>Type</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
+                                    <tr><th>{{ t('landing.formLabels.incidentDate') }}</th><th>{{ t('portal.documents.tableType') }}</th><th>{{ t('landing.formLabels.purpose') }}</th><th>{{ t('common.status') }}</th><th>{{ t('portal.appointments.tableActions') }}</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!pagedDocumentRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.documents.empty }}</td></tr>
+                                    <tr v-if="!pagedDocumentRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ t('portal.documents.empty') }}</td></tr>
                                     <tr v-for="item in pagedDocumentRequests.items" :key="item._id">
                                         <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ normalizeLabel(item.type) }}</td>
                                         <td>{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                                                    <button class="ghost-button table-action" @click="openRecordDetail('document', item)">View</button>
-                                            <button v-if="canEditRecord('document', item)" class="ghost-button table-action" @click="openDocumentRequestEditor(item)">Edit</button>
-                                            <button v-if="canDeleteRecord('document', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('document', item)">Delete</button>
+                                                                    <button class="ghost-button table-action" @click="openRecordDetail('document', item)">{{ t('common.ui.view') }}</button>
+                                            <button v-if="canEditRecord('document', item)" class="ghost-button table-action" @click="openDocumentRequestEditor(item)">{{ t('common.ui.edit') }}</button>
+                                            <button v-if="canDeleteRecord('document', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('document', item)">{{ t('common.ui.delete') }}</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -520,8 +521,8 @@
                         <div v-if="filteredDocumentRequests.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedDocumentRequests.page }} of {{ pagedDocumentRequests.pages }} · {{ filteredDocumentRequests.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedDocumentRequests.page === 1" @click="documentPage = Math.max(documentPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedDocumentRequests.page >= pagedDocumentRequests.pages" @click="documentPage = Math.min(documentPage + 1, pagedDocumentRequests.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedDocumentRequests.page === 1" @click="documentPage = Math.max(documentPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedDocumentRequests.page >= pagedDocumentRequests.pages" @click="documentPage = Math.min(documentPage + 1, pagedDocumentRequests.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -534,32 +535,32 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">{{ texts.reservations.eyebrow }}</span>
-                                <h3>{{ texts.reservations.heading }}</h3>
+                                <span class="eyebrow">{{ t('portal.reservations.eyebrow') }}</span>
+                                <h3>{{ t('portal.reservations.heading') }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'reservation'">{{ texts.reservations.requestButton }}</button>
+                            <button class="primary-button" @click="activeModal = 'reservation'">{{ t('portal.reservations.requestButton') }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="reservationSearch" type="search" :placeholder="texts.reservations.searchPlaceholder">
+                        <input class="portal-search-input" v-model="reservationSearch" type="search" :placeholder="t('portal.reservations.searchPlaceholder')">
                         <div class="table-filter-bar portal-record-filters">
                             <select v-model="reservationStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="rescheduled">Rescheduled</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
+                                <option value="rescheduled">{{ t('common.ui.rescheduled') }}</option>
+                                <option value="completed">{{ t('portal.appointments.statusCompleted') }}</option>
+                                <option value="cancelled">{{ t('portal.appointments.statusCancelled') }}</option>
                             </select>
                             <label class="date-filter-field">
                                 <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <input v-model="reservationDateFilter" type="date" aria-label="Filter reservations by date">
+                                <input v-model="reservationDateFilter" type="date" :aria-label="t('common.ui.filterReservationsDate')">
                             </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
-                                <thead><tr><th>Date</th><th>Facility</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>{{ t('landing.formLabels.incidentDate') }}</th><th>{{ t('common.facility') }}</th><th>{{ t('landing.formLabels.purpose') }}</th><th>{{ t('common.status') }}</th><th>{{ t('portal.appointments.tableActions') }}</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!pagedReservations.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.reservations.empty }}</td></tr>
+                                    <tr v-if="!pagedReservations.items.length"><td colspan="5" class="portal-empty-cell">{{ t('portal.reservations.empty') }}</td></tr>
                                     <tr v-for="item in pagedReservations.items" :key="item._id">
                                         <td>
                                             {{ formatDate(item.reservationDate) }}<br>
@@ -573,8 +574,8 @@
                                         <td>{{ item.purpose }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <button class="ghost-button table-action" @click="openRecordDetail('reservation', item)">View</button>
-                                            <button v-if="canDeleteRecord('reservation', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('reservation', item)">Delete</button>
+                                            <button class="ghost-button table-action" @click="openRecordDetail('reservation', item)">{{ t('common.ui.view') }}</button>
+                                            <button v-if="canDeleteRecord('reservation', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('reservation', item)">{{ t('common.ui.delete') }}</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -583,8 +584,8 @@
                         <div v-if="filteredReservations.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedReservations.page }} of {{ pagedReservations.pages }} · {{ filteredReservations.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedReservations.page === 1" @click="reservationPage = Math.max(reservationPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedReservations.page >= pagedReservations.pages" @click="reservationPage = Math.min(reservationPage + 1, pagedReservations.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedReservations.page === 1" @click="reservationPage = Math.max(reservationPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedReservations.page >= pagedReservations.pages" @click="reservationPage = Math.min(reservationPage + 1, pagedReservations.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -597,42 +598,42 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">{{ texts.manpower.eyebrow }}</span>
-                                <h3>{{ texts.manpower.heading }}</h3>
+                                <span class="eyebrow">{{ t('portal.manpower.eyebrow') }}</span>
+                                <h3>{{ t('portal.manpower.heading') }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'manpower'">{{ texts.manpower.requestButton }}</button>
+                            <button class="primary-button" @click="activeModal = 'manpower'">{{ t('portal.manpower.requestButton') }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="manpowerSearch" type="search" :placeholder="texts.manpower.searchPlaceholder">
+                        <input class="portal-search-input" v-model="manpowerSearch" type="search" :placeholder="t('portal.manpower.searchPlaceholder')">
                         <div class="table-filter-bar portal-record-filters">
                             <select v-model="manpowerStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="assigned">Assigned</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="cancelled">Cancelled</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="assigned">{{ t('common.ui.assigned') }}</option>
+                                <option value="in_progress">{{ t('common.ui.inProgress') }}</option>
+                                <option value="completed">{{ t('portal.appointments.statusCompleted') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
+                                <option value="cancelled">{{ t('portal.appointments.statusCancelled') }}</option>
                             </select>
                             <label class="date-filter-field">
                                 <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <input v-model="manpowerDateFilter" type="date" aria-label="Filter manpower requests by date">
+                                <input v-model="manpowerDateFilter" type="date" :aria-label="t('common.ui.filterManpowerDate')">
                             </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
-                                <thead><tr><th>Date</th><th>Request</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>{{ t('landing.formLabels.incidentDate') }}</th><th>{{ t('common.ui.request') }}</th><th>{{ t('landing.nav.location') }}</th><th>{{ t('common.status') }}</th><th>{{ t('portal.appointments.tableActions') }}</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!pagedManpowerRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ texts.manpower.empty }}</td></tr>
+                                    <tr v-if="!pagedManpowerRequests.items.length"><td colspan="5" class="portal-empty-cell">{{ t('portal.manpower.empty') }}</td></tr>
                                     <tr v-for="item in pagedManpowerRequests.items" :key="item._id">
                                         <td>{{ formatDate(item.requestDate) }}<br><small>{{ item.requestTime || 'Time TBD' }}</small></td>
                                         <td>{{ item.title }}<br><small>{{ normalizeLabel(item.assistanceType) }} | {{ item.requestedPersonnelCount }} personnel</small></td>
                                         <td>{{ item.requestLocation }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <button class="ghost-button table-action" @click="openRecordDetail('manpower', item)">View</button>
-                                            <button v-if="canCancelManpowerRequest(item)" class="ghost-button table-action danger" @click="cancelResidentManpowerRequest(item)">Cancel</button>
-                                            <button v-if="canDeleteRecord('manpower', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('manpower', item)">Delete</button>
+                                            <button class="ghost-button table-action" @click="openRecordDetail('manpower', item)">{{ t('common.ui.view') }}</button>
+                                            <button v-if="canCancelManpowerRequest(item)" class="ghost-button table-action danger" @click="cancelResidentManpowerRequest(item)">{{ t('common.cancel') }}</button>
+                                            <button v-if="canDeleteRecord('manpower', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('manpower', item)">{{ t('common.ui.delete') }}</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -641,8 +642,8 @@
                         <div v-if="filteredManpowerRequests.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedManpowerRequests.page }} of {{ pagedManpowerRequests.pages }} · {{ filteredManpowerRequests.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedManpowerRequests.page === 1" @click="manpowerPage = Math.max(manpowerPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedManpowerRequests.page >= pagedManpowerRequests.pages" @click="manpowerPage = Math.min(manpowerPage + 1, pagedManpowerRequests.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedManpowerRequests.page === 1" @click="manpowerPage = Math.max(manpowerPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedManpowerRequests.page >= pagedManpowerRequests.pages" @click="manpowerPage = Math.min(manpowerPage + 1, pagedManpowerRequests.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -655,40 +656,40 @@
                     <article class="content-card">
                         <div class="section-head portal-table-head">
                             <div>
-                                <span class="eyebrow">{{ texts.reports.eyebrow }}</span>
-                                <h3>My submitted reports</h3>
+                                <span class="eyebrow">{{ t('portal.reports.eyebrow') }}</span>
+                                <h3>{{ t('common.ui.mySubmittedReports') }}</h3>
                             </div>
-                            <button class="primary-button" @click="activeModal = 'report'">Submit New Report</button>
+                            <button class="primary-button" @click="activeModal = 'report'">{{ t('common.ui.submitNewReport') }}</button>
                         </div>
-                        <input class="portal-search-input" v-model="reportSearch" type="search" placeholder="Search reports">
+                        <input class="portal-search-input" v-model="reportSearch" type="search" :placeholder="t('common.ui.searchReports')">
                         <div class="table-filter-bar portal-record-filters">
                             <select v-model="reportStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="reviewing">Reviewing</option>
-                                <option value="approved">Approved</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="closed">Closed</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="reviewing">{{ t('common.ui.reviewing') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="resolved">{{ t('common.ui.resolved') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
+                                <option value="closed">{{ t('common.closed') }}</option>
                             </select>
                             <label class="date-filter-field">
                                 <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                                <input v-model="reportDateFilter" type="date" aria-label="Filter reports by date">
+                                <input v-model="reportDateFilter" type="date" :aria-label="t('common.ui.filterReportsDate')">
                             </label>
                         </div>
                         <div class="portal-table-wrap">
                             <table class="data-table portal-record-table">
-                                <thead><tr><th>Date</th><th>Report</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>{{ t('landing.formLabels.incidentDate') }}</th><th>{{ t('common.ui.report') }}</th><th>{{ t('landing.nav.location') }}</th><th>{{ t('common.status') }}</th><th>{{ t('portal.appointments.tableActions') }}</th></tr></thead>
                                 <tbody>
-                                    <tr v-if="!pagedReports.items.length"><td colspan="5" class="portal-empty-cell">No reports found.</td></tr>
+                                    <tr v-if="!pagedReports.items.length"><td colspan="5" class="portal-empty-cell">{{ t('common.ui.noReports') }}</td></tr>
                                     <tr v-for="item in pagedReports.items" :key="item._id">
                                         <td>{{ formatDate(item.createdAt) }}</td>
                                         <td>{{ item.title }}<br><small>{{ normalizeLabel(item.reportType) }} | {{ normalizeLabel(item.priority) }}</small></td>
                                         <td>{{ item.locationText }}</td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
-                                            <button class="ghost-button table-action" @click="openRecordDetail('report', item)">View</button>
-                                            <button v-if="canDeleteRecord('report', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('report', item)">Delete</button>
+                                            <button class="ghost-button table-action" @click="openRecordDetail('report', item)">{{ t('common.ui.view') }}</button>
+                                            <button v-if="canDeleteRecord('report', item)" class="ghost-button table-action danger" @click="deleteResidentRecord('report', item)">{{ t('common.ui.delete') }}</button>
                                         </div></td>
                                     </tr>
                                 </tbody>
@@ -697,8 +698,8 @@
                         <div v-if="filteredReports.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedReports.page }} of {{ pagedReports.pages }} · {{ filteredReports.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedReports.page === 1" @click="reportPage = Math.max(reportPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedReports.page >= pagedReports.pages" @click="reportPage = Math.min(reportPage + 1, pagedReports.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedReports.page === 1" @click="reportPage = Math.max(reportPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedReports.page >= pagedReports.pages" @click="reportPage = Math.min(reportPage + 1, pagedReports.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -709,10 +710,10 @@
                 <div class="portal-grid">
                     <article class="content-card">
                         <div class="section-head">
-                            <span class="eyebrow">Disaster Advisories</span>
-                            <h3>Latest barangay emergency guidance</h3>
+                            <span class="eyebrow">{{ t('common.disaster') }}</span>
+                            <h3>{{ t('common.ui.latestEmergencyGuidance') }}</h3>
                         </div>
-                        <div v-if="!disasterAdvisories.length" class="fine-print">No active advisories right now.</div>
+                        <div v-if="!disasterAdvisories.length" class="fine-print">{{ t('common.ui.noActiveAdvisories') }}</div>
                         <div v-else style="display:grid; gap:12px;">
                             <article v-for="advisory in disasterAdvisories" :key="advisory._id" class="record-item" style="padding:12px;">
                                 <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
@@ -738,22 +739,22 @@
                 <button class="landing-modal-close" @click="closeModal">X</button>
                 
                 <div v-if="activeModal === 'appointment'">
-                    <h2>{{ texts.modals.appointmentRequest }}</h2>
-                    <p class="fine-print">Schedule a meeting with a barangay official.</p>
+                    <h2>{{ t('portal.modals.appointmentRequest') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.scheduleOfficialMeeting') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitAppointment">
-                        <label><span>Official</span>
+                        <label><span>{{ t('portal.appointments.tableOfficial') }}</span>
                             <select v-model="appointmentForm.officialId" required @change="loadAvailableSlots">
-                                <option disabled value="">Select Official</option>
+                                <option disabled value="">{{ t('common.ui.selectOfficialTitle') }}</option>
                                 <option v-for="official in officials" :key="official._id" :value="official._id" :disabled="isOfficialInactive(official)">{{ formatAppointmentOfficialOption(official) }}</option>
                             </select>
                         </label>
                         <div v-if="selectedAppointmentOfficialInactive" class="facility-slot-note">{{ inactiveAppointmentOfficialMessage }}</div>
-                        <label><span>Date</span><input v-model="appointmentForm.appointmentDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadAvailableSlots"></label>
+                        <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="appointmentForm.appointmentDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadAvailableSlots"></label>
                         
                         <div v-if="appointmentForm.officialId && appointmentForm.appointmentDate && !selectedAppointmentOfficialInactive">
-                            <span>Available Time Slots</span>
-                            <div v-if="isFetchingSlots" style="margin-top: 5px; font-size: 0.9em; color: #666;">Loading slots...</div>
-                            <div v-else-if="availableSlots.length === 0" style="margin-top: 5px; font-size: 0.9em; color: #d32f2f;">No available slots for this date.</div>
+                            <span>{{ t('common.ui.availableTimeSlots') }}</span>
+                            <div v-if="isFetchingSlots" style="margin-top: 5px; font-size: 0.9em; color: #666;">{{ t('common.ui.loadingSlots') }}</div>
+                            <div v-else-if="availableSlots.length === 0" style="margin-top: 5px; font-size: 0.9em; color: #d32f2f;">{{ t('common.ui.noAvailableSlots') }}</div>
                             <div v-else class="appointment-slot-grid" :style="{ '--appointment-slot-min-width': appointmentSlotMinWidth }">
                                 <button type="button"
                                     class="appointment-slot-button"
@@ -772,40 +773,40 @@
                             </div>
                         </div>
 
-                        <label><span>Purpose</span><input v-model="appointmentForm.purpose" type="text" required placeholder="What is this meeting about?"></label>
+                        <label><span>{{ t('landing.formLabels.purpose') }}</span><input v-model="appointmentForm.purpose" type="text" required placeholder="What is this meeting about?"></label>
                         <button type="submit" class="primary-button" :disabled="!canSubmitAppointment">{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</button>
                     </form>
                 </div>
 
                 <div v-if="activeModal === 'reservation'">
-                    <h2>{{ texts.modals.reservationRequest }}</h2>
-                    <p class="fine-print">Book a barangay facility for your event.</p>
+                    <h2>{{ t('portal.modals.reservationRequest') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.bookFacility') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitReservation">
                         <label>
-                            <span>Facility Type</span>
+                            <span>{{ t('landing.formLabels.facilityType') }}</span>
                             <select v-model="reservationForm.facilityName" required @change="handleReservationAvailabilityChange">
                                 <option v-for="option in FACILITY_ITEM_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                         </label>
-                        <label><span>Date</span><input v-model="reservationForm.reservationDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="handleReservationAvailabilityChange"></label>
+                        <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="reservationForm.reservationDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="handleReservationAvailabilityChange"></label>
                         <div class="facility-slot-picker" v-if="reservationForm.facilityName && reservationForm.reservationDate">
                             <div class="facility-slot-head">
-                                <span>Facility Time Slot</span>
+                                <span>{{ t('landing.formLabels.facilityTimeSlot') }}</span>
                                 <small>Open {{ portalFacilityTimeOptions.operatingHoursLabel }}</small>
                             </div>
-                            <div v-if="isFetchingFacilityAvailability" class="facility-slot-note">Loading facility schedule...</div>
+                            <div v-if="isFetchingFacilityAvailability" class="facility-slot-note">{{ t('common.ui.loadingFacilitySchedule') }}</div>
                             <div v-else class="facility-slot-grid">
                                 <label>
-                                    <span>Start Time</span>
+                                    <span>{{ t('landing.formLabels.startTime') }}</span>
                                     <select v-model="reservationForm.startTime" required @change="reservationForm.endTime = ''; handleReservationTimeChange()">
-                                        <option disabled value="">Select start</option>
+                                        <option disabled value="">{{ t('common.ui.selectStart') }}</option>
                                         <option v-for="slot in portalFacilityTimeOptions.startOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                     </select>
                                 </label>
                                 <label>
-                                    <span>End Time</span>
+                                    <span>{{ t('landing.formLabels.endTime') }}</span>
                                     <select v-model="reservationForm.endTime" required :disabled="!reservationForm.startTime" @change="handleReservationTimeChange()">
-                                        <option disabled value="">Select end</option>
+                                        <option disabled value="">{{ t('common.ui.selectEnd') }}</option>
                                         <option v-for="slot in portalFacilityTimeOptions.endOptions" :key="slot.value" :value="slot.value" :disabled="slot.disabled">{{ slot.label }}</option>
                                     </select>
                                 </label>
@@ -816,78 +817,78 @@
                                 <small>{{ reservationInventoryPeakSummary.note }}</small>
                             </div>
                             <div class="facility-reserved-list" v-else-if="portalFacilityTimeOptions.reservedSlots.length">
-                                <span>Reserved ranges</span>
+                                <span>{{ t('landing.formLabels.reservedRanges') }}</span>
                                 <small v-for="slot in portalFacilityTimeOptions.reservedSlots" :key="slot.id || `${slot.startTime}-${slot.endTime}`">{{ formatFacilityRange(slot.startTime, slot.endTime) }} Reserved <span v-if="slot.facilityName">| {{ getFacilityItemLabel(slot.facilityName) }}</span> <span v-if="slot.quantity">x{{ slot.quantity }}</span></small>
                             </div>
                             <!-- Removed standard flow helper text -->
                         </div>
                             <div class="facility-slot-grid" v-if="reservationRequiresQuantity">
                             <label>
-                                <span>Quantity</span>
+                                <span>{{ t('landing.formLabels.quantity') }}</span>
                                 <input v-model.number="reservationForm.quantity" type="number" min="1" :max="reservationQuantityMax" placeholder="0" :disabled="reservationInventoryUnavailable">
                             </label>
                         </div>
                         <div class="facility-slot-note" v-if="reservationInventoryMessage">{{ reservationInventoryMessage }}</div>
-                        <label><span>Purpose</span><input v-model="reservationForm.purpose" type="text" required></label>
-                        <label><span>Reservation details</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
+                        <label><span>{{ t('landing.formLabels.purpose') }}</span><input v-model="reservationForm.purpose" type="text" required></label>
+                        <label><span>{{ t('common.ui.reservationDetails') }}</span><textarea v-model="reservationForm.reservationDetails" rows="3"></textarea></label>
                         <button type="submit" class="primary-button" :disabled="!canSubmitReservation">{{ isSubmitting ? 'Submitting...' : 'Submit Reservation' }}</button>
                     </form>
                     <div class="facility-slot-note" v-if="!reservationRequiresQuantity && facilityAvailability">{{ facilityAvailability }}</div>
                 </div>
 
                 <div v-if="activeModal === 'manpower'">
-                    <h2>{{ texts.modals.manpowerRequest }}</h2>
-                    <p class="fine-print">Request tanod or barangay manpower support for an event or community activity.</p>
+                    <h2>{{ t('portal.modals.manpowerRequest') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.manpowerHelp') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitManpowerRequest">
                         <label>
-                            <span>Assistance Type</span>
+                            <span>{{ t('common.ui.assistanceType') }}</span>
                             <select v-model="manpowerForm.assistanceType" required>
-                                <option value="peacekeeping">Peacekeeping</option>
-                                <option value="traffic_control">Traffic Control</option>
-                                <option value="event_security">Event Security</option>
-                                <option value="community_service">Community Service</option>
-                                <option value="emergency_response">Emergency Response</option>
-                                <option value="other">Other</option>
+                                <option value="peacekeeping">{{ t('common.ui.peacekeeping') }}</option>
+                                <option value="traffic_control">{{ t('common.ui.trafficControl') }}</option>
+                                <option value="event_security">{{ t('common.ui.eventSecurity') }}</option>
+                                <option value="community_service">{{ t('common.ui.communityService') }}</option>
+                                <option value="emergency_response">{{ t('common.ui.emergencyResponse') }}</option>
+                                <option value="other">{{ t('common.ui.other') }}</option>
                             </select>
                         </label>
-                        <label><span>Event / Request Title</span><input v-model="manpowerForm.title" type="text" required placeholder="Ex. Fiesta parade security"></label>
-                        <label><span>Location</span><input v-model="manpowerForm.requestLocation" type="text" required placeholder="Street, purok, or venue"></label>
+                        <label><span>{{ t('common.ui.eventRequestTitle') }}</span><input v-model="manpowerForm.title" type="text" required placeholder="Ex. Fiesta parade security"></label>
+                        <label><span>{{ t('landing.nav.location') }}</span><input v-model="manpowerForm.requestLocation" type="text" required :placeholder="t('common.ui.streetVenue')"></label>
                         <div class="facility-slot-grid">
-                            <label><span>Date</span><input v-model="manpowerForm.requestDate" type="date" :min="todayDate" required></label>
-                            <label><span>Time</span><input v-model="manpowerForm.requestTime" type="time" required></label>
+                            <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="manpowerForm.requestDate" type="date" :min="todayDate" required></label>
+                            <label><span>{{ t('common.ui.time') }}</span><input v-model="manpowerForm.requestTime" type="time" required></label>
                         </div>
                         <div class="facility-slot-grid">
-                            <label><span>Estimated Duration</span><input v-model="manpowerForm.estimatedDuration" type="text" required placeholder="Ex. 3 hours"></label>
-                            <label><span>Personnel Needed</span><input v-model.number="manpowerForm.requestedPersonnelCount" type="number" min="1" required></label>
+                            <label><span>{{ t('common.ui.estimatedDuration') }}</span><input v-model="manpowerForm.estimatedDuration" type="text" required placeholder="Ex. 3 hours"></label>
+                            <label><span>{{ t('common.ui.personnelNeeded') }}</span><input v-model.number="manpowerForm.requestedPersonnelCount" type="number" min="1" required></label>
                         </div>
                         <label>
-                            <span>Priority</span>
+                            <span>{{ t('landing.formLabels.priority') }}</span>
                             <select v-model="manpowerForm.priority" required>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
+                                <option value="low">{{ t('common.ui.low') }}</option>
+                                <option value="medium">{{ t('common.ui.medium') }}</option>
+                                <option value="high">{{ t('common.ui.high') }}</option>
+                                <option value="urgent">{{ t('common.ui.urgent') }}</option>
                             </select>
                         </label>
-                        <label><span>Description / Details</span><textarea v-model="manpowerForm.description" rows="4" required placeholder="Describe the event, expected crowd, route, or duties needed."></textarea></label>
+                        <label><span>{{ t('common.ui.descriptionDetails') }}</span><textarea v-model="manpowerForm.description" rows="4" required placeholder="Describe the event, expected crowd, route, or duties needed."></textarea></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Manpower Request' }}</button>
                     </form>
                 </div>
 
                 <div v-if="activeModal === 'report'">
-                    <h2>Submit Report</h2>
-                    <p class="fine-print">Report an incident or concern in the barangay.</p>
+                    <h2>{{ t('landing.auth.guestReport.submit') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.reportIncidentHelp') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitReport">
                         <label>
-                            <span>Report type</span>
+                            <span>{{ t('common.ui.reportType') }}</span>
                             <select v-model="reportForm.reportType" required>
                                 <option v-for="option in reportTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                         </label>
-                        <label><span>Description</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
-                        <label><span>Location</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
+                        <label><span>{{ t('landing.formLabels.description') }}</span><textarea v-model="reportForm.description" rows="3" required :placeholder="currentReportTypeConfig.descriptionPlaceholder"></textarea></label>
+                        <label><span>{{ t('landing.nav.location') }}</span><input v-model="reportForm.locationText" type="text" required :placeholder="currentReportTypeConfig.locationHint"></label>
                         <label v-if="currentReportTypeConfig.requireIncidentDate">
-                            <span>Date</span>
+                            <span>{{ t('landing.formLabels.incidentDate') }}</span>
                             <input
                                 v-model="reportForm.incidentDate"
                                 type="date"
@@ -898,22 +899,16 @@
                             >
                         </label>
                         <div style="display: grid; gap: 8px; padding: 12px; border: 1px dashed #c7d1cc; border-radius: 8px;">
-                            <span style="font-weight: 600; color: #3a4e43;">Current location (optional but recommended)</span>
+                            <span style="font-weight: 600; color: #3a4e43;">{{ t('landing.formLabels.currentLocationOptional') }}</span>
                             <button type="button" class="ghost-button" @click="captureCurrentLocation" :disabled="locatingPosition">
-                                {{ locatingPosition ? 'Getting location...' : 'Use My Current Location' }}
+                                {{ locatingPosition ? t('landing.formLabels.gettingLocation') : t('landing.formLabels.useCurrentLocation') }}
                             </button>
-                            <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;">
-                                <strong style="color: #3a4e43;">How it works:</strong><br>
-                                1️⃣ Click the button above<br>
-                                2️⃣ A popup will appear asking for permission<br>
-                                3️⃣ Tap <strong>Allow</strong><br>
-                                💡 Safari tip: if no popup appears, go to iPhone Settings → Privacy & Security → Location Services → Safari Websites → <strong>While Using the App</strong>.
-                            </small>
-                            <small v-if="hasCapturedCoordinates" style="color: #4f6b5d;">Pinned: {{ reportForm.locationLatitude }}, {{ reportForm.locationLongitude }} (±{{ reportForm.locationAccuracy || 'N/A' }}m)</small>
+                            <small style="color: #6b7f74; line-height: 1.5; background: rgba(58, 78, 67, 0.05); padding: 8px; border-radius: 4px;" v-html="t('landing.auth.guestReport.safariTip')"></small>
+                            <small v-if="hasCapturedCoordinates" style="color: #4f6b5d;">{{ t('landing.formLabels.pinnedLocation', { latitude: reportForm.locationLatitude, longitude: reportForm.locationLongitude, accuracy: reportForm.locationAccuracy || 'N/A' }) }}</small>
                             <iframe
                                 v-if="reportMapEmbedUrl"
                                 :src="reportMapEmbedUrl"
-                                title="Report location preview map"
+                                :title="t('portal.reports.locationMapTitle')"
                                 style="width: 100%; height: 180px; border: 1px solid #dce6e1; border-radius: 8px;"
                                 loading="lazy"
                                 referrerpolicy="no-referrer-when-downgrade"
@@ -934,29 +929,29 @@
                                 </div>
                             </div>
                         </div>
-                        <label><span>Priority</span><select v-model="reportForm.priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label>
+                        <label><span>{{ t('landing.formLabels.priority') }}</span><select v-model="reportForm.priority"><option value="low">{{ t('common.ui.low') }}</option><option value="medium">{{ t('common.ui.medium') }}</option><option value="high">{{ t('common.ui.high') }}</option><option value="emergency">{{ t('common.ui.emergency') }}</option></select></label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Report' }}</button>
                     </form>
                 </div>
                 <div v-if="activeModal === 'document'">
-                    <h2>{{ editingDocumentRequestId ? 'Edit Document Request' : texts.modals.documentRequest }}</h2>
-                    <p class="fine-print">Choose document type and fill required fields.</p>
+                    <h2>{{ editingDocumentRequestId ? 'Edit Document Request' : t('portal.modals.documentRequest') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.documentFormHelp') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitDocument">
                         <label>
-                            <span>Document Type</span>
+                            <span>{{ t('common.ui.documentType') }}</span>
                             <select v-model="documentForm.type" required>
-                                <option value="certificate">Barangay Certificate</option>
-                                <option value="clearance">Barangay Clearance</option>
-                                <option value="indigency">Barangay Indigency</option>
+                                <option value="certificate">{{ t('common.ui.barangayCertificate') }}</option>
+                                <option value="clearance">{{ t('common.ui.barangayClearance') }}</option>
+                                <option value="indigency">{{ t('common.ui.barangayIndigency') }}</option>
                             </select>
                         </label>
-                        <label><span>Full name</span><input type="text" v-model="documentForm.fields.FULL_NAME" required></label>
-                        <label><span>Age</span><input type="text" v-model="documentForm.fields.AGE"></label>
+                        <label><span>{{ t('common.ui.fullName') }}</span><input type="text" v-model="documentForm.fields.FULL_NAME" required></label>
+                        <label><span>{{ t('common.ui.age') }}</span><input type="text" v-model="documentForm.fields.AGE"></label>
 
-                        <label><span>Barangay</span><input v-model="documentForm.fields.BARANGAY" type="text" placeholder="Irawan"></label>
-                        <label><span>City/Municipality</span><input v-model="documentForm.fields.CITY" type="text" placeholder="Puerto Princesa City"></label>
+                        <label><span>{{ t('portal.profile.labels.barangay') }}</span><input v-model="documentForm.fields.BARANGAY" type="text" placeholder="Irawan"></label>
+                        <label><span>{{ t('common.ui.cityMunicipality') }}</span><input v-model="documentForm.fields.CITY" type="text" :placeholder="t('landing.hero.subtitle')"></label>
 
-                        <label><span>Purpose</span><input v-model="documentForm.purpose" type="text" placeholder="Reason for request"></label>
+                        <label><span>{{ t('landing.formLabels.purpose') }}</span><input v-model="documentForm.purpose" type="text" :placeholder="t('common.ui.reasonForRequest')"></label>
 
                         <button type="submit" class="primary-button" :disabled="isSubmitting">{{ isSubmitting ? 'Submitting...' : (editingDocumentRequestId ? 'Save Changes' : 'Submit Request') }}</button>
                     </form>
@@ -976,7 +971,7 @@
                     </div>
                 </div>
                 <div v-if="recordTimeline.length" class="portal-timeline">
-                    <h3>Status Log</h3>
+                    <h3>{{ t('common.ui.statusLog') }}</h3>
                     <div v-for="entry in recordTimeline" :key="entry.label + entry.value" class="portal-timeline-item">
                         <strong>{{ entry.label }}</strong>
                         <span>{{ entry.value }}</span>
@@ -985,16 +980,16 @@
                 </div>
                 <div v-if="recordDetail.type === 'document' && recordDetail.item?.generatedEmailSentAt" style="display:grid; gap:12px; margin-top: 16px; padding: 14px; border: 1px solid rgba(27, 115, 71, 0.18); border-radius: 10px; background: #f8fcfa;">
                     <div>
-                        <h3 style="margin:0 0 6px;">Revision Request Form</h3>
-                        <p class="fine-print" style="margin:0;">If you need changes, send a revision note to the admin here.</p>
+                        <h3 style="margin:0 0 6px;">{{ t('common.ui.revisionForm') }}</h3>
+                        <p class="fine-print" style="margin:0;">{{ t('common.ui.revisionHelp') }}</p>
                     </div>
                     <div v-if="isDocumentRevisionRequested(recordDetail.item)" style="padding: 10px 12px; border-radius: 8px; background: #fff7f7; color: #7a1d1d; border: 1px solid #f1caca;">
-                        Revision request already sent. Waiting for admin action.
+                        {{ t('common.ui.revisionSent') }}
                     </div>
                     <template v-else>
                         <label>
-                            <span>Revision note</span>
-                            <textarea v-model="revisionRequestNote" rows="4" placeholder="Tell the admin what needs to be changed."></textarea>
+                            <span>{{ t('common.ui.revisionNote') }}</span>
+                            <textarea v-model="revisionRequestNote" rows="4" :placeholder="t('portal.documents.revisionPlaceholder')"></textarea>
                         </label>
                         <button type="button" class="primary-button" :disabled="isRevisionRequesting" @click="submitDocumentRevisionRequest">
                             {{ isRevisionRequesting ? 'Sending...' : 'Send Revision Request' }}
@@ -1002,9 +997,9 @@
                     </template>
                 </div>
                 <div class="portal-modal-actions">
-                    <button v-if="canEditRecord(recordDetail.type, recordDetail.item)" class="ghost-button" @click="openDocumentRequestEditor(recordDetail.item)">Edit</button>
-                    <button v-if="canDeleteRecord(recordDetail.type, recordDetail.item)" class="ghost-button danger" @click="deleteResidentRecord(recordDetail.type, recordDetail.item)">Delete</button>
-                    <button class="primary-button" @click="recordDetail = null">Close</button>
+                    <button v-if="canEditRecord(recordDetail.type, recordDetail.item)" class="ghost-button" @click="openDocumentRequestEditor(recordDetail.item)">{{ t('common.ui.edit') }}</button>
+                    <button v-if="canDeleteRecord(recordDetail.type, recordDetail.item)" class="ghost-button danger" @click="deleteResidentRecord(recordDetail.type, recordDetail.item)">{{ t('common.ui.delete') }}</button>
+                    <button class="primary-button" @click="recordDetail = null">{{ t('common.ui.close') }}</button>
                 </div>
             </dialog>
         </div>
@@ -1013,57 +1008,59 @@
         <div class="landing-modal-backdrop" v-if="viewingAppointment" @click.self="viewingAppointment = null">
             <dialog class="landing-modal" open>
                 <button class="landing-modal-close" @click="viewingAppointment = null">X</button>
-                <h2>Appointment Details</h2>
+                <h2>{{ t('common.ui.appointmentDetails') }}</h2>
                 <div style="display: grid; gap: 12px; margin-top: 15px;">
                     <div>
-                        <span style="font-weight: 600; color: #555;">Official:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.officialLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ viewingAppointment.officialId?.name }} - {{ viewingAppointment.officialId?.position }}</p>
                     </div>
                     <div>
-                        <span style="font-weight: 600; color: #555;">Date:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.dateLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.appointmentDate) }}</p>
                     </div>
                     <div>
-                        <span style="font-weight: 600; color: #555;">Time:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.timeLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ viewingAppointment.timeSlot?.startTime }} - {{ viewingAppointment.timeSlot?.endTime }}</p>
                     </div>
                     <div>
-                        <span style="font-weight: 600; color: #555;">Purpose:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.purposeLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ viewingAppointment.purpose }}</p>
                     </div>
                     <div>
-                        <span style="font-weight: 600; color: #555;">Status:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.status') }}</span>
                         <div style="margin-top: 4px;"><StatusBadge :status="viewingAppointment.status" /></div>
                     </div>
                     <div v-if="viewingAppointment.status === 'rejected' && viewingAppointment.rejectionReason">
-                        <span style="font-weight: 600; color: #d32f2f;">Rejection Reason:</span>
+                        <span style="font-weight: 600; color: #d32f2f;">{{ t('common.ui.rejectionReason') }}</span>
                         <p style="margin: 0; color: #333; padding: 10px; background: rgba(211,47,47,0.05); border-radius: 4px;">{{ viewingAppointment.rejectionReason }}</p>
                     </div>
                     <div v-if="viewingAppointment.status === 'cancelled' && viewingAppointment.cancellationReason">
-                        <span style="font-weight: 600; color: #ff9800;">Cancellation Reason:</span>
+                        <span style="font-weight: 600; color: #ff9800;">{{ t('common.ui.cancellationReason') }}</span>
                         <p style="margin: 0; color: #333; padding: 10px; background: rgba(255,152,0,0.05); border-radius: 4px;">{{ viewingAppointment.cancellationReason }}</p>
                     </div>
                     <div v-if="viewingAppointment.remarks">
-                        <span style="font-weight: 600; color: #555;">Admin Notes:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.adminNotes') }}</span>
                         <p style="margin: 0; color: #333; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 4px;">{{ viewingAppointment.remarks }}</p>
                     </div>
                     <div v-if="viewingAppointment.approvedAt">
-                        <span style="font-weight: 600; color: #555;">Approved:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.approvedLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.approvedAt) }}</p>
                     </div>
                     <div v-if="viewingAppointment.completedAt">
-                        <span style="font-weight: 600; color: #555;">Completed:</span>
+                        <span style="font-weight: 600; color: #555;">{{ t('common.ui.completedLabel') }}</span>
                         <p style="margin: 0; color: #333;">{{ formatDate(viewingAppointment.completedAt) }}</p>
                     </div>
                 </div>
-                <button class="primary-button" @click="viewingAppointment = null" style="margin-top: 20px; width: 100%;">Close</button>
+                <button class="primary-button" @click="viewingAppointment = null" style="margin-top: 20px; width: 100%;">{{ t('common.ui.close') }}</button>
             </dialog>
         </div>
     </div>
 </template>
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BrandMark from '@/components/BrandMark.vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared/client';
@@ -1079,6 +1076,8 @@ import { useDocuments } from '@/composables/useDocuments';
 
 // Composables
 const { user, initializing, ensureResident, logout } = usePortalAuth();
+
+const { t } = useI18n();
 
 const PORTAL_VIEW_STORAGE_KEY = 'barangayPortalCurrentView';
 const PORTAL_VIEWS = new Set(['appointments', 'documents', 'reservations', 'manpower', 'reports', 'disaster', 'profile', 'health']);

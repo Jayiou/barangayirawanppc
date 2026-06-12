@@ -7,7 +7,7 @@
             <div class="toast-body">
                 <p>{{ message }}</p>
             </div>
-            <button type="button" class="toast-close" :aria-label="`Dismiss ${type} message`" @click="$emit('close')">
+            <button type="button" class="toast-close" :aria-label="t('common.dismissToast', { type: props.type })" @click="$emit('close')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </output>
@@ -16,6 +16,9 @@
 
 <script setup>
 import { computed, watch, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     message: {
