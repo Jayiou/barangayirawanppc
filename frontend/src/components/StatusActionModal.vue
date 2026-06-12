@@ -6,23 +6,23 @@
           <i :class="`fa-solid fa-${action.icon}`" style="margin-right: 8px;"></i>
           {{ action.label }}?
         </h3>
-        <button class="close-btn" @click="close" aria-label="Close modal">
+        <button class="close-btn" @click="close" :aria-label="t('common.closeModal')">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
       <div class="modal-body">
         <p v-if="action" class="confirmation-text">
-          Are you sure you want to <strong>{{ action.label.toLowerCase() }}</strong> this {{ entityName }}?
+          {{ t('components.statusActionModal.confirmationPrefix') }} <strong>{{ action.label.toLowerCase() }}</strong> {{ t('components.statusActionModal.confirmationSuffix', { entity: entityName }) }}
         </p>
 
         <div v-if="action && action.requiresReason" class="form-group">
           <label>
-            <span style="font-weight: 600; color: #333;">Reason for {{ action.label.toLowerCase() }} *</span>
+            <span style="font-weight: 600; color: #333;">{{ t('components.statusActionModal.reasonForAction', { action: action.label.toLowerCase() }) }} *</span>
             <textarea
               v-model="reason"
               rows="3"
-              placeholder="Please provide a clear reason..."
+              :placeholder="t('components.statusActionModal.reasonPlaceholder')"
               style="
                 width: 100%;
                 padding: 10px;
@@ -41,13 +41,13 @@
       </div>
 
       <div class="modal-footer">
-        <button @click="close" class="btn btn-secondary">Cancel</button>
+        <button @click="close" class="btn btn-secondary">{{ t('common.cancel') }}</button>
         <button
           @click="handleConfirm"
           :class="`btn btn-${action?.color || 'primary'}`"
           :disabled="loading || (action?.requiresReason && !reason.trim())"
         >
-          {{ loading ? 'Processing...' : (action?.label || 'Confirm') }}
+          {{ loading ? t('common.processing') : (action?.label || t('common.confirm')) }}
         </button>
       </div>
     </div>
@@ -56,6 +56,9 @@
 
 <script setup>
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   visible: {
@@ -95,7 +98,7 @@ watch(() => props.visible, (newVal) => {
 const handleConfirm = () => {
   if (props.action?.requiresReason) {
     if (!reason.value.trim()) {
-      reasonError.value = 'Reason is required';
+      reasonError.value = t('components.statusActionModal.reasonRequired');
       return;
     }
   }

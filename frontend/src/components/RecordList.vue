@@ -1,6 +1,6 @@
 <template>
     <div class="record-list">
-        <div v-if="!items.length" class="record-item">No records found.</div>
+        <div v-if="!items.length" class="record-item">{{ t('common.ui.noRecords') }}</div>
         <div v-for="item in items" :key="item.id" class="record-item">
             <div class="record-title">
                 <span>{{ item.title }}</span>
@@ -13,7 +13,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import StatusBadge from './StatusBadge.vue';
+
+const { t } = useI18n();
 
 defineProps({
     items: {

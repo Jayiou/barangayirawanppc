@@ -11,13 +11,16 @@
       <i :class="`fa-solid fa-${action.icon}`"></i> {{ action.label }}
     </button>
     <span v-if="availableActions.length === 0" class="text-muted" style="font-size: 0.9rem;">
-      No further actions available
+      {{ t('components.statusActionButtons.noActions') }}
     </span>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   entityType: {

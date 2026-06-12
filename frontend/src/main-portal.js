@@ -1,19 +1,12 @@
 import { createApp } from 'vue';
 import PortalApp from './pages/PortalApp.vue';
-import i18n from './i18n';
-import { useTheme } from './composables/useTheme';
+import i18n from './i18n.js';
 import './styles.css';
-import './theme.css';
 
 try {
-	// Initialize theme
-	useTheme();
-
 	const app = createApp(PortalApp);
-	
-	// Use i18n
 	app.use(i18n);
-	
+
 	app.mount('#app');
 	globalThis.__APP_MOUNTED = true;
 } catch (error) {

@@ -1,8 +1,8 @@
 <template>
     <section class="announcement-section">
         <div class="section-title" v-if="announcements.length > 0" style="text-align: center; margin-bottom: 3rem;">
-            <span class="eyebrow">Latest Updates</span>
-            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">Barangay Announcements & Advisories</h2>
+            <span class="eyebrow">{{ t('components.announcementSlideshow.latestUpdates') }}</span>
+            <h2 style="font-family: 'Fraunces', serif; font-size: clamp(2rem, 3vw, 2.5rem); margin: 0; color: #1a1a1a;">{{ t('components.announcementSlideshow.heading') }}</h2>
         </div>
 
         <!-- Horizontal Rotating Carousel -->
@@ -45,7 +45,7 @@
                         class="dot" 
                         :class="{ active: index === currentSlide }"
                         type="button"
-                        :aria-label="`Go to update ${index + 1}: ${announcement.title}`"
+                        :aria-label="t('components.announcementSlideshow.ariaLabelUpdate', { number: index + 1, title: announcement.title })"
                         :aria-current="index === currentSlide ? 'true' : null"
                         @click="goToSlide(index)">
                 </button>
@@ -78,7 +78,7 @@
         </div>
 
         <div v-else class="no-announcements">
-            <p>No announcements available at this time.</p>
+            <p>{{ t('components.announcementSlideshow.noAnnouncements') }}</p>
         </div>
 <!-- Modal for Full Details -->
         <div v-if="selectedAnnouncement" class="announcement-modal-overlay" @click.self="closeModal">
@@ -101,10 +101,12 @@
 
 <script setup>
 import { onMounted, ref, onBeforeUnmount, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { apiFetch } from '@/shared/client';
 import { resolvePublicUploadUrl } from '@/shared/uploadUrls';
 
 const announcements = ref([]);
+const { t } = useI18n();
 const currentSlide = ref(0);
 const selectedAnnouncement = ref(null);
 let autoSlideInterval = null;

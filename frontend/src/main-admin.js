@@ -1,19 +1,12 @@
 import { createApp } from 'vue';
 import AdminApp from './pages/AdminApp.vue';
-import i18n from './i18n';
-import { useTheme } from './composables/useTheme';
+import i18n from './i18n.js';
 import './styles.css';
-import './theme.css';
 
 try {
 	const app = createApp(AdminApp);
-	
-	// Initialize theme
-	useTheme();
-	
-	// Use i18n
 	app.use(i18n);
-	
+
 	app.mount('#app');
 	globalThis.__APP_MOUNTED = true;
 } catch (error) {

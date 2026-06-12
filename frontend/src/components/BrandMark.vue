@@ -7,7 +7,7 @@
                 sizes="(max-width: 700px) 42px, 60px"
                 width="160"
                 height="160"
-                alt="Barangay Irawan logo"
+                :alt="t('common.brandLogoAlt')"
                 class="brand-logo"
                 decoding="async"
             />
@@ -20,6 +20,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 defineProps({
     initials: { type: String, required: true },
     eyebrow: { type: String, required: true },

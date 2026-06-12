@@ -1,21 +1,24 @@
 <template>
   <header class="app-header">
     <div class="header-left">
-      <h1>{{ $t('navigation.dashboard') }}</h1>
+      <h1>{{ t('common.dashboard') }}</h1>
     </div>
 
     <div class="header-right">
-      <ThemeLanguageControls />
+      <LanguageSwitcher />
       <button class="header-btn" type="button">
         <i class="fa-solid fa-user"></i>
-        <span>{{ $t('navigation.profile') }}</span>
+        <span>{{ t('common.profile') }}</span>
       </button>
     </div>
   </header>
 </template>
 
 <script setup>
-import ThemeLanguageControls from '@/components/ThemeLanguageControls.vue';
+import { useI18n } from 'vue-i18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
+
+const { t } = useI18n();
 </script>
 
 <style scoped>

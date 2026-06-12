@@ -1,12 +1,13 @@
 <template>
+    <LanguageSwitcher floating />
         <div v-if="initializing" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; flex-direction: column;">
             <div style="width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-            <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">{{ texts.admin.initializing }}</p>
+            <p style="margin-top: 1rem; color: #5e6f66; font-size: 0.9rem;">{{ t('admin.initializing') }}</p>
         </div>
     <div v-else-if="!isAuthenticated" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f4f7f6; padding: 20px;">
         <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center;">
             <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
-            <BrandMark initials="BI" eyebrow="Barangay Admin" title="Barangay Irawan" style="margin-bottom: 2rem;" />
+            <BrandMark initials="BI" eyebrow="Barangay Admin" :title="t('common.barangayName')" style="margin-bottom: 2rem;" />
             <form class="stack" @submit.prevent="handleAuthSubmit" style="width: 100%; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="section-head" style="text-align: center; margin-bottom: 1.5rem;">
                     <h3 style="margin: 0; font-size: 1.5rem; color: #1a1a1a;">{{ authPanelTitle }}</h3>
@@ -14,17 +15,17 @@
                 </div>
                 <template v-if="authView === 'login'">
                     <label>
-                        <span>{{ texts.admin.login.username }}</span>
+                        <span>{{ t('admin.login.username') }}</span>
                         <input v-model="loginForm.username" type="text" required>
                     </label>
                     <label>
-                        <span>{{ texts.admin.login.password }}</span>
+                        <span>{{ t('admin.login.password') }}</span>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input v-model="loginForm.password" :type="showAdminPassword ? 'text' : 'password'" required style="padding-right: 42px; width: 100%;">
                             <button
                                 type="button"
                                 @click="showAdminPassword = !showAdminPassword"
-                                :aria-label="showAdminPassword ? 'Hide password' : 'Show password'"
+                                :aria-label="showAdminPassword ? t('common.passwordHide') : t('common.passwordShow')"
                                 style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
                             >
                                 <i :class="showAdminPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
@@ -32,44 +33,44 @@
                         </div>
                     </label>
                     <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                        <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #2c5d3f; font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline;">Forgot password?</button>
+                        <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #2c5d3f; font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline;">{{ t('landing.auth.login.forgot') }}</button>
                     </div>
-                    <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? texts.admin.login.signingIn : texts.admin.login.login }}</button>
+                    <button type="submit" class="primary-button" :disabled="loginLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="loginLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-lock'"></i> {{ loginLoading ? t('admin.login.signingIn') : t('admin.login.login') }}</button>
                 </template>
 
                 <template v-else-if="authView === 'forgot'">
                     <label>
-                        <span>{{ texts.admin.forgot.email }}</span>
+                        <span>{{ t('admin.forgot.email') }}</span>
                         <input v-model="forgotPasswordForm.email" type="email" autocomplete="email" required placeholder="admin@example.com">
                     </label>
-                    <p class="fine-print" style="margin: 0;">{{ texts.admin.forgot.helper }}</p>
-                    <button type="submit" class="primary-button" :disabled="forgotPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="forgotPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i> {{ forgotPasswordLoading ? texts.admin.forgot.sending : texts.admin.forgot.send }}</button>
-                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.forgot.back }}</button>
+                    <p class="fine-print" style="margin: 0;">{{ t('admin.forgot.helper') }}</p>
+                    <button type="submit" class="primary-button" :disabled="forgotPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="forgotPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i> {{ forgotPasswordLoading ? t('admin.forgot.sending') : t('admin.forgot.send') }}</button>
+                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ t('admin.forgot.back') }}</button>
                 </template>
 
                 <template v-else-if="authView === 'email-confirm'">
-                    <p class="fine-print" style="margin: 0;">{{ texts.admin.emailConfirm.helper }}</p>
+                    <p class="fine-print" style="margin: 0;">{{ t('admin.emailConfirm.helper') }}</p>
                     <label>
-                        <span>{{ texts.admin.emailConfirm.email }}</span>
+                        <span>{{ t('admin.emailConfirm.email') }}</span>
                         <input v-model="emailChangeConfirmForm.email" type="email" readonly>
                     </label>
-                    <button type="submit" class="primary-button" :disabled="emailChangeConfirmLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="emailChangeConfirmLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-envelope-circle-check'"></i> {{ emailChangeConfirmLoading ? texts.admin.emailConfirm.verifying : texts.admin.emailConfirm.confirm }}</button>
-                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.emailConfirm.back }}</button>
+                    <button type="submit" class="primary-button" :disabled="emailChangeConfirmLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="emailChangeConfirmLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-envelope-circle-check'"></i> {{ emailChangeConfirmLoading ? t('admin.emailConfirm.verifying') : t('admin.emailConfirm.confirm') }}</button>
+                    <button type="button" @click="setAuthView('login')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ t('admin.emailConfirm.back') }}</button>
                 </template>
 
                 <template v-else>
                     <label>
-                        <span>{{ texts.admin.reset.email }}</span>
+                        <span>{{ t('admin.reset.email') }}</span>
                         <input v-model="resetPasswordForm.email" type="email" readonly>
                     </label>
                     <label>
-                        <span>{{ texts.admin.reset.password }}</span>
+                        <span>{{ t('admin.reset.password') }}</span>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input v-model="resetPasswordForm.password" :type="showResetPassword ? 'text' : 'password'" minlength="8" required style="padding-right: 42px; width: 100%;">
                             <button
                                 type="button"
                                 @click="showResetPassword = !showResetPassword"
-                                :aria-label="showResetPassword ? 'Hide password' : 'Show password'"
+                                :aria-label="showResetPassword ? t('common.passwordHide') : t('common.passwordShow')"
                                 style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
                             >
                                 <i :class="showResetPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
@@ -77,13 +78,13 @@
                         </div>
                     </label>
                     <label>
-                        <span>{{ texts.admin.reset.confirmPassword }}</span>
+                        <span>{{ t('admin.reset.confirmPassword') }}</span>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input v-model="resetPasswordForm.confirmPassword" :type="showResetConfirmPassword ? 'text' : 'password'" minlength="8" required style="padding-right: 42px; width: 100%;">
                             <button
                                 type="button"
                                 @click="showResetConfirmPassword = !showResetConfirmPassword"
-                                :aria-label="showResetConfirmPassword ? 'Hide password' : 'Show password'"
+                                :aria-label="showResetConfirmPassword ? t('common.passwordHide') : t('common.passwordShow')"
                                 style="position: absolute; right: 10px; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: #5e6f66; display: grid; place-items: center;"
                             >
                                 <i :class="showResetConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
@@ -91,7 +92,7 @@
                         </div>
                     </label>
                     <div class="password-rules profile-password-rules" aria-live="polite">
-                        <p class="password-rules-title">Password must include:</p>
+                        <p class="password-rules-title">{{ t('common.passwordMustInclude') }}</p>
                         <ul class="password-rules-list">
                             <li v-for="rule in resetPasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
                                 <i :class="rule.passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
@@ -99,8 +100,8 @@
                             </li>
                         </ul>
                     </div>
-                    <button type="submit" class="primary-button" :disabled="resetPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="resetPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i> {{ resetPasswordLoading ? texts.admin.reset.saving : texts.admin.reset.save }}</button>
-                    <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ texts.admin.reset.requestNew }}</button>
+                    <button type="submit" class="primary-button" :disabled="resetPasswordLoading" style="justify-content: center; width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 6px; margin-top: 0.5rem;"><i :class="resetPasswordLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-key'"></i> {{ resetPasswordLoading ? t('admin.reset.saving') : t('admin.reset.save') }}</button>
+                    <button type="button" @click="setAuthView('forgot')" style="border: none; background: transparent; color: #32586f; font-weight: 600; cursor: pointer; padding: 0;">{{ t('admin.reset.requestNew') }}</button>
                 </template>
             </form>
         </div>
@@ -110,11 +111,11 @@
         <ToastPopup :message="toastMessage" :type="toastType" @close="clearToast" />
         <dialog v-if="reportAlertVisible && !isBhwUser" class="report-alert-overlay" aria-modal="true" aria-live="assertive" open>
             <div class="report-alert-card">
-                <span class="report-alert-eyebrow">New Incident Report</span>
+                <span class="report-alert-eyebrow">{{ t('admin.reportAlert.heading') }}</span>
                 <h3>{{ reportAlertHeading }}</h3>
                 <p>{{ reportAlertMessage }}</p>
                 <div class="report-alert-actions">
-                    <button type="button" class="ghost-button" @click="dismissReportAlert" :disabled="reportAlertBusy">Dismiss</button>
+                    <button type="button" class="ghost-button" @click="dismissReportAlert" :disabled="reportAlertBusy">{{ t('admin.reportAlert.dismiss') }}</button>
                     <button type="button" class="primary-button" @click="viewReportsFromAlert" :disabled="reportAlertBusy">
                         <i :class="reportAlertBusy ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-flag'"></i>
                         {{ reportAlertBusy ? 'Loading reports...' : 'View Reports' }}
@@ -123,43 +124,43 @@
             </div>
         </dialog>
 
-        <aside class="app-sidebar" aria-label="Admin sidebar" :class="{ open: sidebarOpen, 'notifications-blurred': reportAlertVisible }">
+        <aside class="app-sidebar" :aria-label="t('common.ui.adminSidebar')" :class="{ open: sidebarOpen, 'notifications-blurred': reportAlertVisible }">
             <button class="sidebar-close-btn" @click="sidebarOpen = false"><i class="fa-solid fa-xmark"></i></button>
             
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <BrandMark initials="BI" :eyebrow="isBhwUser ? 'Health Worker Portal' : 'Admin Portal'" title="Barangay Irawan" />
+                <BrandMark initials="BI" :eyebrow="isBhwUser ? 'Health Worker Portal' : 'Admin Portal'" :title="t('common.barangayName')" />
             </div>
 
             <!-- Sidebar Navigation -->
                 <nav class="sidebar-nav">
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ texts.admin.sidebar.dashboard }}</button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ texts.admin.sidebar.announcements }}</button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ texts.admin.sidebar.residents }}</button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ texts.admin.sidebar.appointments }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ texts.admin.sidebar.officials }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i> {{ t('admin.sidebar.dashboard') }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i> {{ t('admin.sidebar.announcements') }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i> {{ t('admin.sidebar.residents') }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i> {{ t('admin.sidebar.appointments') }} <span class="badge" v-if="pendingCounts.appointments">{{ pendingCounts.appointments }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i> {{ t('admin.sidebar.officials') }}</button>
 
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> Health Center</button>
-                <button :class="{ active: currentView === 'health-queue' }" type="button" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i> Queue Monitor</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i> {{ t('admin.healthCenter') }}</button>
+                <button :class="{ active: currentView === 'health-queue' }" type="button" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i> {{ t('components.activeQueueDashboard.healthQueueDashboard') }}</button>
 
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ texts.admin.sidebar.facilities }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ texts.admin.sidebar.manpower }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ texts.admin.sidebar.reports }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ texts.admin.sidebar.documents }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ texts.admin.sidebar.disaster }}</button>
-                <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ texts.admin.sidebar.smsLogs }}</button>
-                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ texts.admin.sidebar.profile }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i> {{ t('admin.sidebar.facilities') }} <span class="badge" v-if="pendingCounts.reserves">{{ pendingCounts.reserves }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i> {{ t('admin.sidebar.manpower') }} <span class="badge" v-if="pendingCounts.manpower">{{ pendingCounts.manpower }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i> {{ t('admin.sidebar.reports') }} <span class="badge" v-if="pendingCounts.reports">{{ pendingCounts.reports }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i> {{ t('admin.sidebar.documents') }} <span class="badge" v-if="documentRequests.length">{{ documentRequests.length }}</span></button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i> {{ t('admin.sidebar.disaster') }}</button>
+                <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i> {{ t('admin.sidebar.smsLogs') }}</button>
+                <button :class="{ active: currentView === 'profile' }" type="button" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i> {{ t('admin.sidebar.profile') }}</button>
             </nav>
 
             <!-- Sidebar Footer -->
             <div class="sidebar-footer">
-                <span class="footer-eyebrow">Logged In As</span>
+                <span class="footer-eyebrow">{{ t('common.loggedInAs') }}</span>
                 <div class="user-info" v-if="user">
                     <strong class="user-name">{{ user.username }}</strong>
                     <div class="user-email">{{ user.email }}</div>
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
-                    <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> {{ texts.admin.sidebar.logout }}</button>
+                    <button type="button" class="logout-btn" @click="confirmLogout" style="flex: 1;"><i class="fa-solid fa-right-from-bracket"></i> {{ t('admin.sidebar.logout') }}</button>
                 </div>
             </div>
         </aside>
@@ -167,21 +168,21 @@
         <main class="app-main" :class="{ 'notifications-blurred': reportAlertVisible }">
             <header class="mobile-app-header">
                 <button class="sidebar-open-btn" @click="sidebarOpen = true"><i class="fa-solid fa-bars"></i></button>
-                <nav class="mobile-quick-nav" aria-label="Admin quick navigation">
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" :title="texts.admin.sidebar.dashboard" :aria-label="texts.admin.sidebar.dashboard" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ texts.admin.sidebar.dashboard }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" :title="texts.admin.sidebar.announcements" :aria-label="texts.admin.sidebar.announcements" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ texts.admin.sidebar.announcements }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" :title="texts.admin.sidebar.residents" :aria-label="texts.admin.sidebar.residents" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ texts.admin.sidebar.residents }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" :title="texts.admin.sidebar.appointments" :aria-label="texts.admin.sidebar.appointments" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Appoint</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" :title="texts.admin.sidebar.officials" :aria-label="texts.admin.sidebar.officials" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ texts.admin.sidebar.officials }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" :title="texts.admin.sidebar.facilities" :aria-label="texts.admin.sidebar.facilities" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>Facility</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" :title="texts.admin.sidebar.manpower" :aria-label="texts.admin.sidebar.manpower" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i><span>Manpower</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" :title="texts.admin.sidebar.reports" :aria-label="texts.admin.sidebar.reports" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ texts.admin.sidebar.reports }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" :title="texts.admin.sidebar.documents" :aria-label="texts.admin.sidebar.documents" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ texts.admin.sidebar.documents }}</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" :title="texts.admin.sidebar.disaster" :aria-label="texts.admin.sidebar.disaster" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>Advisories</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" :title="'Health Center'" :aria-label="'Health Center'" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>Health</span></button>
-                    <button :class="{ active: currentView === 'health-queue' }" type="button" :title="'Queue Monitor'" :aria-label="'Queue Monitor'" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i><span>Queue</span></button>
-                    <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" :title="texts.admin.sidebar.smsLogs" :aria-label="texts.admin.sidebar.smsLogs" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ texts.admin.sidebar.smsLogs }}</span></button>
-                    <button :class="{ active: currentView === 'profile' }" type="button" :title="texts.admin.sidebar.profile" :aria-label="texts.admin.sidebar.profile" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ texts.admin.sidebar.profile }}</span></button>
+                <nav class="mobile-quick-nav" :aria-label="t('common.adminQuickNavigation')">
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'dashboard' }" type="button" :title="t('admin.sidebar.dashboard')" :aria-label="t('admin.sidebar.dashboard')" @click="currentView = 'dashboard'"><i class="fa-solid fa-chart-pie"></i><span>{{ t('admin.sidebar.dashboard') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'announcements' }" type="button" :title="t('admin.sidebar.announcements')" :aria-label="t('admin.sidebar.announcements')" @click="currentView = 'announcements'"><i class="fa-solid fa-bullhorn"></i><span>{{ t('admin.sidebar.announcements') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'residents' }" type="button" :title="t('admin.sidebar.residents')" :aria-label="t('admin.sidebar.residents')" @click="currentView = 'residents'"><i class="fa-solid fa-users"></i><span>{{ t('admin.sidebar.residents') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'appointments' }" type="button" :title="t('admin.sidebar.appointments')" :aria-label="t('admin.sidebar.appointments')" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>{{ t('admin.sidebar.appointments') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'officials' }" type="button" :title="t('admin.sidebar.officials')" :aria-label="t('admin.sidebar.officials')" @click="currentView = 'officials'"><i class="fa-solid fa-crown"></i><span>{{ t('admin.sidebar.officials') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reservations' }" type="button" :title="t('admin.sidebar.facilities')" :aria-label="t('admin.sidebar.facilities')" @click="currentView = 'reservations'"><i class="fa-solid fa-building"></i><span>{{ t('admin.sidebar.facilities') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'manpower' }" type="button" :title="t('admin.sidebar.manpower')" :aria-label="t('admin.sidebar.manpower')" @click="currentView = 'manpower'"><i class="fa-solid fa-people-group"></i><span>{{ t('admin.sidebar.manpower') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'reports' }" type="button" :title="t('admin.sidebar.reports')" :aria-label="t('admin.sidebar.reports')" @click="currentView = 'reports'"><i class="fa-solid fa-flag"></i><span>{{ t('admin.sidebar.reports') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'documents' }" type="button" :title="t('admin.sidebar.documents')" :aria-label="t('admin.sidebar.documents')" @click="currentView = 'documents'"><i class="fa-solid fa-file-lines"></i><span>{{ t('admin.sidebar.documents') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'disaster' }" type="button" :title="t('admin.sidebar.disaster')" :aria-label="t('admin.sidebar.disaster')" @click="currentView = 'disaster'"><i class="fa-solid fa-house-flood-water"></i><span>{{ t('admin.sidebar.disaster') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'health-events' }" type="button" :title="t('admin.healthCenter')" :aria-label="t('admin.healthCenter')" @click="currentView = 'health-events'"><i class="fa-solid fa-hospital"></i><span>{{ t('admin.healthCenter') }}</span></button>
+                    <button :class="{ active: currentView === 'health-queue' }" type="button" :title="t('components.activeQueueDashboard.healthQueueDashboard')" :aria-label="t('components.activeQueueDashboard.healthQueueDashboard')" @click="currentView = 'health-queue'"><i class="fa-solid fa-list-check"></i><span>{{ t('components.activeQueueDashboard.healthQueueDashboard') }}</span></button>
+                    <button v-if="!isBhwUser" :class="{ active: currentView === 'sms-logs' }" type="button" :title="t('admin.sidebar.smsLogs')" :aria-label="t('admin.sidebar.smsLogs')" @click="currentView = 'sms-logs'"><i class="fa-solid fa-message"></i><span>{{ t('admin.sidebar.smsLogs') }}</span></button>
+                    <button :class="{ active: currentView === 'profile' }" type="button" :title="t('admin.sidebar.profile')" :aria-label="t('admin.sidebar.profile')" @click="currentView = 'profile'"><i class="fa-solid fa-id-card"></i><span>{{ t('admin.sidebar.profile') }}</span></button>
                 </nav>
             </header>
             <!-- Dashboard View -->
@@ -189,12 +190,12 @@
                 <div class="ops-dashboard-shell">
                     <div class="ops-dashboard-header">
                         <div>
-                            <span class="eyebrow">Municipal Operations Command</span>
-                            <h1>Barangay Operations Dashboard</h1>
+                            <span class="eyebrow">{{ t('admin.dashboard.opsEyebrow') }}</span>
+                            <h1>{{ t('admin.dashboard.opsTitle') }}</h1>
                         </div>
                         <div class="ops-live-status">
                             <span class="live-dot"></span>
-                            <span>Live operations feed</span>
+                            <span>{{ t('admin.dashboard.liveFeed') }}</span>
                         </div>
                     </div>
 
@@ -234,7 +235,7 @@
                             <div class="ops-side-panels">
                                 <article class="ops-mini-panel">
                                     <div class="ops-panel-heading">
-                                        <h3>Recent Activity</h3>
+                                        <h3>{{ t('admin.dashboard.recentActivity') }}</h3>
                                         <span>{{ getRecentActivityItems.length }} latest</span>
                                     </div>
                                     <div v-if="getRecentActivityItems.length" class="ops-timeline">
@@ -256,20 +257,20 @@
                                     </div>
                                     <div v-else class="dashboard-empty-state">
                                         <i class="fa-solid fa-circle-check"></i>
-                                        <p>No recent activity</p>
+                                        <p>{{ t('common.ui.noRecentActivity') }}</p>
                                     </div>
                                 </article>
 
                                 <article class="ops-mini-panel">
                                     <div class="ops-panel-heading">
-                                        <h3>Quick Actions</h3>
-                                        <span>Priority paths</span>
+                                        <h3>{{ t('common.ui.quickActions') }}</h3>
+                                        <span>{{ t('common.ui.priorityPaths') }}</span>
                                     </div>
                                     <div class="ops-quick-actions">
-                                        <button type="button" @click="currentView = 'reports'"><i class="fa-solid fa-shield-halved"></i><span>Review reports</span></button>
-                                        <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>Manage appointments</span></button>
-                                        <button type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building-columns"></i><span>Facility reservations</span></button>
-                                        <button type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-bullhorn"></i><span>Publish advisory</span></button>
+                                        <button type="button" @click="currentView = 'reports'"><i class="fa-solid fa-shield-halved"></i><span>{{ t('common.ui.reviewReports') }}</span></button>
+                                        <button type="button" @click="currentView = 'appointments'"><i class="fa-solid fa-calendar-check"></i><span>{{ t('common.ui.manageAppointmentsShort') }}</span></button>
+                                        <button type="button" @click="currentView = 'reservations'"><i class="fa-solid fa-building-columns"></i><span>{{ t('common.ui.facilityReservations') }}</span></button>
+                                        <button type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-bullhorn"></i><span>{{ t('common.ui.publishAdvisory') }}</span></button>
                                     </div>
                                 </article>
                             </div>
@@ -281,7 +282,7 @@
                                     <span class="ops-kicker">{{ activeAnalyticsData.kicker }}</span>
                                     <h2>{{ activeAnalyticsData.title }}</h2>
                                 </div>
-                                <div class="ops-range-tabs" role="tablist" aria-label="Analytics range">
+                                <div class="ops-range-tabs" role="tablist" :aria-label="t('common.ui.analyticsRange')">
                                     <button
                                         v-for="range in analyticsRanges"
                                         :key="range.key"
@@ -373,7 +374,7 @@
                                     <div class="ops-distribution-ring" :style="activeAnalyticsData.ringStyle">
                                         <div>
                                             <strong>{{ activeAnalyticsData.total }}</strong>
-                                            <span>Total</span>
+                                            <span>{{ t('common.ui.total') }}</span>
                                         </div>
                                     </div>
                                     <div class="ops-distribution-list">
@@ -398,24 +399,24 @@
                     <section class="ops-community-band">
                         <article class="ops-mini-panel community-insights-panel">
                             <div class="ops-panel-heading">
-                                <h3>Community Insights</h3>
-                                <span>Operational signals</span>
+                                <h3>{{ t('common.ui.communityInsights') }}</h3>
+                                <span>{{ t('common.ui.operationalSignals') }}</span>
                             </div>
                             <div class="community-insight-grid">
                                 <div>
-                                    <span>Resident verification</span>
+                                    <span>{{ t('common.ui.residentVerification') }}</span>
                                     <strong>{{ approvedResidentsCount }}/{{ totalResidentsCount }}</strong>
-                                    <small>Approved account coverage</small>
+                                    <small>{{ t('common.ui.approvedCoverage') }}</small>
                                 </div>
                                 <div>
-                                    <span>Resolution load</span>
+                                    <span>{{ t('common.ui.resolutionLoad') }}</span>
                                     <strong>{{ pendingCounts.reports }}</strong>
-                                    <small>Reports needing review</small>
+                                    <small>{{ t('common.ui.reportsReview') }}</small>
                                 </div>
                                 <div>
-                                    <span>Public advisories</span>
+                                    <span>{{ t('common.ui.publicAdvisories') }}</span>
                                     <strong>{{ activeAnnouncementsCount }}</strong>
-                                    <small>Currently active posts</small>
+                                    <small>{{ t('common.ui.activePosts') }}</small>
                                 </div>
                             </div>
                         </article>
@@ -427,75 +428,75 @@
                     <article class="content-card">
                         <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
                             <div>
-                                <span class="eyebrow">Disaster Advisory Module</span>
-                                <h3>Weather impact advisory and evacuation guidance</h3>
+                                <span class="eyebrow">{{ t('common.ui.disasterModule') }}</span>
+                                <h3>{{ t('common.ui.weatherAdvisory') }}</h3>
                             </div>
-                            <button class="ghost-button" type="button" @click="resetDisasterAdvisoryForm"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+                            <button class="ghost-button" type="button" @click="resetDisasterAdvisoryForm"><i class="fa-solid fa-rotate-right"></i> {{ t('common.ui.clearForm') }}</button>
                         </div>
                         <div class="summary-grid" style="margin-bottom:14px;">
-                            <article class="summary-card"><span>Total Advisories</span><strong>{{ disasterSummary.total }}</strong></article>
-                            <article class="summary-card"><span>Upcoming</span><strong>{{ disasterSummary.upcoming }}</strong></article>
-                            <article class="summary-card"><span>Ongoing</span><strong>{{ disasterSummary.ongoing }}</strong></article>
-                            <article class="summary-card"><span>Ended</span><strong>{{ disasterSummary.ended }}</strong></article>
+                            <article class="summary-card"><span>{{ t('common.ui.totalAdvisories') }}</span><strong>{{ disasterSummary.total }}</strong></article>
+                            <article class="summary-card"><span>{{ t('common.ui.upcoming') }}</span><strong>{{ disasterSummary.upcoming }}</strong></article>
+                            <article class="summary-card"><span>{{ t('common.ui.ongoing') }}</span><strong>{{ disasterSummary.ongoing }}</strong></article>
+                            <article class="summary-card"><span>{{ t('common.ui.ended') }}</span><strong>{{ disasterSummary.ended }}</strong></article>
                         </div>
                         <div class="portal-grid" style="grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.3fr);">
                             <article class="content-card" style="padding:16px;">
                                 <form class="stack" @submit.prevent="saveDisasterAdvisory">
-                                    <label><span>Disaster Type</span>
+                                    <label><span>{{ t('common.ui.disasterType') }}</span>
                                         <select v-model="disasterAdvisoryForm.disasterType" required>
-                                            <option value="typhoon">Typhoon</option>
-                                            <option value="flood">Flood</option>
-                                            <option value="landslide">Landslide</option>
+                                            <option value="typhoon">{{ t('common.ui.typhoon') }}</option>
+                                            <option value="flood">{{ t('common.ui.flood') }}</option>
+                                            <option value="landslide">{{ t('common.ui.landslide') }}</option>
                                         </select>
                                     </label>
-                                    <label><span>Expected Impact Date</span><input v-model="disasterAdvisoryForm.expectedImpactDate" type="datetime-local" required></label>
-                                    <label><span>Severity</span>
+                                    <label><span>{{ t('common.ui.expectedImpactDate') }}</span><input v-model="disasterAdvisoryForm.expectedImpactDate" type="datetime-local" required></label>
+                                    <label><span>{{ t('common.ui.severity') }}</span>
                                         <select v-model="disasterAdvisoryForm.severity" required>
-                                            <option value="low">Low</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="high">High</option>
-                                            <option value="critical">Critical</option>
+                                            <option value="low">{{ t('common.ui.low') }}</option>
+                                            <option value="medium">{{ t('common.ui.medium') }}</option>
+                                            <option value="high">{{ t('common.ui.high') }}</option>
+                                            <option value="critical">{{ t('common.ui.critical') }}</option>
                                         </select>
                                     </label>
                                     <div style="display:grid; gap:10px; padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#fbfdfc;">
                                         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                                            <span style="font-weight:600;">Flood-Prone Areas</span>
-                                            <button type="button" class="ghost-button" @click="addFloodProneAreaRow"><i class="fa-solid fa-plus"></i> Add Area</button>
+                                            <span style="font-weight:600;">{{ t('common.ui.floodProneAreas') }}</span>
+                                            <button type="button" class="ghost-button" @click="addFloodProneAreaRow"><i class="fa-solid fa-plus"></i> {{ t('common.ui.addArea') }}</button>
                                         </div>
                                         <div v-for="(area, index) in disasterFloodAreaRows" :key="area.id" style="display:grid; gap:10px; padding:12px; border:1px solid #e6eee9; border-radius:8px; background:#fff;">
                                             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                                                 <strong>Area {{ index + 1 }}</strong>
-                                                <button v-if="disasterFloodAreaRows.length > 1" type="button" class="ghost-button" @click="removeFloodProneAreaRow(index)" style="color:#b42318;"><i class="fa-solid fa-trash"></i> Remove</button>
+                                                <button v-if="disasterFloodAreaRows.length > 1" type="button" class="ghost-button" @click="removeFloodProneAreaRow(index)" style="color:#b42318;"><i class="fa-solid fa-trash"></i> {{ t('common.ui.remove') }}</button>
                                             </div>
                                             <label>
-                                                <span>Purok</span>
+                                                <span>{{ t('portal.profile.labels.purok') }}</span>
                                                 <select v-model="area.purok" required @change="area.zone = ''">
-                                                    <option value="" disabled>Select Purok</option>
+                                                    <option value="" disabled>{{ t('common.ui.selectPurok') }}</option>
                                                     <option v-for="purok in disasterPurokOptions" :key="purok" :value="purok">{{ purok }}</option>
                                                 </select>
                                             </label>
                                             <label v-if="getFloodProneAreaZoneOptions(area.purok).length">
-                                                <span>Zone</span>
+                                                <span>{{ t('portal.profile.labels.zone') }}</span>
                                                 <select v-model="area.zone" required>
-                                                    <option value="" disabled>Select Zone</option>
+                                                    <option value="" disabled>{{ t('common.ui.selectZone') }}</option>
                                                     <option v-for="zone in getFloodProneAreaZoneOptions(area.purok)" :key="zone" :value="zone">{{ zone }}</option>
                                                 </select>
                                             </label>
                                         </div>
                                     </div>
-                                    <label><span>Available Evacuation Centers (comma separated)</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" placeholder="Barangay Hall, Covered Court"></label>
-                                    <label><span>Advisory Message</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required placeholder="Safety reminders and evacuation instructions"></textarea></label>
-                                    <label><span>Picture (optional)</span><input type="file" accept="image/*" @change="handleDisasterAdvisoryImageChange"></label>
+                                    <label><span>{{ t('common.ui.evacuationCenters') }}</span><input v-model="disasterAdvisoryForm.evacuationCenters" type="text" :placeholder="t('common.ui.barangayHallCoveredCourt')"></label>
+                                    <label><span>{{ t('common.ui.advisoryMessage') }}</span><textarea v-model="disasterAdvisoryForm.advisoryMessage" rows="4" required :placeholder="t('common.ui.safetyInstructions')"></textarea></label>
+                                    <label><span>{{ t('common.ui.pictureOptional') }}</span><input type="file" accept="image/*" @change="handleDisasterAdvisoryImageChange"></label>
                                     <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                                     <div v-if="disasterAdvisoryImagePreview" style="display:grid; gap:6px; margin-top:-8px;">
                                         <img :src="disasterAdvisoryImagePreview" alt="Disaster advisory preview" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; border:1px solid #dce6e1;">
                                         <small class="fine-print">{{ disasterAdvisoryImageFile ? disasterAdvisoryImageFile.name : 'Current advisory picture' }}</small>
                                     </div>
-                                    <label><span>Status</span>
+                                    <label><span>{{ t('common.status') }}</span>
                                         <select v-model="disasterAdvisoryForm.status">
-                                            <option value="upcoming">Upcoming</option>
-                                            <option value="ongoing">Ongoing</option>
-                                            <option value="ended">Ended</option>
+                                            <option value="upcoming">{{ t('common.ui.upcoming') }}</option>
+                                            <option value="ongoing">{{ t('common.ui.ongoing') }}</option>
+                                            <option value="ended">{{ t('common.ui.ended') }}</option>
                                         </select>
                                     </label>
                                     <button class="primary-button" type="submit" :disabled="isSubmitting">
@@ -504,12 +505,12 @@
                                 </form>
                             </article>
                             <article class="content-card" style="padding:16px;">
-                                <label><span>Filter by Status</span>
+                                <label><span>{{ t('common.ui.filterByStatus') }}</span>
                                     <select v-model="disasterFilterStatus">
-                                        <option value="all">All</option>
-                                        <option value="upcoming">Upcoming</option>
-                                        <option value="ongoing">Ongoing</option>
-                                        <option value="ended">Ended</option>
+                                        <option value="all">{{ t('common.ui.all') }}</option>
+                                        <option value="upcoming">{{ t('common.ui.upcoming') }}</option>
+                                        <option value="ongoing">{{ t('common.ui.ongoing') }}</option>
+                                        <option value="ended">{{ t('common.ui.ended') }}</option>
                                     </select>
                                 </label>
                                 <div style="margin-top:10px; display:grid; gap:8px;">
@@ -526,12 +527,12 @@
                                         <small class="fine-print" style="display:block;">Evacuation Centers: {{ advisory.evacuationCenters?.join(', ') || 'N/A' }}</small>
                                         <small class="fine-print" style="display:block;">Residents Notified: {{ advisory.notifiedResidentCount || 0 }}</small>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-                                            <button class="ghost-button" type="button" @click="editDisasterAdvisory(advisory)"><i class="fa-solid fa-pen"></i> Edit</button>
-                                            <button class="ghost-button" type="button" @click="deleteDisasterAdvisory(advisory._id)"><i class="fa-solid fa-trash"></i> Delete</button>
-                                            <button class="ghost-button" type="button" @click="markDisasterAdvisoryStatus(advisory, 'ended')"><i class="fa-solid fa-check"></i> Mark Ended</button>
+                                            <button class="ghost-button" type="button" @click="editDisasterAdvisory(advisory)"><i class="fa-solid fa-pen"></i> {{ t('common.ui.edit') }}</button>
+                                            <button class="ghost-button" type="button" @click="deleteDisasterAdvisory(advisory._id)"><i class="fa-solid fa-trash"></i> {{ t('common.ui.delete') }}</button>
+                                            <button class="ghost-button" type="button" @click="markDisasterAdvisoryStatus(advisory, 'ended')"><i class="fa-solid fa-check"></i> {{ t('common.ui.markEnded') }}</button>
                                         </div>
                                     </article>
-                                    <div v-if="!filteredDisasterIncidents.length" class="fine-print">No advisories found.</div>
+                                    <div v-if="!filteredDisasterIncidents.length" class="fine-print">{{ t('common.ui.noAdvisories') }}</div>
                                 </div>
                             </article>
                         </div>
@@ -553,10 +554,10 @@
                                     <option v-for="option in managementFilterConfig.statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                                 </select>
                                 <input v-model="managementDateFilter" type="date" :aria-label="`Filter ${currentView} by ${managementFilterConfig.dateLabel.toLowerCase()}`">
-                                <button v-if="currentView === 'announcements'" class="primary-button" type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> Add Announcement</button>
+                                <button v-if="currentView === 'announcements'" class="primary-button" type="button" @click="openModal('announcement', {})"><i class="fa-solid fa-plus"></i> {{ t('common.ui.addAnnouncement') }}</button>
                             </div>
                         </div>
-                        <div v-if="supportsRequesterTabs(currentView)" class="requester-segment" aria-label="Requester type filter">
+                        <div v-if="supportsRequesterTabs(currentView)" class="requester-segment" :aria-label="t('common.ui.requesterTypeFilter')">
                             <button
                                 v-for="option in requesterFilterOptions"
                                 :key="option.value"
@@ -572,48 +573,48 @@
                             <table class="data-table">
                                 <thead>
                                     <tr v-if="currentView === 'residents'">
-                                    <th scope="col">Photo</th>
-                                    <th scope="col">Name</th>
-                                    <th scope="col">Address</th>
-                                    <th scope="col">Account Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('common.ui.photo') }}</th>
+                                    <th scope="col">{{ t('common.name') }}</th>
+                                    <th scope="col">{{ t('common.ui.address') }}</th>
+                                    <th scope="col">{{ t('common.ui.accountStatus') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                                 
                                 <tr v-if="currentView === 'reservations'">
-                                    <th scope="col">Facility & Date</th>
-                                    <th scope="col">Requester</th>
-                                    <th scope="col">Purpose</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('common.ui.facilityAndDate') }}</th>
+                                    <th scope="col">{{ t('common.ui.requester') }}</th>
+                                    <th scope="col">{{ t('landing.formLabels.purpose') }}</th>
+                                    <th scope="col">{{ t('common.status') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                                 <tr v-if="currentView === 'reports'">
-                                    <th scope="col">Issue</th>
-                                    <th scope="col">Requester / Type</th>
-                                    <th scope="col">Priority</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('common.ui.issue') }}</th>
+                                    <th scope="col">{{ t('common.ui.requesterType') }}</th>
+                                    <th scope="col">{{ t('landing.formLabels.priority') }}</th>
+                                    <th scope="col">{{ t('common.status') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                                 <tr v-if="currentView === 'manpower'">
-                                    <th scope="col">Request & Date</th>
-                                    <th scope="col">Requester</th>
-                                    <th scope="col">Personnel</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('common.ui.requestAndDate') }}</th>
+                                    <th scope="col">{{ t('common.ui.requester') }}</th>
+                                    <th scope="col">{{ t('common.ui.personnel') }}</th>
+                                    <th scope="col">{{ t('common.status') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                                 <tr v-if="currentView === 'documents'">
-                                    <th scope="col">Date</th>
-                                    <th scope="col">Requester</th>
-                                    <th scope="col">Type</th>
-                                    <th scope="col">Purpose</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('landing.formLabels.incidentDate') }}</th>
+                                    <th scope="col">{{ t('common.ui.requester') }}</th>
+                                    <th scope="col">{{ t('portal.documents.tableType') }}</th>
+                                    <th scope="col">{{ t('landing.formLabels.purpose') }}</th>
+                                    <th scope="col">{{ t('common.status') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                                 <tr v-if="currentView === 'announcements'">
-                                    <th scope="col">Title</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Display Order</th>
-                                    <th scope="col">Date Range</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">{{ t('common.ui.title') }}</th>
+                                    <th scope="col">{{ t('common.status') }}</th>
+                                    <th scope="col">{{ t('common.ui.displayOrder') }}</th>
+                                    <th scope="col">{{ t('common.ui.dateRange') }}</th>
+                                    <th scope="col">{{ t('portal.appointments.tableActions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -639,19 +640,19 @@
                                     <td v-if="currentView === 'residents'">{{ item.address }}</td>
                                     <td v-if="currentView === 'residents'"><StatusBadge :status="item.userId?.accountStatus || 'pending'" /></td>
                                     <td v-if="currentView === 'residents'">
-                                        <button class="icon-button" @click="openModal('resident', item)"><i class="fa-solid fa-eye"></i> View</button>
-                                        <button class="icon-button" @click="deleteResident(item._id)" :disabled="deletingResidentId === item._id"><i class="fa-solid fa-trash"></i> Delete</button>
+                                        <button class="icon-button" @click="openModal('resident', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
+                                        <button class="icon-button" @click="deleteResident(item._id)" :disabled="deletingResidentId === item._id"><i class="fa-solid fa-trash"></i> {{ t('common.ui.delete') }}</button>
                                     </td>
 
                                     
 
 
-                                    <td v-if="currentView === 'reservations'"><strong>{{ normalizeLabel(item.facilityName) }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small><br><small v-if="isInventoryReservation(item)">Quantity: {{ item.quantity || item.chairQuantity || item.tentQuantity || item.tableQuantity || 0 }}</small><small v-else>Time-slot reservation</small></td>
+                                    <td v-if="currentView === 'reservations'"><strong>{{ normalizeLabel(item.facilityName) }}</strong><br><small>{{ formatDate(item.reservationDate) }} ({{ item.startTime }} - {{ item.endTime }})</small><br><small v-if="isInventoryReservation(item)">Quantity: {{ item.quantity || item.chairQuantity || item.tentQuantity || item.tableQuantity || 0 }}</small><small v-else>{{ t('common.ui.timeSlotReservation') }}</small></td>
                                     <td v-if="currentView === 'reservations'">{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }}</small></td>
                                     <td v-if="currentView === 'reservations'">{{ item.purpose }}</td>
                                     <td v-if="currentView === 'reservations'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'reservations'">
-                                        <button class="icon-button" @click="openModal('reservation', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                        <button class="icon-button" @click="openModal('reservation', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
                                     </td>
 
                                     <td v-if="currentView === 'manpower'"><strong>{{ item.title }}</strong><br><small>{{ formatDate(item.requestDate) }} {{ item.requestTime || '' }}</small><br><small>{{ normalizeLabel(item.assistanceType) }} · {{ item.requestLocation }}</small></td>
@@ -659,7 +660,7 @@
                                     <td v-if="currentView === 'manpower'">{{ item.requestedPersonnelCount || 0 }}<br><small>{{ normalizeLabel(item.priority) }}</small></td>
                                     <td v-if="currentView === 'manpower'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'manpower'">
-                                        <button class="icon-button" @click="openModal('manpower', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                        <button class="icon-button" @click="openModal('manpower', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
                                     </td>
 
                                     <td v-if="currentView === 'reports'"><strong>{{ item.title }}</strong><br><small>{{ formatDate(item.incidentDate) }}</small></td>
@@ -669,13 +670,13 @@
                                     <td v-if="currentView === 'documents'">{{ item.purpose || item.fields?.PURPOSE || '-' }}</td>
                                     <td v-if="currentView === 'documents'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'documents'">
-                                        <button class="icon-button" @click="openModal('document', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                        <button class="icon-button" @click="openModal('document', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
                                     </td>
                                     <td v-if="currentView === 'reports'">{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }} · {{ item.reportType.replaceAll('_', ' ') }}</small></td>
                                     <td v-if="currentView === 'reports'"><span class="priority-badge" :class="'p-' + item.priority">{{ item.priority.toUpperCase() }}</span></td>
                                     <td v-if="currentView === 'reports'"><StatusBadge :status="item.status" /></td>
                                     <td v-if="currentView === 'reports'">
-                                        <button class="icon-button" @click="openModal('report', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                        <button class="icon-button" @click="openModal('report', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
                                     </td>
 
                                     <td v-if="currentView === 'announcements'"><strong>{{ item.title }}</strong></td>
@@ -683,11 +684,11 @@
                                     <td v-if="currentView === 'announcements'">{{ item.displayOrder }}</td>
                                     <td v-if="currentView === 'announcements'"><small>{{ formatDateTime(item.startDate) }} - {{ item.endDate ? formatDateTime(item.endDate) : 'No end date' }}</small></td>
                                     <td v-if="currentView === 'announcements'">
-                                        <button class="icon-button" @click="openModal('announcement', item)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                        <button class="icon-button" @click="openModal('announcement', item)"><i class="fa-solid fa-pen-to-square"></i> {{ t('common.ui.edit') }}</button>
                                     </td>
                                 </tr>
                                 <tr v-if="filteredManagementList.length === 0">
-                                    <td colspan="6" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> No records found.</td>
+                                    <td colspan="6" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> {{ t('common.ui.noRecords') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -695,8 +696,8 @@
                         <div v-if="filteredManagementList.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedManagementList.page }} of {{ pagedManagementList.pages }} · {{ filteredManagementList.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedManagementList.page === 1" @click="managementPage = Math.max(managementPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedManagementList.page >= pagedManagementList.pages" @click="managementPage = Math.min(managementPage + 1, pagedManagementList.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedManagementList.page === 1" @click="managementPage = Math.max(managementPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedManagementList.page >= pagedManagementList.pages" @click="managementPage = Math.min(managementPage + 1, pagedManagementList.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -708,8 +709,8 @@
                 <div class="ops-dashboard-shell">
                     <div class="ops-dashboard-header">
                         <div>
-                            <span class="eyebrow">Account Settings</span>
-                            <h1>Admin Profile</h1>
+                            <span class="eyebrow">{{ t('common.ui.accountSettings') }}</span>
+                            <h1>{{ t('common.ui.adminProfile') }}</h1>
                         </div>
                     </div>
 
@@ -717,31 +718,31 @@
                         <section class="ops-left-section">
                             <article class="ops-mini-panel">
                                 <div class="ops-panel-heading">
-                                    <h3>Recovery Email</h3>
-                                    <span>Username remains the login key</span>
+                                    <h3>{{ t('common.ui.recoveryEmail') }}</h3>
+                                    <span>{{ t('common.ui.usernameLoginKey') }}</span>
                                 </div>
 
                                 <div class="stack" style="gap: 0.85rem;">
                                     <label>
-                                        <span>Username</span>
+                                        <span>{{ t('landing.auth.login.username') }}</span>
                                         <input :value="user?.username || ''" type="text" readonly>
                                     </label>
                                     <label>
-                                        <span>Current Recovery Email</span>
+                                        <span>{{ t('common.ui.currentRecoveryEmail') }}</span>
                                         <input :value="user?.email || ''" type="email" readonly>
                                     </label>
                                     <label v-if="user?.pendingEmail">
-                                        <span>Pending Email</span>
+                                        <span>{{ t('common.ui.pendingEmail') }}</span>
                                         <input :value="user.pendingEmail" type="email" readonly>
                                     </label>
                                     <label>
-                                        <span>New Recovery Email</span>
+                                        <span>{{ t('common.ui.newRecoveryEmail') }}</span>
                                         <input v-model="profileForm.newEmail" type="email" autocomplete="email" placeholder="admin@example.com">
                                     </label>
                                     <label>
-                                        <span>Current Password</span>
+                                        <span>{{ t('common.currentPassword') }}</span>
                                         <div class="profile-password-input">
-                                            <input v-model="profileForm.currentPassword" :type="adminProfilePasswordVisibility.emailCurrent ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter current password">
+                                            <input v-model="profileForm.currentPassword" :type="adminProfilePasswordVisibility.emailCurrent ? 'text' : 'password'" autocomplete="current-password" :placeholder="t('common.ui.enterCurrentPassword')">
                                             <button
                                                 type="button"
                                                 :aria-label="adminProfilePasswordVisibility.emailCurrent ? 'Hide current password' : 'Show current password'"
@@ -755,19 +756,19 @@
                                         <i :class="profileLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'"></i>
                                         {{ profileLoading ? 'Sending verification...' : 'Send Verification Link' }}
                                     </button>
-                                    <p class="fine-print" style="margin: 0;">{{ texts.admin.profile.helper }}</p>
+                                    <p class="fine-print" style="margin: 0;">{{ t('admin.profile.helper') }}</p>
                                 </div>
                             </article>
 
                             <article class="ops-mini-panel">
                                 <div class="ops-panel-heading">
-                                    <h3>Change Password</h3>
-                                    <span>Update admin credentials</span>
+                                    <h3>{{ t('common.ui.changePassword') }}</h3>
+                                    <span>{{ t('common.ui.updateCredentials') }}</span>
                                 </div>
 
                                 <form class="stack" style="gap: 0.85rem;" @submit.prevent="changeAdminPassword">
                                     <label>
-                                        <span>Current Password</span>
+                                        <span>{{ t('common.currentPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.currentPassword" :type="adminProfilePasswordVisibility.current ? 'text' : 'password'" autocomplete="current-password" required>
                                             <button
@@ -780,7 +781,7 @@
                                         </div>
                                     </label>
                                     <label>
-                                        <span>New Password</span>
+                                        <span>{{ t('common.newPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.newPassword" :type="adminProfilePasswordVisibility.new ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
                                             <button
@@ -793,7 +794,7 @@
                                         </div>
                                     </label>
                                     <label>
-                                        <span>Confirm New Password</span>
+                                        <span>{{ t('portal.profile.labels.confirmNewPassword') }}</span>
                                         <div class="profile-password-input">
                                             <input v-model="changePasswordForm.confirmPassword" :type="adminProfilePasswordVisibility.confirm ? 'text' : 'password'" autocomplete="new-password" minlength="8" required>
                                             <button
@@ -806,7 +807,7 @@
                                         </div>
                                     </label>
                                     <div class="password-rules profile-password-rules" aria-live="polite">
-                                        <p class="password-rules-title">Password must include:</p>
+                                        <p class="password-rules-title">{{ t('common.passwordMustInclude') }}</p>
                                         <ul class="password-rules-list">
                                             <li v-for="rule in adminChangePasswordRules" :key="rule.key" :class="['password-rule-item', rule.passed ? 'is-pass' : 'is-fail']">
                                                 <i :class="rule.passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
@@ -849,24 +850,24 @@
                     <article class="content-card">
                         <div class="section-head" style="margin-bottom: 15px;">
                             <div>
-                                <span class="eyebrow">Appointments</span>
-                                <h3>Manage appointment requests</h3>
+                                <span class="eyebrow">{{ t('common.appointments') }}</span>
+                                <h3>{{ t('common.ui.manageAppointments') }}</h3>
                             </div>
                         </div>
                         <div class="table-toolbar appointment-toolbar">
                             <input v-model="appointmentSearch" type="search" placeholder="Search appointments...">
                             <select v-model="appointmentStatusFilter">
-                                <option value="all">All statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
-                                <option value="expired">Expired</option>
+                                <option value="all">{{ t('portal.appointments.statusAll') }}</option>
+                                <option value="pending">{{ t('portal.appointments.statusPending') }}</option>
+                                <option value="approved">{{ t('portal.appointments.statusApproved') }}</option>
+                                <option value="rejected">{{ t('portal.appointments.statusRejected') }}</option>
+                                <option value="completed">{{ t('portal.appointments.statusCompleted') }}</option>
+                                <option value="cancelled">{{ t('portal.appointments.statusCancelled') }}</option>
+                                <option value="expired">{{ t('common.ui.expired') }}</option>
                             </select>
-                            <input v-model="appointmentDateFilter" type="date" aria-label="Filter appointments by date">
+                            <input v-model="appointmentDateFilter" type="date" :aria-label="t('common.ui.filterAppointmentsDate')">
                         </div>
-                        <div class="requester-segment" aria-label="Appointment requester type filter">
+                        <div class="requester-segment" :aria-label="t('common.ui.appointmentRequesterFilter')">
                             <button
                                 v-for="option in requesterFilterOptions"
                                 :key="option.value"
@@ -882,11 +883,11 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Official</th>
-                                        <th>Requester</th>
-                                        <th>Date & Time</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th>{{ t('portal.appointments.tableOfficial') }}</th>
+                                        <th>{{ t('common.ui.requester') }}</th>
+                                        <th>{{ t('common.ui.dateAndTime') }}</th>
+                                        <th>{{ t('common.status') }}</th>
+                                        <th>{{ t('portal.appointments.tableActions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -908,11 +909,11 @@
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'N/A' }} - {{ item.timeSlot?.endTime || 'N/A' }}</small></td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td>
-                                            <button class="icon-button" @click="openModal('appointment', item)"><i class="fa-solid fa-eye"></i> View</button>
+                                            <button class="icon-button" @click="openModal('appointment', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
                                         </td>
                                     </tr>
                                     <tr v-if="appointments.length === 0">
-                                        <td colspan="5" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> No appointments found.</td>
+                                        <td colspan="5" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> {{ t('portal.appointments.empty') }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -920,8 +921,8 @@
                         <div v-if="appointmentRows.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedAppointmentRows.page }} of {{ pagedAppointmentRows.pages }} · {{ appointmentRows.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedAppointmentRows.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointmentRows.page >= pagedAppointmentRows.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointmentRows.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedAppointmentRows.page === 1" @click="appointmentPage = Math.max(appointmentPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedAppointmentRows.page >= pagedAppointmentRows.pages" @click="appointmentPage = Math.min(appointmentPage + 1, pagedAppointmentRows.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -934,25 +935,25 @@
                     <article class="content-card">
                         <div class="section-head" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <span class="eyebrow">Officials</span>
-                                <h3>Manage barangay officials</h3>
+                                <span class="eyebrow">{{ t('landing.nav.officials') }}</span>
+                                <h3>{{ t('common.ui.manageOfficials') }}</h3>
                             </div>
-                            <button class="primary-button" @click="openModal('official', {})"><i class="fa-solid fa-plus"></i> Add Official</button>
+                            <button class="primary-button" @click="openModal('official', {})"><i class="fa-solid fa-plus"></i> {{ t('common.ui.addOfficial') }}</button>
                         </div>
                         <!-- Admin BHW creation form -->
                         <div style="margin-bottom: 16px; padding: 12px; border: 1px dashed #dce6e1; border-radius: 8px; background: #fbfdfc; display:flex; gap:12px; align-items:center;">
                             <form @submit.prevent="createBhwAccount" style="display:flex; gap:8px; align-items:center; flex:1;">
                                 <label style="display:flex; flex-direction:column; gap:6px; flex:1;">
-                                    <small class="fine-print">Create BHW Account</small>
+                                    <small class="fine-print">{{ t('common.ui.createBhwAccount') }}</small>
                                     <input v-model="bhwForm.username" placeholder="username" required />
                                 </label>
                                 <label style="display:flex; flex-direction:column; gap:6px; width:260px;">
-                                    <small class="fine-print">Email</small>
+                                    <small class="fine-print">{{ t('common.ui.email') }}</small>
                                     <input v-model="bhwForm.email" type="email" placeholder="email@example.com" required />
                                 </label>
                                 <label style="display:flex; flex-direction:column; gap:6px; width:180px;">
-                                    <small class="fine-print">Password (optional)</small>
-                                    <input v-model="bhwForm.password" type="password" placeholder="leave blank to auto-generate" />
+                                    <small class="fine-print">{{ t('common.ui.passwordOptional') }}</small>
+                                    <input v-model="bhwForm.password" type="password" :placeholder="t('common.ui.autoGenerateHint')" />
                                 </label>
                                 <button type="submit" class="primary-button" :disabled="bhwLoading">{{ bhwLoading ? 'Creating...' : 'Create BHW' }}</button>
                             </form>
@@ -961,12 +962,12 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Photo</th>
-                                        <th>Name</th>
-                                        <th>Position</th>
-                                        <th>Contact</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th>{{ t('common.ui.photo') }}</th>
+                                        <th>{{ t('common.name') }}</th>
+                                        <th>{{ t('common.ui.position') }}</th>
+                                        <th>{{ t('common.contact') }}</th>
+                                        <th>{{ t('common.status') }}</th>
+                                        <th>{{ t('portal.appointments.tableActions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -993,11 +994,11 @@
                                         <td>{{ item.email || 'N/A' }}<br><small>{{ item.contactNumber || '' }}</small></td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td>
-                                            <button class="icon-button" @click="openModal('official', item)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                            <button class="icon-button" @click="openModal('official', item)"><i class="fa-solid fa-pen-to-square"></i> {{ t('common.ui.edit') }}</button>
                                         </td>
                                     </tr>
                                     <tr v-if="officials.length === 0">
-                                        <td colspan="6" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> No officials found.</td>
+                                        <td colspan="6" style="text-align: center; padding: 30px; color: #777;"><i class="fa-solid fa-folder-open"></i> {{ t('common.ui.noOfficialsFound') }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1005,8 +1006,8 @@
                         <div v-if="officialRows.length > 0" class="table-pagination">
                             <span class="pagination-meta">Page {{ pagedOfficialRows.page }} of {{ pagedOfficialRows.pages }} · {{ officialRows.length }} records</span>
                             <div class="pagination-actions">
-                                <button class="pagination-button" type="button" :disabled="pagedOfficialRows.page === 1" @click="officialPage = Math.max(officialPage - 1, 1)">Prev</button>
-                                <button class="pagination-button primary-button" type="button" :disabled="pagedOfficialRows.page >= pagedOfficialRows.pages" @click="officialPage = Math.min(officialPage + 1, pagedOfficialRows.pages)">Next</button>
+                                <button class="pagination-button" type="button" :disabled="pagedOfficialRows.page === 1" @click="officialPage = Math.max(officialPage - 1, 1)">{{ t('common.ui.previous') }}</button>
+                                <button class="pagination-button primary-button" type="button" :disabled="pagedOfficialRows.page >= pagedOfficialRows.pages" @click="officialPage = Math.min(officialPage + 1, pagedOfficialRows.pages)">{{ t('common.next') }}</button>
                             </div>
                         </div>
                     </article>
@@ -1018,42 +1019,42 @@
                 <article class="content-card">
                     <div style="padding: 20px;">
                         <div style="margin-bottom: 20px;">
-                            <h3 style="margin: 0 0 10px 0;">SMS Message Logs</h3>
-                            <p style="margin: 0; color: #666; font-size: 0.9rem;">View all sent SMS messages in real-time</p>
+                            <h3 style="margin: 0 0 10px 0;">{{ t('common.ui.smsLogs') }}</h3>
+                            <p style="margin: 0; color: #666; font-size: 0.9rem;">{{ t('common.ui.smsLogsHelp') }}</p>
                         </div>
 
                         <div style="margin-bottom: 15px; display: flex; gap: 10px;">
                             <select v-model="smsFilterType" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
-                                <option value="">All Types</option>
-                                <option value="document_status">Document Status</option>
-                                <option value="resident_approval">Resident Approval</option>
-                                <option value="resident_update">Resident Update</option>
-                                <option value="appointment_confirmation">Appointment Confirmation</option>
-                                <option value="facility_reservation">Facility Reservation</option>
-                                <option value="report_status">Report Status</option>
+                                <option value="">{{ t('common.ui.allTypes') }}</option>
+                                <option value="document_status">{{ t('common.ui.documentStatus') }}</option>
+                                <option value="resident_approval">{{ t('common.ui.residentApproval') }}</option>
+                                <option value="resident_update">{{ t('common.ui.residentUpdate') }}</option>
+                                <option value="appointment_confirmation">{{ t('common.ui.appointmentConfirmation') }}</option>
+                                <option value="facility_reservation">{{ t('common.ui.facilityReservation') }}</option>
+                                <option value="report_status">{{ t('common.ui.reportStatus') }}</option>
 
                             </select>
-                            <button @click="loadSMSLogs" class="primary-button" style="padding: 8px 16px;"><i class="fa-solid fa-refresh"></i> Refresh</button>
+                            <button @click="loadSMSLogs" class="primary-button" style="padding: 8px 16px;"><i class="fa-solid fa-refresh"></i> {{ t('components.activeQueueDashboard.refresh') }}</button>
                         </div>
 
                         <div v-if="smsLogsLoading" style="text-align: center; padding: 40px; color: #999;">
                             <i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite; font-size: 2rem;"></i>
-                            <p>Loading SMS logs...</p>
+                            <p>{{ t('common.ui.loadingSmsLogs') }}</p>
                         </div>
 
                         <div v-else-if="smsLogs.length === 0" style="text-align: center; padding: 40px; color: #999;">
                             <i class="fa-solid fa-inbox" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
-                            <p>No SMS logs found</p>
+                            <p>{{ t('common.ui.noSmsLogs') }}</p>
                         </div>
 
                         <div v-else style="overflow-x: auto;">
                             <table style="width: 100%; border-collapse: collapse;">
                                 <thead>
                                     <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">Phone</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">Type</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">Message</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">Sent At</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">{{ t('common.ui.phone') }}</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">{{ t('portal.documents.tableType') }}</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">{{ t('common.ui.message') }}</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem;">{{ t('common.ui.sentAt') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1089,10 +1090,10 @@
                 <button class="admin-modal-close" @click="activeModal = null"><i class="fa-solid fa-xmark"></i></button>
 
                 <div v-if="activeModal === 'resident'">
-                    <h2><i class="fa-solid fa-users-viewfinder"></i> Resident Overview Dashboard</h2>
-                    <p class="fine-print">Complete resident information, verification workflow, and service history.</p>
+                    <h2><i class="fa-solid fa-users-viewfinder"></i> {{ t('common.ui.residentOverview') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.residentWorkflowHelp') }}</p>
                     <div class="resident-overview-layout">
-                        <aside class="resident-identity-card" aria-label="Resident identity">
+                        <aside class="resident-identity-card" :aria-label="t('common.ui.residentIdentity')">
                             <div class="resident-avatar">
                                 <img v-if="selectedItem.profileImage" :src="selectedItem.profileImage" alt="Resident avatar">
                                 <span v-else>{{ getResidentInitials(selectedItem) }}</span>
@@ -1100,7 +1101,7 @@
                             <h3>{{ getFullResidentName(selectedItem) }}</h3>
                             <p class="fine-print">Resident ID: {{ residentSystemId(selectedItem) }}</p>
                             <StatusBadge :status="selectedItem.userId?.accountStatus || 'pending_approval'" />
-                            <p class="fine-print"><strong>Verification:</strong> {{ formatVerificationStatus(selectedItem.verificationStatus) }}</p>
+                            <p class="fine-print"><strong>{{ t('common.ui.verificationLabel') }}</strong> {{ formatVerificationStatus(selectedItem.verificationStatus) }}</p>
                             <div class="resident-tags">
                                 <span v-for="tag in residentVulnerabilityTags(selectedItem)" :key="tag" class="resident-tag">{{ tag }}</span>
                             </div>
@@ -1109,37 +1110,37 @@
                                 <small>Last Activity: {{ formatDate(selectedItem.updatedAt || selectedItem.createdAt) }}</small>
                             </div>
                             <div class="resident-quick-actions">
-                                <button v-if="canApproveRejectResident" type="button" class="primary-button" @click="setResidentStatusAndSave('approved')"><i class="fa-solid fa-circle-check"></i> Approve</button>
-                                <button v-if="canApproveRejectResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> Reject</button>
-                                <button v-if="canSuspendResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> Suspend</button>
-                                <button v-if="canArchiveResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> Archive</button>
-                                <button type="button" class="ghost-button danger" @click="deleteSelectedResidentAccount"><i class="fa-solid fa-trash-can"></i> Delete Account</button>
+                                <button v-if="canApproveRejectResident" type="button" class="primary-button" @click="setResidentStatusAndSave('approved')"><i class="fa-solid fa-circle-check"></i> {{ t('common.ui.approve') }}</button>
+                                <button v-if="canApproveRejectResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('rejected')"><i class="fa-solid fa-circle-xmark"></i> {{ t('common.ui.reject') }}</button>
+                                <button v-if="canSuspendResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('suspended')"><i class="fa-solid fa-user-lock"></i> {{ t('common.ui.suspend') }}</button>
+                                <button v-if="canArchiveResident" type="button" class="ghost-button" @click="setResidentStatusAndSave('archived')"><i class="fa-solid fa-box-archive"></i> {{ t('common.ui.archive') }}</button>
+                                <button type="button" class="ghost-button danger" @click="deleteSelectedResidentAccount"><i class="fa-solid fa-trash-can"></i> {{ t('common.ui.deleteAccount') }}</button>
                             </div>
                         </aside>
                         <section class="resident-center-pane">
                             <div class="resident-tab-nav">
-                                <button type="button" :class="{ active: residentTab === 'personal' }" @click="residentTab = 'personal'"><i class="fa-solid fa-id-card"></i> Personal Information</button>
-                                <button type="button" :class="{ active: residentTab === 'activity' }" @click="residentTab = 'activity'"><i class="fa-solid fa-timeline"></i> Activity History</button>
-                                <button type="button" :class="{ active: residentTab === 'transactions' }" @click="residentTab = 'transactions'"><i class="fa-solid fa-receipt"></i> Requests & Transactions</button>
+                                <button type="button" :class="{ active: residentTab === 'personal' }" @click="residentTab = 'personal'"><i class="fa-solid fa-id-card"></i> {{ t('common.ui.personalInformation') }}</button>
+                                <button type="button" :class="{ active: residentTab === 'activity' }" @click="residentTab = 'activity'"><i class="fa-solid fa-timeline"></i> {{ t('common.ui.activityHistory') }}</button>
+                                <button type="button" :class="{ active: residentTab === 'transactions' }" @click="residentTab = 'transactions'"><i class="fa-solid fa-receipt"></i> {{ t('common.ui.requestsAndTransactions') }}</button>
                             </div>
                             <div class="resident-tab-content" v-if="residentTab === 'personal'">
                                 <div class="resident-info-grid">
-                                    <p><strong>Full Name:</strong> {{ getFullResidentName(selectedItem) }}</p>
-                                    <p><strong>Suffix:</strong> {{ selectedItem.suffix || 'N/A' }}</p>
-                                    <p><strong>Birthdate / Age:</strong> {{ formatDate(selectedItem.birthDate) }} ({{ calculateAge(selectedItem.birthDate) }})</p>
-                                    <p><strong>Sex:</strong> {{ selectedItem.sex || 'N/A' }}</p>
-                                    <p><strong>Civil Status:</strong> {{ selectedItem.civilStatus || 'N/A' }}</p>
-                                    <p><strong>Citizenship:</strong> {{ selectedItem.citizenship || 'N/A' }}</p>
-                                    <p><strong>Occupation:</strong> {{ selectedItem.occupation || 'N/A' }}</p>
-                                    <p><strong>Contact Number:</strong> {{ selectedItem.contactNumber || 'N/A' }}</p>
-                                    <p><strong>Email:</strong> {{ selectedItem.email || selectedItem.userId?.email || 'N/A' }}</p>
-                                    <p><strong>Address:</strong> {{ selectedItem.address || 'N/A' }}</p>
-                                    <p><strong>Purok/Zone:</strong> {{ formatPurokZone(selectedItem) }}</p>
+                                    <p><strong>{{ t('common.ui.fullNameLabel') }}</strong> {{ getFullResidentName(selectedItem) }}</p>
+                                    <p><strong>{{ t('common.ui.suffixLabel') }}</strong> {{ selectedItem.suffix || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.birthdateAgeLabel') }}</strong> {{ formatDate(selectedItem.birthDate) }} ({{ calculateAge(selectedItem.birthDate) }})</p>
+                                    <p><strong>{{ t('common.ui.sexLabel') }}</strong> {{ selectedItem.sex || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.civilStatusLabel') }}</strong> {{ selectedItem.civilStatus || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.citizenshipLabel') }}</strong> {{ selectedItem.citizenship || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.occupationLabel') }}</strong> {{ selectedItem.occupation || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.contactNumberLabel') }}</strong> {{ selectedItem.contactNumber || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.emailLabel') }}</strong> {{ selectedItem.email || selectedItem.userId?.email || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.addressLabel') }}</strong> {{ selectedItem.address || 'N/A' }}</p>
+                                    <p><strong>{{ t('common.ui.purokZoneLabel') }}</strong> {{ formatPurokZone(selectedItem) }}</p>
                                 </div>
                                 <section class="resident-proof-panel">
                                     <div class="resident-proof-head">
                                         <div>
-                                            <strong>Proof of Residency</strong>
+                                            <strong>{{ t('common.ui.proofOfResidency') }}</strong>
                                             <p class="fine-print">{{ residentProofLabel(selectedItem) }}</p>
                                         </div>
                                         <button
@@ -1148,10 +1149,10 @@
                                             class="ghost-button table-action"
                                             @click="openResidentProofPreview"
                                         >
-                                            <i class="fa-solid fa-up-right-from-square"></i> Open
+                                            <i class="fa-solid fa-up-right-from-square"></i> {{ t('common.open') }}
                                         </button>
                                     </div>
-                                    <div v-if="residentProofPreview.loading" class="resident-proof-state">Loading proof of residency...</div>
+                                    <div v-if="residentProofPreview.loading" class="resident-proof-state">{{ t('common.ui.loadingProof') }}</div>
                                     <div v-else-if="residentProofPreview.error" class="resident-proof-state is-error">{{ residentProofPreview.error }}</div>
                                     <button
                                         v-else-if="residentProofPreview.url && residentProofPreview.isImage"
@@ -1163,9 +1164,9 @@
                                     </button>
                                     <div v-else-if="residentProofPreview.url" class="resident-proof-file">
                                         <i class="fa-solid fa-file"></i>
-                                        <span>Proof file is ready to open.</span>
+                                        <span>{{ t('common.ui.proofReady') }}</span>
                                     </div>
-                                    <div v-else class="resident-proof-state">No proof of residency uploaded.</div>
+                                    <div v-else class="resident-proof-state">{{ t('common.ui.noProof') }}</div>
                                 </section>
                             </div>
                             <div class="resident-tab-content" v-else-if="residentTab === 'activity'">
@@ -1179,7 +1180,7 @@
                             <div class="resident-tab-content" v-else-if="residentTab === 'transactions'">
                                 <div class="table-responsive">
                                     <table class="data-table">
-                                        <thead><tr><th>Type</th><th>Status</th><th>Date Submitted</th><th>Stage</th></tr></thead>
+                                        <thead><tr><th>{{ t('portal.documents.tableType') }}</th><th>{{ t('common.status') }}</th><th>{{ t('common.ui.dateSubmitted') }}</th><th>{{ t('common.ui.stage') }}</th></tr></thead>
                                         <tbody>
                                             <tr v-for="entry in residentTransactions(selectedItem)" :key="entry.key">
                                                 <td>{{ entry.type }}</td>
@@ -1187,7 +1188,7 @@
                                                 <td>{{ entry.date }}</td>
                                                 <td>{{ entry.stage }}</td>
                                             </tr>
-                                            <tr v-if="residentTransactions(selectedItem).length === 0"><td colspan="4" style="text-align:center;">No transactions yet.</td></tr>
+                                            <tr v-if="residentTransactions(selectedItem).length === 0"><td colspan="4" style="text-align:center;">{{ t('common.ui.noTransactions') }}</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1196,7 +1197,7 @@
                     </div>
                     <div class="resident-bottom-panels">
                         <article class="content-card">
-                            <h4><i class="fa-solid fa-tags"></i> Resident Tags</h4>
+                            <h4><i class="fa-solid fa-tags"></i> {{ t('common.ui.residentTags') }}</h4>
                             <div class="resident-tags"><span class="resident-tag" v-for="tag in residentAutoTags(selectedItem)" :key="tag">{{ tag }}</span></div>
                         </article>
                     </div>
@@ -1225,23 +1226,23 @@
 
                         <div class="report-modal-right">
                             <div v-if="selectedItem.locationCoordinates?.latitude && selectedItem.locationCoordinates?.longitude" class="report-side-card">
-                                <strong class="report-side-title">Pinned Location</strong>
+                                <strong class="report-side-title">{{ t('common.ui.pinnedLocation') }}</strong>
                                 <p class="report-side-coordinates">{{ selectedItem.locationCoordinates.latitude }}, {{ selectedItem.locationCoordinates.longitude }}</p>
                                 <iframe
                                     :src="getReportMapEmbedUrl(selectedItem)"
-                                    title="Report location map"
+                                    :title="t('common.ui.reportLocationMap')"
                                     class="report-map-frame"
                                     loading="lazy"
                                     referrerpolicy="no-referrer-when-downgrade"
                                 ></iframe>
                                 <button type="button" class="ghost-button report-map-link" @click="openLocationPreview(selectedItem)">
                                     <i class="fa-solid fa-location-dot"></i>
-                                    View location in system
+                                    {{ t('common.ui.viewLocation') }}
                                 </button>
                             </div>
 
                             <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" class="report-side-card">
-                                <strong class="report-side-title">Proof Images</strong>
+                                <strong class="report-side-title">{{ t('common.ui.proofImages') }}</strong>
                                 <div class="proof-preview-grid">
                                     <div
                                         v-for="proofPath in selectedItem.proofFiles"
@@ -1267,7 +1268,7 @@
                     <!-- Status display and action buttons -->
                     <div style="margin-top: 15px; margin-bottom: 20px;">
                         <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600; color: #333;">Status:</span>
+                            <span style="font-weight: 600; color: #333;">{{ t('common.ui.status') }}</span>
                             <StatusBadge :status="selectedItem.status" />
                         </div>
 
@@ -1280,7 +1281,7 @@
                     </div>
 
                     <div class="document-audit-panel">
-                        <h3>Audit Trail</h3>
+                        <h3>{{ t('common.ui.auditTrail') }}</h3>
                         <div v-if="recordAuditTrail(selectedItem, activeModal).length" class="document-audit-list">
                             <div v-for="entry in recordAuditTrail(selectedItem, activeModal)" :key="entry.key" class="document-audit-item">
                                 <strong>{{ entry.label }}</strong>
@@ -1288,13 +1289,13 @@
                                 <small v-if="entry.note">{{ entry.note }}</small>
                             </div>
                         </div>
-                        <p v-else class="fine-print">No audit trail yet.</p>
+                        <p v-else class="fine-print">{{ t('common.ui.noAuditTrail') }}</p>
                     </div>
                 </div>
 
                 <div v-if="activeModal === 'document'">
-                    <h2><i class="fa-solid fa-file-lines"></i> View Document Request</h2>
-                    <p class="fine-print">Review complete document request details and process the document generation.</p>
+                    <h2><i class="fa-solid fa-file-lines"></i> {{ t('common.ui.viewDocumentRequest') }}</h2>
+                    <p class="fine-print">{{ t('common.ui.reviewDocumentHelp') }}</p>
                     
                     <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr); gap: 24px; align-items: start; margin-top: 15px;">
                         <!-- Left Pane: Details -->
@@ -1306,7 +1307,7 @@
                             </div>
 
                             <div class="document-audit-panel">
-                                <h3>Audit Trail</h3>
+                                <h3>{{ t('common.ui.auditTrail') }}</h3>
                                 <div v-if="recordAuditTrail(selectedItem, 'document').length" class="document-audit-list">
                                     <div v-for="entry in recordAuditTrail(selectedItem, 'document')" :key="entry.key" class="document-audit-item">
                                         <strong>{{ entry.label }}</strong>
@@ -1314,11 +1315,11 @@
                                         <small v-if="entry.note">{{ entry.note }}</small>
                                     </div>
                                 </div>
-                                <p v-else class="fine-print">No audit trail yet.</p>
+                                <p v-else class="fine-print">{{ t('common.ui.noAuditTrail') }}</p>
                             </div>
 
                             <div v-if="Array.isArray(selectedItem.proofFiles) && selectedItem.proofFiles.length" style="padding: 12px; border: 1px solid #dce6e1; border-radius: 8px; background: #fcfefe;">
-                                <strong style="display: block; margin-bottom: 10px;">Proof Images</strong>
+                                <strong style="display: block; margin-bottom: 10px;">{{ t('common.ui.proofImages') }}</strong>
                                 <div class="proof-preview-grid">
                                     <div
                                         v-for="proofPath in selectedItem.proofFiles"
@@ -1338,20 +1339,20 @@
                         <!-- Right Pane: Management & Status -->
                         <div style="display: grid; gap: 12px;">
                             <div v-if="isDocumentEditable(selectedItem)" style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#fbfffc,#f3f8f6); box-shadow: 0 6px 18px rgba(13,74,42,0.03);">
-                                <h3 style="margin:0 0 12px 0; color: #0f3f33;">Document Management</h3>
+                                <h3 style="margin:0 0 12px 0; color: #0f3f33;">{{ t('common.ui.documentManagement') }}</h3>
                                 <div v-if="selectedItem.status === 'revision_requested' && selectedItem.requesterRevisionNote" style="margin-bottom: 12px; padding: 12px; border-radius: 8px; background: #fff7f7; border: 1px solid #f1caca; color: #7a1d1d;">
-                                    <strong style="display:block; margin-bottom:4px;">Requester note</strong>
+                                    <strong style="display:block; margin-bottom:4px;">{{ t('common.ui.requesterNote') }}</strong>
                                     <div style="white-space: pre-wrap;">{{ selectedItem.requesterRevisionNote }}</div>
                                 </div>
                                 <div class="stack" style="gap: 12px;">
-                                    <label><span>Formal Purpose (admin)</span><input v-model="formalPurposeInput" type="text" style="width: 100%;"></label>
+                                    <label><span>{{ t('common.ui.formalPurpose') }}</span><input v-model="formalPurposeInput" type="text" style="width: 100%;"></label>
 
                                     <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
-                                        <label><span>Full name</span><input v-model="editableFields.FULL_NAME" type="text" style="width: 100%;"></label>
-                                        <label><span>Age</span><input v-model="editableFields.AGE" type="text" style="width: 100%;"></label>
-                                        <label><span>Barangay</span><input v-model="editableFields.BARANGAY" type="text" style="width: 100%;"></label>
-                                        <label><span>City</span><input v-model="editableFields.CITY" type="text" style="width: 100%;"></label>
-                                        <label><span>Purpose</span><input v-model="editableFields.PURPOSE" type="text" style="width: 100%;"></label>
+                                        <label><span>{{ t('common.ui.fullName') }}</span><input v-model="editableFields.FULL_NAME" type="text" style="width: 100%;"></label>
+                                        <label><span>{{ t('common.ui.age') }}</span><input v-model="editableFields.AGE" type="text" style="width: 100%;"></label>
+                                        <label><span>{{ t('portal.profile.labels.barangay') }}</span><input v-model="editableFields.BARANGAY" type="text" style="width: 100%;"></label>
+                                        <label><span>{{ t('common.ui.city') }}</span><input v-model="editableFields.CITY" type="text" style="width: 100%;"></label>
+                                        <label><span>{{ t('landing.formLabels.purpose') }}</span><input v-model="editableFields.PURPOSE" type="text" style="width: 100%;"></label>
                                     </div>
 
                                     <div style="display:flex; gap:8px; flex-direction: column;">
@@ -1368,22 +1369,22 @@
                             </div>
 
                             <div v-if="isDocumentRejected(selectedItem)" style="padding:12px; border:1px solid #f1caca; border-radius:8px; background:#fff7f7; color:#7a1d1d;">
-                                This document request has been rejected.
+                                {{ t('common.ui.documentRejected') }}
                             </div>
 
                             <div v-if="hasGeneratedDocument(selectedItem)" style="padding:12px; border:1px solid #dce6e1; border-radius:8px; background:#f7fbf9; color:#2d5f45;">
-                                PDF has already been generated.
+                                {{ t('common.ui.pdfGenerated') }}
                                 <button type="button" class="primary-button" @click="sendGeneratedDocumentToRequester(selectedItem)" :disabled="documentEmailLoading" style="width: 100%; margin-top: 10px;">
                                     <i :class="documentEmailLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-envelope'"></i>
                                     {{ documentEmailLoading ? 'Sending...' : 'Send to Requester' }}
                                 </button>
-                                <p class="fine-print" style="margin: 8px 0 0;">Soft copy only. The email marks it as not valid for official use.</p>
+                                <p class="fine-print" style="margin: 8px 0 0;">{{ t('common.ui.softCopyNotice') }}</p>
                             </div>
 
                             <!-- Status display and action buttons -->
                             <div style="padding:16px; border:1px solid rgba(13,74,42,0.06); border-radius:8px; background: linear-gradient(180deg,#f7fbf8,#f3f8f6);">
                                 <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-weight: 600; color: #333;">Status:</span>
+                                    <span style="font-weight: 600; color: #333;">{{ t('common.ui.status') }}</span>
                                     <StatusBadge :status="selectedItem.status" />
                                 </div>
 
@@ -1398,25 +1399,25 @@
                     </div>
                 </div>
                 <div v-if="activeModal === 'official'">
-                    <h2><i class="fa-solid fa-user-tie"></i> Official Details</h2>
+                    <h2><i class="fa-solid fa-user-tie"></i> {{ t('common.ui.officialDetails') }}</h2>
                     <form class="stack" @submit.prevent="handleSaveOfficial" style="margin-top: 15px;">
                         <input type="hidden" v-model="editForm._id">
-                        <label><span>Name</span><input v-model="editForm.name" required></label>
+                        <label><span>{{ t('common.name') }}</span><input v-model="editForm.name" required></label>
                         <label>
-                            <span>Position</span>
+                            <span>{{ t('common.ui.position') }}</span>
                             <select v-model="editForm.position" required>
-                                <option value="" disabled>Select Position</option>
-                                <option value="Barangay Captain">Barangay Captain</option>
-                                <option value="Barangay Secretary">Barangay Secretary</option>
-                                <option value="Barangay Treasurer">Barangay Treasurer</option>
-                                <option value="Barangay Kagawad">Barangay Kagawad</option>
-                                <option value="other">Other</option>
+                                <option value="" disabled>{{ t('common.ui.selectPosition') }}</option>
+                                <option value="Barangay Captain">{{ t('common.ui.barangayCaptain') }}</option>
+                                <option value="Barangay Secretary">{{ t('common.ui.barangaySecretary') }}</option>
+                                <option value="Barangay Treasurer">{{ t('common.ui.barangayTreasurer') }}</option>
+                                <option value="Barangay Kagawad">{{ t('common.ui.barangayKagawad') }}</option>
+                                <option value="other">{{ t('common.ui.other') }}</option>
                             </select>
                         </label>
-                        <label><span>Email</span><input v-model="editForm.email" type="email"></label>
-                        <label><span>Contact Number</span><input v-model="editForm.contactNumber" type="text"></label>
+                        <label><span>{{ t('common.ui.email') }}</span><input v-model="editForm.email" type="email"></label>
+                        <label><span>{{ t('landing.formLabels.contactNumber') }}</span><input v-model="editForm.contactNumber" type="text"></label>
                         <label>
-                            <span>Profile Picture</span>
+                            <span>{{ t('common.ui.profilePicture') }}</span>
                             <input type="file" accept="image/*" @change="handleOfficialPictureChange">
                         </label>
                         <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
@@ -1424,14 +1425,14 @@
                             <div style="width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: #f4f4f4; display: grid; place-items: center; border: 1px solid #ddd;">
                                 <img :src="officialPicturePreview" alt="Official preview" style="width: 100%; height: 100%; object-fit: cover;" />
                             </div>
-                            <span style="color: #5e6f66; font-size: 0.9rem;">Profile picture selected.</span>
+                            <span style="color: #5e6f66; font-size: 0.9rem;">{{ t('common.ui.profilePictureSelected') }}</span>
                         </div>
-                        <label><span>Notes</span><textarea v-model="editForm.notes" rows="2"></textarea></label>
+                        <label><span>{{ t('common.ui.notes') }}</span><textarea v-model="editForm.notes" rows="2"></textarea></label>
                         <label>
-                            <span>Status</span>
+                            <span>{{ t('common.status') }}</span>
                             <select v-model="editForm.status">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{{ t('common.ui.active') }}</option>
+                                <option value="inactive">{{ t('common.ui.inactive') }}</option>
                             </select>
                         </label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting"><i :class="isSubmitting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-save'"></i> {{ isSubmitting ? 'Saving...' : 'Save Official' }}</button>
@@ -1439,30 +1440,30 @@
                 </div>
 
                 <div v-if="activeModal === 'announcement'">
-                    <h2><i class="fa-solid fa-megaphone"></i> Announcement Details</h2>
+                    <h2><i class="fa-solid fa-megaphone"></i> {{ t('common.ui.announcementDetails') }}</h2>
                     <form class="stack" @submit.prevent="handleSaveAnnouncement" style="margin-top: 15px;">
                         <input type="hidden" v-model="editForm._id">
-                        <label><span>Title</span><input v-model="editForm.title" required></label>
-                        <label><span>Description</span><textarea v-model="editForm.description" rows="4" required></textarea></label>
-                        <label><span>Image</span><input type="file" @change="handleAnnouncementImageUpload" accept="image/*"></label>
+                        <label><span>{{ t('common.ui.title') }}</span><input v-model="editForm.title" required></label>
+                        <label><span>{{ t('landing.formLabels.description') }}</span><textarea v-model="editForm.description" rows="4" required></textarea></label>
+                        <label><span>{{ t('common.ui.image') }}</span><input type="file" @change="handleAnnouncementImageUpload" accept="image/*"></label>
                         <small class="fine-print">{{ UPLOAD_SIZE_NOTE }}</small>
                         <div v-if="editForm.imagePath && !announcementImageFile" style="margin-top: -10px; font-size: 0.9rem; color: #666;">Current: {{ editForm.imagePath }}</div>
-                        <label><span>Start Date</span><input v-model="editForm.startDate" type="datetime-local" required></label>
-                        <label><span>End Date (Optional)</span><input v-model="editForm.endDate" type="datetime-local" :min="editForm.startDate || undefined"></label>
+                        <label><span>{{ t('common.ui.startDate') }}</span><input v-model="editForm.startDate" type="datetime-local" required></label>
+                        <label><span>{{ t('common.ui.endDateOptional') }}</span><input v-model="editForm.endDate" type="datetime-local" :min="editForm.startDate || undefined"></label>
                         <div style="font-size: 0.95rem; color: #1f3c5a; background: #eaf3ff; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #4a90e2; margin-bottom: 15px; display: grid; gap: 4px;">
-                            <strong>Display Order</strong>
+                            <strong>{{ t('common.ui.displayOrder') }}</strong>
                             <span v-if="editForm._id">Current order: {{ editForm.displayOrder || 'N/A' }}</span>
                             <template v-else>
-                                <span v-if="nextDisplayOrderLoading">Loading next number...</span>
+                                <span v-if="nextDisplayOrderLoading">{{ t('common.ui.loadingNextNumber') }}</span>
                                 <span v-else-if="nextDisplayOrder !== null && nextDisplayOrder !== undefined">Next display order: {{ nextDisplayOrder }}</span>
-                                <span v-else>Will be auto-assigned when saved</span>
+                                <span v-else>{{ t('common.ui.autoAssigned') }}</span>
                             </template>
                         </div>
                         <label>
-                            <span>Active</span>
+                            <span>{{ t('common.ui.active') }}</span>
                             <select v-model="editForm.isActive">
-                                <option :value="true">Active</option>
-                                <option :value="false">Inactive</option>
+                                <option :value="true">{{ t('common.ui.active') }}</option>
+                                <option :value="false">{{ t('common.ui.inactive') }}</option>
                             </select>
                         </label>
                         <button type="submit" class="primary-button" :disabled="isSubmitting"><i :class="isSubmitting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-save'"></i> {{ isSubmitting ? (editForm._id ? 'Updating...' : 'Creating...') : (editForm._id ? 'Update' : 'Create') }} Announcement</button>
@@ -1488,7 +1489,7 @@
             <div class="confirm-dialog">
                 <p class="confirm-message">{{ confirmMessage }}</p>
                 <div class="confirm-actions">
-                    <button type="button" class="ghost-button" @click="cancelConfirm">Cancel</button>
+                    <button type="button" class="ghost-button" @click="cancelConfirm">{{ t('common.cancel') }}</button>
                     <button type="button" class="primary-button" @click="confirmAction" :disabled="isConfirmSubmitting">
                         <i v-if="isConfirmSubmitting" class="fa-solid fa-spinner fa-spin"></i>
                         {{ isConfirmSubmitting ? 'Confirming...' : 'Confirm' }}
@@ -1501,20 +1502,20 @@
         <div v-if="previewLoading" class="preview-loading-overlay">
             <div class="preview-loading-box">
                 <div class="spinner" aria-hidden="true"></div>
-                <div style="margin-top: 12px; font-weight: 600;">Generating PDF...</div>
-                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing the certificate and opening it when ready.</div>
+                <div style="margin-top: 12px; font-weight: 600;">{{ t('common.ui.generatingPdf') }}</div>
+                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">{{ t('common.ui.preparingCertificate') }}</div>
             </div>
         </div>
         <div v-if="residentModalLoading" class="preview-loading-overlay">
             <div class="preview-loading-box">
                 <div class="spinner" aria-hidden="true"></div>
-                <div style="margin-top: 12px; font-weight: 600;">Loading resident profile...</div>
-                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">Preparing full resident details for review.</div>
+                <div style="margin-top: 12px; font-weight: 600;">{{ t('common.ui.loadingResidentProfile') }}</div>
+                <div style="margin-top: 6px; color: #666; font-size: 0.95rem;">{{ t('common.ui.preparingResidentDetails') }}</div>
             </div>
         </div>
         <div v-if="recordPreview.open" class="record-preview-overlay" @click.self="closeRecordPreview">
             <div class="record-preview-modal" :class="{ 'record-preview-map': recordPreview.type === 'map' }">
-                <button type="button" class="record-preview-close" @click="closeRecordPreview" aria-label="Close preview">
+                <button type="button" class="record-preview-close" @click="closeRecordPreview" :aria-label="t('common.ui.closePreview')">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
                 <h3 class="record-preview-title">{{ recordPreview.title }}</h3>
@@ -1527,7 +1528,7 @@
                 <iframe
                     v-else
                     :src="recordPreview.src"
-                    title="Pinned location preview"
+                    :title="t('common.ui.pinnedLocationPreview')"
                     class="record-preview-map-frame"
                     loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"
@@ -1538,7 +1539,9 @@
 </template>
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BrandMark from '@/components/BrandMark.vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import SkeletonLoader from '@/components/SkeletonLoader.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import StatusActionButtons from '@/components/StatusActionButtons.vue';
@@ -1594,68 +1597,13 @@ const {
     initSession
 } = useAdminAuth();
 
+const { t } = useI18n();
+
 const ADMIN_VIEW_STORAGE_KEY = 'barangayAdminCurrentView';
 const ADMIN_VIEWS = new Set(['dashboard', 'announcements', 'residents', 'appointments', 'officials', 'reservations', 'manpower', 'reports', 'documents', 'disaster', 'sms-logs', 'profile', 'health-events', 'health-queue']);
 const BHW_VIEWS = new Set(['health-queue', 'profile']);
 
-const texts = {
-    admin: {
-        initializing: 'Initializing admin session...',
-        login: {
-            heading: 'Administrator Login',
-            sub: 'Sign in to manage the barangay portal',
-            username: 'Username or Email',
-            password: 'Password',
-            signingIn: 'Signing in...',
-            login: 'Log In',
-            forgot: 'Forgot password?'
-        },
-        emailConfirm: {
-            helper: 'Please confirm the new email address from your inbox.',
-            email: 'New Email',
-            confirm: 'Confirm Email Update',
-            verifying: 'Confirming...',
-            back: 'Back to Login'
-        },
-        forgot: {
-            heading: 'Recover Admin Access',
-            sub: 'Send a reset link to the admin email',
-            email: 'Admin Email',
-            helper: 'Use the email currently registered on your admin account.',
-            send: 'Send Reset Link',
-            sending: 'Sending...',
-            back: 'Back to Login'
-        },
-        reset: {
-            heading: 'Set New Admin Password',
-            sub: 'Choose a strong password to continue',
-            email: 'Admin Email',
-            password: 'New Password',
-            confirmPassword: 'Confirm New Password',
-            save: 'Update Password',
-            saving: 'Updating...',
-            requestNew: 'Request a new reset link'
-        },
-        profile: {
-            helper: 'Use this email for password recovery and admin notices. Changing it requires your current password and verification from the new inbox.'
-        },
-        sidebar: {
-            dashboard: 'Dashboard',
-            profile: 'Profile',
-            announcements: 'Announcements',
-            residents: 'Residents',
-            appointments: 'Appointments',
-            officials: 'Officials',
-            facilities: 'Facility Reservations',
-            manpower: 'Manpower',
-            reports: 'Incident Reports',
-            documents: 'Documents',
-            disaster: 'Disaster Management',
-            smsLogs: 'SMS Logs',
-            logout: 'Log Out'
-        }
-    }
-};
+// Per-page static text has been migrated to global i18n locale files.
 
 const confirmLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
@@ -1664,17 +1612,17 @@ const confirmLogout = () => {
 };
 
 const authPanelTitle = computed(() => {
-    if (authView.value === 'login') return texts.admin.login.heading;
-    if (authView.value === 'forgot') return texts.admin.forgot.heading;
+    if (authView.value === 'login') return t('admin.login.heading');
+    if (authView.value === 'forgot') return t('admin.forgot.heading');
     if (authView.value === 'email-confirm') return 'Confirm Admin Email';
-    return texts.admin.reset.heading;
+    return t('admin.reset.heading');
 });
 
 const authPanelSubtitle = computed(() => {
-    if (authView.value === 'login') return texts.admin.login.sub;
-    if (authView.value === 'forgot') return texts.admin.forgot.sub;
+    if (authView.value === 'login') return t('admin.login.sub');
+    if (authView.value === 'forgot') return t('admin.forgot.sub');
     if (authView.value === 'email-confirm') return 'Complete the email update request';
-    return texts.admin.reset.sub;
+    return t('admin.reset.sub');
 });
 
 const resetPasswordRules = computed(() => {
