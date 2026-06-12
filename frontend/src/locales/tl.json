@@ -1,6 +1,8 @@
 {
   "language": {
     "switcher": "Palitan ang wika",
+    "hide": "Itago ang language control",
+    "show": "Ipakita ang language control",
     "english": "Ingles",
     "filipino": "Filipino"
   },

@@ -1,6 +1,8 @@
 {
   "language": {
     "switcher": "Switch language",
+    "hide": "Hide language control",
+    "show": "Show language control",
     "english": "English",
     "filipino": "Filipino"
   },
