@@ -2,18 +2,45 @@ const HealthEvent = require('../models/HealthEvent');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 
+const EVENT_STATUSES = new Set(['upcoming', 'ongoing', 'completed', 'cancelled']);
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const normalizePrefix = (prefix) => String(prefix || '').trim().toUpperCase();
+
+const parseEventDate = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        throw createHttpError(400, 'Please provide a valid event date');
+    }
+    return date;
+};
+
+const validateTimeRange = (startTime, endTime) => {
+    if (!TIME_RE.test(String(startTime || '')) || !TIME_RE.test(String(endTime || ''))) {
+        throw createHttpError(400, 'Please provide valid start and end times');
+    }
+    if (startTime >= endTime) {
+        throw createHttpError(400, 'End time must be later than start time');
+    }
+};
+
 const createEvent = asyncHandler(async (req, res) => {
     const { title, description, prefix, eventDate, startTime, endTime } = req.body;
 
     if (!title || !prefix || !eventDate || !startTime || !endTime) {
         throw createHttpError(400, 'title, prefix, eventDate, startTime and endTime are required');
     }
+    validateTimeRange(startTime, endTime);
+    const normalizedPrefix = normalizePrefix(prefix);
+    if (!normalizedPrefix || normalizedPrefix.length > 5) {
+        throw createHttpError(400, 'Prefix must be 1 to 5 characters');
+    }
 
     const event = new HealthEvent({
-        title,
+        title: String(title).trim(),
         description: description || '',
-        prefix: String(prefix).toUpperCase(),
-        eventDate: new Date(eventDate),
+        prefix: normalizedPrefix,
+        eventDate: parseEventDate(eventDate),
         startTime,
         endTime,
         createdBy: req.user?._id
@@ -44,13 +71,26 @@ const updateEvent = asyncHandler(async (req, res) => {
     if (!event) throw createHttpError(404, 'Event not found');
 
     const { title, description, prefix, eventDate, startTime, endTime, status } = req.body;
-    if (title) event.title = title;
+    const nextStartTime = startTime || event.startTime;
+    const nextEndTime = endTime || event.endTime;
+    validateTimeRange(nextStartTime, nextEndTime);
+
+    if (title) event.title = String(title).trim();
     if (description !== undefined) event.description = description;
-    if (prefix) event.prefix = String(prefix).toUpperCase();
-    if (eventDate) event.eventDate = new Date(eventDate);
+    if (prefix) {
+        const normalizedPrefix = normalizePrefix(prefix);
+        if (!normalizedPrefix || normalizedPrefix.length > 5) {
+            throw createHttpError(400, 'Prefix must be 1 to 5 characters');
+        }
+        event.prefix = normalizedPrefix;
+    }
+    if (eventDate) event.eventDate = parseEventDate(eventDate);
     if (startTime) event.startTime = startTime;
     if (endTime) event.endTime = endTime;
-    if (status) event.status = status;
+    if (status) {
+        if (!EVENT_STATUSES.has(status)) throw createHttpError(400, 'Invalid event status');
+        event.status = status;
+    }
 
     event.updatedAt = new Date();
     await event.save();

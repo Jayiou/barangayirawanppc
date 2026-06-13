@@ -682,13 +682,15 @@ const sendCustomResidentEmail = async (toEmail, name, subject, message) => {
 
         if (shouldSkipEmailSend()) {
             console.log('Skipping custom resident email because no Brevo API key or SMTP credentials are configured');
-            return;
+            return { sent: false, skipped: true, reason: 'missing_config' };
         }
 
-        await sendMail(mailOptions);
+        const result = await sendMail(mailOptions);
         console.log(`Custom resident email sent to ${toEmail}`);
+        return { sent: true, result };
     } catch (error) {
         console.error('Error sending custom resident email:', error);
+        return { sent: false, error };
     }
 };
 

@@ -94,21 +94,21 @@
                                     </div>
                                     <div style="display:flex; gap:8px; align-items:center;">
                                         <button class="ghost-button" @click="viewHealthQueue(event)">{{ t('common.viewQueue') }}</button>
-                                        <button class="primary-button" :disabled="!event.isQueueOpen || joinLoading" @click="joinHealthQueue(event)">{{ joinLoading ? 'Joining...' : (event.isQueueOpen ? 'Join Queue' : 'Closed') }}</button>
+                                        <button class="primary-button" :disabled="!event.isQueueOpen || joinLoading" @click="joinHealthQueue(event)">{{ joinLoading ? t('common.joining') : (event.isQueueOpen ? t('common.joinQueue') : t('common.closed')) }}</button>
                                     </div>
                                 </div>
                             </div>
 
                             <div v-if="selectedHealthEvent" style="margin-top:16px;">
-                                <h4>Queue for: {{ selectedHealthEvent.title }}</h4>
+                                <h4>{{ t('common.queueFor', { title: selectedHealthEvent.title }) }}</h4>
                                 <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:12px;">
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
                                         <div class="fine-print">{{ t('common.nowServing') }}</div>
-                                        <strong>{{ healthQueueSummary.current?.queueCode || selectedHealthEvent.currentServing || 'None' }}</strong>
+                                        <strong>{{ healthQueueSummary.current?.queueCode || t('common.none') }}</strong>
                                     </div>
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
                                         <div class="fine-print">{{ t('common.next') }}</div>
-                                        <strong>{{ healthQueueSummary.next?.queueCode || 'None' }}</strong>
+                                        <strong>{{ healthQueueSummary.next?.queueCode || t('common.none') }}</strong>
                                     </div>
                                     <div style="border:1px solid #e4ece8; border-radius:8px; padding:10px;">
                                         <div class="fine-print">{{ t('common.waiting') }}</div>
@@ -122,13 +122,11 @@
                                 </div>
                                 <div class="portal-table-wrap">
                                     <table class="data-table portal-record-table">
-                                        <thead><tr><th>{{ t('common.code') }}</th><th>{{ t('common.name') }}</th><th>{{ t('common.contact') }}</th><th>{{ t('common.status') }}</th></tr></thead>
+                                        <thead><tr><th>{{ t('common.code') }}</th><th>{{ t('common.status') }}</th></tr></thead>
                                         <tbody>
-                                            <tr v-if="!healthQueue.length"><td colspan="4" class="portal-empty-cell">{{ t('portal.health.noQueueEntries') }}</td></tr>
+                                            <tr v-if="!healthQueue.length"><td colspan="2" class="portal-empty-cell">{{ t('portal.health.noQueueEntries') }}</td></tr>
                                             <tr v-for="q in healthQueue" :key="q._id" :style="isMyHealthQueueEntry(q) ? 'background:#f3fbf6;' : ''">
-                                                <td>{{ q.queueCode }}</td>
-                                                <td>{{ q.firstName }} {{ q.lastName }}</td>
-                                                <td>{{ q.contactNumber }}</td>
+                                                <td>{{ q.queueCode }} <strong v-if="q.isMine">({{ t('common.yourNumber') }})</strong></td>
                                                 <td><StatusBadge :status="q.status" /></td>
                                             </tr>
                                         </tbody>
@@ -1203,7 +1201,7 @@ const getRecordId = (value) => {
     return String(value);
 };
 const isSameRecordId = (left, right) => Boolean(getRecordId(left) && getRecordId(left) === getRecordId(right));
-const isMyHealthQueueEntry = (item) => isSameRecordId(item?.residentId, profile._id);
+const isMyHealthQueueEntry = (item) => Boolean(item?.isMine);
 const myHealthQueueEntry = computed(() => healthQueue.value.find((item) => isMyHealthQueueEntry(item)) || null);
 
 const clampProfileCropValue = (value) => Math.min(100, Math.max(0, value));
@@ -2777,17 +2775,9 @@ const joinHealthQueue = async (event) => {
         return;
     }
 
-    const payload = {
-        requesterType: 'resident',
-        residentId: profile._id,
-        firstName: profile.firstName || user?.username || '',
-        lastName: profile.lastName || '',
-        contactNumber: profile.contactNumber || '',
-        email: profile.email || user?.email || ''
-    };
     joinLoading.value = true;
     try {
-        const res = await apiFetch(`/api/health-queues/${event._id}/join`, { method: 'POST', body: payload });
+        const res = await apiFetch(`/api/health-queues/${event._id}/join`, { method: 'POST', body: {} });
         if (res?.success) {
             selectedHealthEvent.value = event;
             await loadHealthQueue(event._id);
