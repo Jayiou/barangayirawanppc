@@ -258,7 +258,6 @@ test('sendSmsNotification uses messagingServiceSid when configured', async () =>
             SMS_ENABLED: 'true',
             TWILIO_ACCOUNT_SID: 'AC123',
             TWILIO_AUTH_TOKEN: 'token',
-            TWILIO_NUMBER: '+15550001111',
             TWILIO_MESSAGING_SERVICE_SID: 'MG1234567890abcdef1234567890abcdef'
         },
         smsLogModel: FakeSmsLog,

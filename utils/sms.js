@@ -104,7 +104,7 @@ const getTwilioConfig = () => {
         authToken,
         fromNumber,
         messagingServiceSid,
-        isConfigured: Boolean(accountSid && authToken && fromNumber)
+        isConfigured: Boolean(accountSid && authToken && (fromNumber || messagingServiceSid))
     };
 };
 

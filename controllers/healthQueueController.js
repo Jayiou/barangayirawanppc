@@ -21,6 +21,12 @@ const ALLOWED_STATUS_TRANSITIONS = {
 const getUserId = (req) => req.user?._id || req.user?.id;
 const isQueueStaff = (req) => ['admin', 'bhw'].includes(req.user?.role);
 const sameId = (a, b) => a && b && String(a) === String(b);
+const deliveryStatus = (smsResult, emailResult) => ({
+    smsSent: Boolean(smsResult?.sent),
+    smsReason: smsResult?.sent ? '' : (smsResult?.reason || smsResult?.error?.message || 'send_failed'),
+    emailSent: Boolean(emailResult?.sent),
+    emailReason: emailResult?.sent ? '' : (emailResult?.reason || emailResult?.error?.message || 'send_failed')
+});
 
 const toQueueItem = (item, { staff = false, residentId = null } = {}) => {
     if (!item) return null;
@@ -254,8 +260,7 @@ const joinQueue = asyncHandler(async (req, res) => {
         message: `Joined queue. Your number is ${entry.queueCode}.`,
         data: toQueueItem(entry, { residentId: resident._id }),
         notification: {
-            smsSent: Boolean(notification.sms?.sent),
-            emailSent: Boolean(notification.email?.sent),
+            ...deliveryStatus(notification.sms, notification.email),
             waitingAhead: notification.waitingAhead
         }
     });
@@ -317,7 +322,7 @@ const callNext = asyncHandler(async (req, res) => {
         event.currentServing = current.queueNumber;
         await event.save();
 
-        await notifyQueueTurn(current, eventId);
+        const turnNotification = await notifyQueueTurn(current, eventId);
 
         const nextNotification = await notifyNextInLine(eventId);
 
@@ -328,7 +333,11 @@ const callNext = asyncHandler(async (req, res) => {
             data: { current: toQueueItem(current, { staff: true }), event, summary },
             notification: {
                 turnSent: Boolean(current.notifiedTurn),
-                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching)
+                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching),
+                turn: deliveryStatus(turnNotification.sms, turnNotification.email),
+                next: nextNotification
+                    ? deliveryStatus(nextNotification.sms, nextNotification.email)
+                    : null
             }
         });
     } finally {
@@ -394,7 +403,11 @@ const updateStatus = asyncHandler(async (req, res) => {
         notification: status === 'serving'
             ? {
                 turnSent: Boolean(turnNotification?.sms?.sent || turnNotification?.email?.sent),
-                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching)
+                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching),
+                turn: deliveryStatus(turnNotification?.sms, turnNotification?.email),
+                next: nextNotification
+                    ? deliveryStatus(nextNotification.sms, nextNotification.email)
+                    : null
             }
             : undefined
     });
