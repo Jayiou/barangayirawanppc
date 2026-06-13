@@ -318,7 +318,7 @@ exports.updateResident = asyncHandler(async (req, res) => {
     }
 
     const updated = await Resident.findByIdAndUpdate(req.params.id, residentData, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true
     }).populate('userId', 'username email role isActive accountStatus createdAt');
 
@@ -397,7 +397,7 @@ exports.updateResidentVerification = asyncHandler(async (req, res) => {
             verificationStatus,
             verificationRemarks: String(verificationRemarks || '').trim()
         },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     ).populate('userId', 'username email role isActive accountStatus createdAt');
 
     if (!resident) {

@@ -185,7 +185,7 @@ exports.updateDisasterIncident = asyncHandler(async (req, res) => {
     const incident = await DisasterIncident.findByIdAndUpdate(
         req.params.id,
         payload,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     ).populate('createdBy', 'username email');
 
     if (!incident) {
@@ -232,7 +232,7 @@ exports.updateAffectedRecord = asyncHandler(async (req, res) => {
     const record = await DisasterAffectedRecord.findByIdAndUpdate(
         req.params.affectedId,
         payload,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     ).populate({
         path: 'residentId',
         select: 'firstName middleName lastName suffix'

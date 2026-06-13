@@ -9,6 +9,7 @@ const sms = require('../utils/sms');
 const pad = (n, width = 3) => String(n).padStart(width, '0');
 const TERMINAL_QUEUE_STATUSES = ['completed', 'no-show', 'cancelled'];
 const STATUS_TRANSITIONS = new Set(['waiting', 'serving', ...TERMINAL_QUEUE_STATUSES]);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_STATUS_TRANSITIONS = {
     waiting: new Set(['serving', 'cancelled', 'no-show']),
     serving: new Set(['completed', 'no-show', 'cancelled']),
@@ -125,6 +126,66 @@ const notifyQueueTurn = async (entry, eventId) => {
     return { sms: smsResult, email: emailResult };
 };
 
+const notifyNextInLine = async (eventId) => {
+    const entry = await HealthQueue.findOne({
+        eventId,
+        status: 'waiting',
+        notifiedApproaching: false
+    }).sort({ queueNumber: 1 });
+    if (!entry) return null;
+
+    const message = `Brgy Irawan: Hi ${entry.firstName}, you are next in line. Please be ready to proceed to the Health Center. (${entry.queueCode})`;
+    const smsResult = await sms.sendSmsNotification({
+        phoneNumber: entry.contactNumber,
+        messageType: 'health_queue_next',
+        messageContent: message,
+        recipientId: entry._id,
+        referenceId: eventId
+    }).catch((error) => ({ sent: false, error }));
+    const emailResult = entry.email
+        ? await mailer.sendCustomResidentEmail(
+            entry.email,
+            `${entry.firstName} ${entry.lastName}`,
+            'Health Center - You Are Next',
+            message
+        )
+        : { sent: false, skipped: true, reason: 'missing_email' };
+
+    entry.notifiedApproaching = Boolean(smsResult?.sent || emailResult?.sent);
+    await entry.save();
+    return { entry, sms: smsResult, email: emailResult };
+};
+
+const sendQueueJoinConfirmation = async (entry, event) => {
+    const waitingAhead = await HealthQueue.countDocuments({
+        eventId: event._id,
+        status: 'waiting',
+        queueNumber: { $lt: entry.queueNumber }
+    });
+    const positionText = waitingAhead === 0
+        ? 'You are next in line.'
+        : `There ${waitingAhead === 1 ? 'is' : 'are'} ${waitingAhead} waiting ${waitingAhead === 1 ? 'person' : 'people'} ahead of you.`;
+    const message = `Brgy Irawan: You joined the ${event.title} queue. Your number is ${entry.queueCode}. ${positionText}`;
+
+    const smsResult = await sms.sendSmsNotification({
+        phoneNumber: entry.contactNumber,
+        messageType: 'health_queue_joined',
+        messageContent: message,
+        recipientId: entry._id,
+        referenceId: event._id
+    }).catch((error) => ({ sent: false, error }));
+    const emailResult = entry.email
+        ? await mailer.sendCustomResidentEmail(
+            entry.email,
+            `${entry.firstName} ${entry.lastName}`,
+            'Health Center - Queue Confirmation',
+            message
+        )
+        : { sent: false, skipped: true, reason: 'missing_email' };
+
+    return { sms: smsResult, email: emailResult, waitingAhead };
+};
+
 const reserveQueueNumber = async (event, payload, attempts = 3) => {
     for (let attempt = 0; attempt < attempts; attempt += 1) {
         const last = await HealthQueue.findOne({ eventId: event._id }).sort({ queueNumber: -1 });
@@ -185,8 +246,19 @@ const joinQueue = asyncHandler(async (req, res) => {
         email: resident.email || req.user?.email || '',
         status: 'waiting'
     });
+    const notification = await sendQueueJoinConfirmation(entry, event);
 
-    res.status(201).json({ success: true, duplicate: false, message: `Joined queue. Your number is ${entry.queueCode}.`, data: toQueueItem(entry, { residentId: resident._id }) });
+    res.status(201).json({
+        success: true,
+        duplicate: false,
+        message: `Joined queue. Your number is ${entry.queueCode}.`,
+        data: toQueueItem(entry, { residentId: resident._id }),
+        notification: {
+            smsSent: Boolean(notification.sms?.sent),
+            emailSent: Boolean(notification.email?.sent),
+            waitingAhead: notification.waitingAhead
+        }
+    });
 });
 
 const listQueue = asyncHandler(async (req, res) => {
@@ -210,12 +282,11 @@ const getSummary = asyncHandler(async (req, res) => {
 
 const callNext = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
-    const threshold = Math.max(1, Number(req.body.threshold || 3));
 
     const event = await HealthEvent.findOneAndUpdate(
         { _id: eventId, queueLock: { $ne: true } },
         { queueLock: true },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!event) throw createHttpError(409, 'Queue is busy. Please try again.');
 
@@ -232,7 +303,7 @@ const callNext = asyncHandler(async (req, res) => {
         const current = await HealthQueue.findOneAndUpdate(
             { eventId, status: 'waiting' },
             { status: 'serving', servedAt: new Date() },
-            { new: true, sort: { queueNumber: 1 } }
+            { returnDocument: 'after', sort: { queueNumber: 1 } }
         );
 
         if (!current) {
@@ -248,21 +319,18 @@ const callNext = asyncHandler(async (req, res) => {
 
         await notifyQueueTurn(current, eventId);
 
-        const approachingNumber = current.queueNumber + threshold;
-        const approaching = await HealthQueue.findOne({ eventId, queueNumber: approachingNumber, notifiedApproaching: false });
-        if (approaching) {
-            const appMsg = `Brgy Irawan: Hi ${approaching.firstName}, your turn is approaching. ${threshold - 1} people ahead of you. (${approaching.queueCode})`;
-            const smsResult = await sms.sendSmsNotification({ phoneNumber: approaching.contactNumber, messageType: 'health_queue_approaching', messageContent: appMsg, recipientId: approaching._id, referenceId: eventId })
-                .catch((error) => ({ sent: false, error }));
-            const emailResult = approaching.email
-                ? await mailer.sendCustomResidentEmail(approaching.email, `${approaching.firstName} ${approaching.lastName}`, 'Health Center - Approaching', appMsg)
-                : { sent: false, skipped: true, reason: 'missing_email' };
-            approaching.notifiedApproaching = Boolean(smsResult?.sent || emailResult?.sent);
-            await approaching.save();
-        }
+        const nextNotification = await notifyNextInLine(eventId);
 
         const { summary } = await getQueueWithSummary(eventId, { staff: true });
-        res.json({ success: true, message: 'Called next', data: { current: toQueueItem(current, { staff: true }), event, summary } });
+        res.json({
+            success: true,
+            message: 'Called next',
+            data: { current: toQueueItem(current, { staff: true }), event, summary },
+            notification: {
+                turnSent: Boolean(current.notifiedTurn),
+                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching)
+            }
+        });
     } finally {
         event.queueLock = false;
         await event.save();
@@ -298,10 +366,12 @@ const updateStatus = asyncHandler(async (req, res) => {
     const item = await HealthQueue.findOneAndUpdate(
         { _id: queueId, eventId },
         update,
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!item) throw createHttpError(404, 'Queue entry not found');
 
+    let turnNotification = null;
+    let nextNotification = null;
     if (status === 'serving') {
         await HealthQueue.updateMany(
             { eventId, _id: { $ne: item._id }, status: 'serving' },
@@ -309,13 +379,67 @@ const updateStatus = asyncHandler(async (req, res) => {
         );
         event.currentServing = item.queueNumber;
         await event.save();
-        await notifyQueueTurn(item, eventId);
+        turnNotification = await notifyQueueTurn(item, eventId);
+        nextNotification = await notifyNextInLine(eventId);
     } else if (existing.status === 'serving' && TERMINAL_QUEUE_STATUSES.includes(status)) {
         await refreshCurrentServing(eventId, event);
     }
 
     const { summary } = await getQueueWithSummary(eventId, { staff: true });
-    res.json({ success: true, message: 'Queue status updated', data: toQueueItem(item, { staff: true }), summary });
+    res.json({
+        success: true,
+        message: 'Queue status updated',
+        data: toQueueItem(item, { staff: true }),
+        summary,
+        notification: status === 'serving'
+            ? {
+                turnSent: Boolean(turnNotification?.sms?.sent || turnNotification?.email?.sent),
+                nextSent: Boolean(nextNotification?.entry?.notifiedApproaching)
+            }
+            : undefined
+    });
+});
+
+const updateQueueDetails = asyncHandler(async (req, res) => {
+    const { eventId, queueId } = req.params;
+    const item = await HealthQueue.findOne({ _id: queueId, eventId });
+    if (!item) throw createHttpError(404, 'Queue entry not found');
+    if (item.status !== 'waiting') {
+        throw createHttpError(400, 'Only waiting queue entries can be edited');
+    }
+
+    const firstName = String(req.body.firstName || '').trim();
+    const lastName = String(req.body.lastName || '').trim();
+    const contactNumber = String(req.body.contactNumber || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!firstName || !lastName || !contactNumber) {
+        throw createHttpError(400, 'First name, last name, and contact number are required');
+    }
+    if (email && !EMAIL_RE.test(email)) {
+        throw createHttpError(400, 'Please provide a valid email address');
+    }
+
+    item.firstName = firstName;
+    item.lastName = lastName;
+    item.contactNumber = contactNumber;
+    item.email = email;
+    item.notifiedApproaching = false;
+    item.notifiedTurn = false;
+    await item.save();
+
+    res.json({ success: true, message: 'Queue entry updated', data: toQueueItem(item, { staff: true }) });
+});
+
+const deleteQueueEntry = asyncHandler(async (req, res) => {
+    const { eventId, queueId } = req.params;
+    const item = await HealthQueue.findOne({ _id: queueId, eventId });
+    if (!item) throw createHttpError(404, 'Queue entry not found');
+    if (!TERMINAL_QUEUE_STATUSES.includes(item.status)) {
+        throw createHttpError(400, 'Complete, cancel, or mark the entry as no-show before deleting it');
+    }
+
+    await HealthQueue.deleteOne({ _id: queueId, eventId });
+    res.json({ success: true, message: 'Queue entry deleted' });
 });
 
 module.exports = {
@@ -323,5 +447,7 @@ module.exports = {
     listQueue,
     getSummary,
     callNext,
-    updateStatus
+    updateStatus,
+    updateQueueDetails,
+    deleteQueueEntry
 };

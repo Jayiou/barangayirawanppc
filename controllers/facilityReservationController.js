@@ -892,7 +892,7 @@ exports.updateFacilityReservationStatus = asyncHandler(async (req, res) => {
     const reservation = await FacilityReservation.findByIdAndUpdate(
         req.params.id,
         statusData,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
 
     // Log the status change

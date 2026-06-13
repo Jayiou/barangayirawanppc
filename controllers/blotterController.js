@@ -134,7 +134,7 @@ exports.updateBlotter = asyncHandler(async (req, res) => {
     const updatedBlotter = await Blotter.findByIdAndUpdate(
         req.params.id,
         updateData,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
 
     res.json(updatedBlotter);

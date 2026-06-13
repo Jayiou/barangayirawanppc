@@ -17,6 +17,8 @@
       </div>
     </div>
 
+    <p v-if="actionMessage" class="action-message" :class="{ error: actionError }">{{ actionMessage }}</p>
+
     <div class="event-select-row">
       <label>
         <span>{{ t('components.activeQueueDashboard.selectEvent') }}</span>
@@ -73,9 +75,17 @@
               <span>{{ item.firstName }} {{ item.lastName }}</span>
               <small>{{ item.contactNumber }} | {{ item.email || t('common.noEmail') }}</small>
             </div>
-            <button class="ghost-button icon-action" type="button" :title="t('common.serveNow')" @click="updateQueueStatus(item, 'serving')">
-              <i class="fa-solid fa-play"></i>
-            </button>
+            <div class="item-actions">
+              <button class="ghost-button icon-action" type="button" :title="t('components.activeQueueDashboard.editEntry')" @click="openEdit(item)">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="ghost-button icon-action" type="button" :title="t('common.serveNow')" @click="updateQueueStatus(item, 'serving')">
+                <i class="fa-solid fa-play"></i>
+              </button>
+              <button class="ghost-button icon-action danger" type="button" :title="t('components.activeQueueDashboard.cancelEntry')" @click="cancelEntry(item)">
+                <i class="fa-solid fa-ban"></i>
+              </button>
+            </div>
           </article>
         </section>
 
@@ -99,10 +109,30 @@
                 <i class="fa-solid fa-user-slash"></i>
               </button>
             </div>
+            <button v-else-if="canDelete(item)" class="ghost-button icon-action danger" type="button" :title="t('components.activeQueueDashboard.deleteEntry')" @click="deleteEntry(item)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </article>
         </section>
       </div>
     </template>
+
+    <div v-if="editingItem" class="queue-modal-backdrop" @click.self="closeEdit">
+      <form class="queue-modal" @submit.prevent="saveEdit">
+        <div class="column-head">
+          <h4>{{ t('components.activeQueueDashboard.editEntry') }} {{ editingItem.queueCode }}</h4>
+          <button class="ghost-button icon-action" type="button" @click="closeEdit"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <label><span>{{ t('components.activeQueueDashboard.firstName') }}</span><input v-model.trim="editForm.firstName" required></label>
+        <label><span>{{ t('components.activeQueueDashboard.lastName') }}</span><input v-model.trim="editForm.lastName" required></label>
+        <label><span>{{ t('common.contact') }}</span><input v-model.trim="editForm.contactNumber" required></label>
+        <label><span>{{ t('components.activeQueueDashboard.email') }}</span><input v-model.trim="editForm.email" type="email"></label>
+        <div class="item-actions">
+          <button class="primary-button" type="submit" :disabled="saving">{{ saving ? t('common.processing') : t('common.saveChanges') }}</button>
+          <button class="ghost-button" type="button" @click="closeEdit">{{ t('common.cancel') }}</button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -120,10 +150,15 @@ const selectedEventId = ref('');
 const currentEvent = ref(null);
 const lastUpdated = ref('');
 const pollHandle = ref(null);
+const actionMessage = ref('');
+const actionError = ref(false);
+const saving = ref(false);
+const editingItem = ref(null);
+const editForm = ref({ firstName: '', lastName: '', contactNumber: '', email: '' });
 
 const waitingItems = computed(() => queue.value.filter((item) => item.status === 'waiting'));
 const activeOrDoneItems = computed(() => queue.value.filter((item) => item.status !== 'waiting'));
-const currentCode = computed(() => summary.value.current?.queueCode || (currentEvent.value?.currentServing ? `#${currentEvent.value.currentServing}` : 'None'));
+const currentCode = computed(() => summary.value.current?.queueCode || t('common.none'));
 const canCallNext = computed(() => Boolean(selectedEventId.value && currentEvent.value?.isQueueOpen && waitingItems.value.length && !loading.value));
 
 const loadEvents = async () => {
@@ -175,14 +210,82 @@ onUnmounted(stopPolling);
 
 const callNext = async () => {
   if (!selectedEventId.value) return;
-  await apiFetch(`/api/health-queues/${selectedEventId.value}/call-next`, { method: 'POST', body: {} });
-  await loadQueue();
-  await loadEvents();
+  try {
+    const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/call-next`, { method: 'POST', body: {} });
+    setActionMessage(notificationMessage(res, res?.message || t('components.activeQueueDashboard.calledNext')));
+    await loadQueue();
+    await loadEvents();
+  } catch (error) {
+    setActionMessage(error?.message || t('components.activeQueueDashboard.actionFailed'), true);
+  }
 };
 
 const updateQueueStatus = async (item, status) => {
-  await apiFetch(`/api/health-queues/${selectedEventId.value}/${item._id}/status`, { method: 'PATCH', body: { status } });
-  await loadQueue();
+  try {
+    const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/${item._id}/status`, { method: 'PATCH', body: { status } });
+    setActionMessage(notificationMessage(res, res?.message || t('components.activeQueueDashboard.statusUpdated')));
+    await loadQueue();
+  } catch (error) {
+    setActionMessage(error?.message || t('components.activeQueueDashboard.actionFailed'), true);
+  }
+};
+
+const setActionMessage = (message, isError = false) => {
+  actionMessage.value = message;
+  actionError.value = isError;
+};
+const notificationMessage = (response, fallback) => {
+  if (!response?.notification) return fallback;
+  if (response.notification.turnSent) {
+    return response.notification.nextSent
+      ? `${fallback} ${t('components.activeQueueDashboard.turnAndNextSent')}`
+      : `${fallback} ${t('components.activeQueueDashboard.turnSent')}`;
+  }
+  return `${fallback} ${t('components.activeQueueDashboard.notificationNotSent')}`;
+};
+const canDelete = (item) => ['completed', 'no-show', 'cancelled'].includes(item.status);
+const cancelEntry = async (item) => {
+  if (!window.confirm(t('components.activeQueueDashboard.confirmCancel', { code: item.queueCode }))) return;
+  await updateQueueStatus(item, 'cancelled');
+};
+const deleteEntry = async (item) => {
+  if (!window.confirm(t('components.activeQueueDashboard.confirmDelete', { code: item.queueCode }))) return;
+  try {
+    const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/${item._id}`, { method: 'DELETE' });
+    setActionMessage(res?.message || t('components.activeQueueDashboard.entryDeleted'));
+    await loadQueue();
+  } catch (error) {
+    setActionMessage(error?.message || t('components.activeQueueDashboard.actionFailed'), true);
+  }
+};
+const openEdit = (item) => {
+  editingItem.value = item;
+  editForm.value = {
+    firstName: item.firstName || '',
+    lastName: item.lastName || '',
+    contactNumber: item.contactNumber || '',
+    email: item.email || ''
+  };
+};
+const closeEdit = () => {
+  editingItem.value = null;
+};
+const saveEdit = async () => {
+  if (!editingItem.value) return;
+  saving.value = true;
+  try {
+    const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/${editingItem.value._id}`, {
+      method: 'PATCH',
+      body: editForm.value
+    });
+    setActionMessage(res?.message || t('components.activeQueueDashboard.entryUpdated'));
+    closeEdit();
+    await loadQueue();
+  } catch (error) {
+    setActionMessage(error?.message || t('components.activeQueueDashboard.actionFailed'), true);
+  } finally {
+    saving.value = false;
+  }
 };
 
 const personName = (item) => item ? `${item.firstName} ${item.lastName}` : 'No resident selected';
@@ -222,6 +325,12 @@ const labelStatus = (status) => String(status || '').replace('-', ' ');
 .icon-action { width: 38px; height: 38px; justify-content: center; padding: 0; }
 .empty-state { padding: 20px; text-align: center; color: #66736d; border: 1px dashed #d9e3de; border-radius: 8px; }
 .empty-state.small { padding: 14px; }
+.action-message { margin: 0; padding: 10px 12px; border-radius: 8px; background: #e8f7ee; color: #17623a; }
+.action-message.error { background: #fff0ef; color: #9c2f27; }
+.danger { color: #a7372f; }
+.queue-modal-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; background: rgba(20, 35, 28, 0.45); }
+.queue-modal { width: min(480px, 100%); display: grid; gap: 12px; padding: 18px; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2); }
+.queue-modal h4 { margin: 0; }
 @media (max-width: 900px) {
   .stats-grid, .now-grid, .queue-columns { grid-template-columns: 1fr; }
   .dashboard-head, .event-select-row { align-items: stretch; flex-direction: column; }

@@ -460,7 +460,7 @@ exports.updateReportStatus = asyncHandler(async (req, res) => {
     const updatedReport = await Report.findByIdAndUpdate(
         req.params.id,
         statusData,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedReport) {

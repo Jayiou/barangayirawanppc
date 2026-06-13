@@ -220,7 +220,7 @@ exports.updateDisasterAdvisory = asyncHandler(async (req, res) => {
     const advisory = await DisasterAdvisory.findByIdAndUpdate(
         req.params.id,
         payload,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     ).populate('createdBy', 'username email');
 
     if (!advisory) {

@@ -15,6 +15,8 @@ const originals = {
     queueFindOne: HealthQueue.findOne,
     queueFindOneAndUpdate: HealthQueue.findOneAndUpdate,
     queueUpdateMany: HealthQueue.updateMany,
+    queueCountDocuments: HealthQueue.countDocuments,
+    queueDeleteOne: HealthQueue.deleteOne,
     queueSave: HealthQueue.prototype.save,
     residentFindOne: Resident.findOne,
     sendEmail: mailer.sendCustomResidentEmail,
@@ -27,6 +29,8 @@ test.afterEach(() => {
     HealthQueue.findOne = originals.queueFindOne;
     HealthQueue.findOneAndUpdate = originals.queueFindOneAndUpdate;
     HealthQueue.updateMany = originals.queueUpdateMany;
+    HealthQueue.countDocuments = originals.queueCountDocuments;
+    HealthQueue.deleteOne = originals.queueDeleteOne;
     HealthQueue.prototype.save = originals.queueSave;
     Resident.findOne = originals.residentFindOne;
     mailer.sendCustomResidentEmail = originals.sendEmail;
@@ -58,6 +62,9 @@ test('joinQueue uses the authenticated resident profile instead of request body 
         this._id = '665000000000000000000003';
         return this;
     };
+    HealthQueue.countDocuments = async () => 0;
+    sms.sendSmsNotification = async () => ({ sent: true });
+    mailer.sendCustomResidentEmail = async () => ({ sent: true });
 
     const req = {
         params: { eventId: '665000000000000000000002' },
@@ -137,7 +144,12 @@ test('updateStatus sends turn notifications when staff manually serves a residen
     let emailCalls = 0;
 
     HealthEvent.findById = async () => event;
-    HealthQueue.findOne = async () => existing;
+    HealthQueue.findOne = (query) => {
+        if (query.status === 'waiting' && query.notifiedApproaching === false) {
+            return { sort: async () => null };
+        }
+        return Promise.resolve(existing);
+    };
     HealthQueue.findOneAndUpdate = async () => served;
     HealthQueue.updateMany = async () => ({ modifiedCount: 0 });
     HealthQueue.find = () => ({ sort: async () => [served] });
@@ -163,4 +175,76 @@ test('updateStatus sends turn notifications when staff manually serves a residen
     assert.equal(smsCalls, 1);
     assert.equal(emailCalls, 1);
     assert.equal(served.notifiedTurn, true);
+});
+
+test('updateStatus notifies the first waiting resident that they are next', async () => {
+    const event = { _id: 'event-1', currentServing: 0, save: async () => event };
+    const existing = {
+        _id: 'queue-1',
+        queueNumber: 1,
+        queueCode: 'MED-001',
+        status: 'waiting',
+        firstName: 'Juan',
+        lastName: 'Dela Cruz',
+        contactNumber: '+639171234567',
+        email: 'juan@example.com'
+    };
+    const served = { ...existing, status: 'serving', save: async () => served };
+    const next = {
+        _id: 'queue-2',
+        queueNumber: 2,
+        queueCode: 'MED-002',
+        status: 'waiting',
+        firstName: 'Maria',
+        lastName: 'Santos',
+        contactNumber: '+639181234567',
+        email: 'maria@example.com',
+        notifiedApproaching: false,
+        save: async () => next
+    };
+    const messages = [];
+
+    HealthEvent.findById = async () => event;
+    HealthQueue.findOne = (query) => {
+        if (query.status === 'waiting' && query.notifiedApproaching === false) {
+            return { sort: async () => next };
+        }
+        return Promise.resolve(existing);
+    };
+    HealthQueue.findOneAndUpdate = async () => served;
+    HealthQueue.updateMany = async () => ({ modifiedCount: 0 });
+    HealthQueue.find = () => ({ sort: async () => [served, next] });
+    sms.sendSmsNotification = async ({ messageContent }) => {
+        messages.push(messageContent);
+        return { sent: true };
+    };
+    mailer.sendCustomResidentEmail = async () => ({ sent: true });
+
+    const req = {
+        params: { eventId: 'event-1', queueId: 'queue-1' },
+        body: { status: 'serving' },
+        user: { role: 'bhw' }
+    };
+    const res = createMockResponse();
+
+    await controller.updateStatus(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(next.notifiedApproaching, true);
+    assert.equal(messages.some((message) => message.includes('you are next in line')), true);
+});
+
+test('deleteQueueEntry rejects deleting an active queue entry', async () => {
+    HealthQueue.findOne = async () => ({ _id: 'queue-1', status: 'waiting' });
+
+    const req = {
+        params: { eventId: 'event-1', queueId: 'queue-1' },
+        user: { role: 'admin' }
+    };
+    const res = createMockResponse();
+
+    await controller.deleteQueueEntry(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.equal(res.body.success, false);
 });

@@ -2781,7 +2781,10 @@ const joinHealthQueue = async (event) => {
         if (res?.success) {
             selectedHealthEvent.value = event;
             await loadHealthQueue(event._id);
-            setStatus(res.message || (res.duplicate ? 'You are already in this queue.' : 'Successfully joined queue.'));
+            const deliveryWarning = res.notification && !res.notification.smsSent && !res.notification.emailSent
+                ? ' Notification could not be sent. Please monitor your queue number on this page.'
+                : '';
+            setStatus((res.message || (res.duplicate ? 'You are already in this queue.' : 'Successfully joined queue.')) + deliveryWarning, Boolean(deliveryWarning));
         } else {
             setStatus(res?.message || 'Failed to join queue', true);
         }

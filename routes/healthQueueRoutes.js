@@ -12,5 +12,7 @@ router.get('/:eventId/summary', authMiddleware, roleMiddleware('admin','bhw'), c
 // Calling next should be restricted to BHW or admin
 router.post('/:eventId/call-next', authMiddleware, roleMiddleware('admin','bhw'), controller.callNext);
 router.patch('/:eventId/:queueId/status', authMiddleware, roleMiddleware('admin','bhw'), controller.updateStatus);
+router.patch('/:eventId/:queueId', authMiddleware, roleMiddleware('admin','bhw'), controller.updateQueueDetails);
+router.delete('/:eventId/:queueId', authMiddleware, roleMiddleware('admin','bhw'), controller.deleteQueueEntry);
 
 module.exports = router;

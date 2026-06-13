@@ -280,7 +280,7 @@ exports.updateRequestStatus = asyncHandler(async (req, res) => {
             $set: statusData,
             $push: { statusHistory: statusHistoryEntry }
         },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
 
     // Log the status change
