@@ -95,6 +95,19 @@ export function useLandingAuth() {
             return { success: false, message: 'Please fill in all required fields.', fieldErrors };
         }
 
+        const birthDate = new Date(`${registerForm.birthDate}T00:00:00`);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDifference = today.getMonth() - birthDate.getMonth();
+        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) age -= 1;
+        if (age < 18 || age > 120) {
+            return {
+                success: false,
+                message: 'Registrant age must be between 18 and 120 years.',
+                fieldErrors: { birthDate: 'Enter a birth date for an age between 18 and 120 years.' }
+            };
+        }
+
         const normalizedContactNumber = normalizeContactNumber(registerForm.contactNumber);
         if (!normalizedContactNumber) {
             return { success: false, message: 'Contact number must be a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.', fieldErrors: { contactNumber: 'Enter a valid PH number: 09XXXXXXXXX or +639XXXXXXXXX.' } };

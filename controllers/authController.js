@@ -13,6 +13,7 @@ const s3 = require('../utils/s3');
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MINIMUM_AGE = 18;
+const MAXIMUM_AGE = 120;
 const OTP_EXPIRY_MINUTES = 10;
 const PASSWORD_RESET_EXPIRY_MINUTES = 30;
 const GENERIC_LOGIN_ERROR = 'Invalid username or password';
@@ -257,6 +258,9 @@ exports.register = asyncHandler(async (req, res) => {
     const age = calculateAge(birthDate);
     if (age < MINIMUM_AGE) {
         throw createHttpError(403, `You must be at least ${MINIMUM_AGE} years old to register unassisted.`, { code: 'AGE_RESTRICTION', fields: { birthDate: `Registrant must be at least ${MINIMUM_AGE} years old.` } });
+    }
+    if (age > MAXIMUM_AGE) {
+        throw createHttpError(400, `Please enter a realistic birth date. Maximum supported age is ${MAXIMUM_AGE}.`, { code: 'AGE_RESTRICTION', fields: { birthDate: `Age cannot exceed ${MAXIMUM_AGE} years.` } });
     }
 
     // 4. Check for attached file

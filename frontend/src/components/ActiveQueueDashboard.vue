@@ -212,7 +212,7 @@ const callNext = async () => {
   if (!selectedEventId.value) return;
   try {
     const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/call-next`, { method: 'POST', body: {} });
-    setActionMessage(notificationMessage(res, res?.message || t('components.activeQueueDashboard.calledNext')));
+    setActionMessage(res?.message || t('components.activeQueueDashboard.calledNext'));
     await loadQueue();
     await loadEvents();
   } catch (error) {
@@ -223,7 +223,7 @@ const callNext = async () => {
 const updateQueueStatus = async (item, status) => {
   try {
     const res = await apiFetch(`/api/health-queues/${selectedEventId.value}/${item._id}/status`, { method: 'PATCH', body: { status } });
-    setActionMessage(notificationMessage(res, res?.message || t('components.activeQueueDashboard.statusUpdated')));
+    setActionMessage(res?.message || t('components.activeQueueDashboard.statusUpdated'));
     await loadQueue();
   } catch (error) {
     setActionMessage(error?.message || t('components.activeQueueDashboard.actionFailed'), true);
@@ -233,17 +233,6 @@ const updateQueueStatus = async (item, status) => {
 const setActionMessage = (message, isError = false) => {
   actionMessage.value = message;
   actionError.value = isError;
-};
-const notificationMessage = (response, fallback) => {
-  if (!response?.notification) return fallback;
-  if (response.notification.turnSent) {
-    return response.notification.nextSent
-      ? `${fallback} ${t('components.activeQueueDashboard.turnAndNextSent')}`
-      : `${fallback} ${t('components.activeQueueDashboard.turnSent')}`;
-  }
-  const turn = response.notification.turn || {};
-  const reasons = turn.emailReason ? `email: ${turn.emailReason}` : '';
-  return `${fallback} ${t('components.activeQueueDashboard.notificationNotSent')}${reasons ? ` (${reasons})` : ''}`;
 };
 const canDelete = (item) => ['completed', 'no-show', 'cancelled'].includes(item.status);
 const cancelEntry = async (item) => {

@@ -700,7 +700,7 @@
                                     </div>
                                     <div :class="registerInputClass('birthDate')">
                                         <label for="reg-birthdate">{{ t('common.ui.birthDate') }} <span class="required-mark">*</span></label>
-                                        <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required :aria-invalid="hasRegisterError('birthDate')">
+                                        <input id="reg-birthdate" name="birthDate" v-model="registerForm.birthDate" type="date" autocomplete="bday" required :min="oldestRegistrationBirthDate" :max="youngestRegistrationBirthDate" :aria-invalid="hasRegisterError('birthDate')">
                                         <p v-if="hasRegisterError('birthDate')" class="field-error">{{ registerFieldErrors.birthDate }}</p>
                                     </div>
                                 </div>
@@ -1172,6 +1172,13 @@ const formatLocalDateInputValue = (date = new Date()) => {
 };
 
 const todayDate = formatLocalDateInputValue();
+const registrationBirthDateLimit = (yearsAgo) => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - yearsAgo);
+    return formatLocalDateInputValue(date);
+};
+const oldestRegistrationBirthDate = registrationBirthDateLimit(120);
+const youngestRegistrationBirthDate = registrationBirthDateLimit(18);
 
 const limitGuestIncidentDateToToday = () => {
     if (guestReportForm.incidentDate && guestReportForm.incidentDate > todayDate) {

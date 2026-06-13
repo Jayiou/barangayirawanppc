@@ -108,8 +108,17 @@ const validateResidentData = (payload) => {
         return 'Please provide a valid resident email address';
     }
 
-    if (payload.birthDate !== undefined && Number.isNaN(new Date(payload.birthDate).getTime())) {
-        return 'Please provide a valid birthDate';
+    if (payload.birthDate !== undefined) {
+        const birthDate = new Date(payload.birthDate);
+        if (Number.isNaN(birthDate.getTime())) {
+            return 'Please provide a valid birthDate';
+        }
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDifference = today.getMonth() - birthDate.getMonth();
+        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) age -= 1;
+        if (age < 0) return 'Birth date cannot be in the future';
+        if (age > 120) return 'Age cannot exceed 120 years';
     }
 
     if (payload.evacuationPriority !== undefined && !['', 'low', 'medium', 'high', 'critical'].includes(String(payload.evacuationPriority))) {
@@ -258,7 +267,6 @@ exports.getMyResidentProfile = asyncHandler(async (req, res) => {
 
 exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     const residentData = pickResidentFields(req.body);
-    const existingResident = await Resident.findOne({ userId: req.user.id });
     const validationError = validateResidentData(residentData);
 
     if (req.file?.filename) {
@@ -269,6 +277,8 @@ exports.upsertMyResidentProfile = asyncHandler(async (req, res) => {
     if (validationError) {
         throw createHttpError(400, validationError, { code: 'RESIDENT_VALIDATION_ERROR' });
     }
+
+    const existingResident = await Resident.findOne({ userId: req.user.id });
 
     if (!residentData.email) {
         try {

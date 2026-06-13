@@ -888,10 +888,7 @@
       "entryDeleted": "Nabura ang queue entry.",
       "actionFailed": "Hindi nagtagumpay ang queue action.",
       "confirmCancel": "Kanselahin ang queue entry {code}?",
-      "confirmDelete": "Permanenteng burahin ang queue entry {code}? Hindi na ito maibabalik.",
-      "turnSent": "Na-notify ang kasalukuyang residente.",
-      "turnAndNextSent": "Na-notify ang kasalukuyan at susunod na residente.",
-      "notificationNotSent": "Walang naipadalang email. Suriin ang email ng residente at Render email settings."
+      "confirmDelete": "Permanenteng burahin ang queue entry {code}? Hindi na ito maibabalik."
     },
     "announcementSlideshow": {
       "latestUpdates": "Pinakabagong Mga Update",

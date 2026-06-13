@@ -115,7 +115,7 @@ test('upsertMyResidentProfile creates a new profile when one does not exist', as
     };
 
     const req = {
-        user: { id: 'user-1' },
+        user: { id: '665000000000000000000001' },
         body: {
             firstName: 'Juan',
             lastName: 'Dela Cruz',
@@ -239,6 +239,28 @@ test('upsertMyResidentProfile rejects invalid birth dates', async () => {
     assert.deepEqual(res.body, {
         success: false,
         message: 'Please provide a valid birthDate'
+    });
+});
+
+test('upsertMyResidentProfile rejects ages over 120 years', async () => {
+    const req = {
+        user: { id: '665000000000000000000001' },
+        body: {
+            firstName: 'Juan',
+            lastName: 'Dela Cruz',
+            sex: 'male',
+            birthDate: '1800-01-01',
+            address: 'Purok 1'
+        }
+    };
+    const res = createMockResponse();
+
+    await residentController.upsertMyResidentProfile(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, {
+        success: false,
+        message: 'Age cannot exceed 120 years'
     });
 });
 

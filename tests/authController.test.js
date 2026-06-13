@@ -209,6 +209,21 @@ test('register rejects passwords that are too short', async () => {
     });
 });
 
+test('register rejects birth dates older than 120 years', async () => {
+    process.env.SKIP_RECAPTCHA = 'true';
+    const req = {
+        ...defaultValidReq,
+        body: { ...defaultValidBody, birthDate: '1800-01-01' }
+    };
+    const res = createMockResponse();
+
+    await authController.register(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.equal(res.body.message, 'Please enter a realistic birth date. Maximum supported age is 120.');
+    assert.equal(res.body.fields.birthDate, 'Age cannot exceed 120 years.');
+});
+
 test('register allows the first admin account only when requested', async () => {
     process.env.SKIP_RECAPTCHA = 'true';
     const req = { ...defaultValidReq, body: { ...defaultValidBody, username: 'captain', email: 'captain@example.com', role: 'admin' } };

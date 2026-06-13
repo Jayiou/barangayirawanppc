@@ -888,10 +888,7 @@
       "entryDeleted": "Queue entry deleted.",
       "actionFailed": "The queue action failed.",
       "confirmCancel": "Cancel queue entry {code}?",
-      "confirmDelete": "Permanently delete queue entry {code}? This cannot be undone.",
-      "turnSent": "The current resident was notified.",
-      "turnAndNextSent": "The current and next residents were notified.",
-      "notificationNotSent": "No email was sent. Check the resident email and Render email settings."
+      "confirmDelete": "Permanently delete queue entry {code}? This cannot be undone."
     },
     "announcementSlideshow": {
       "latestUpdates": "Latest Updates",
