@@ -1,10 +1,10 @@
 const HealthQueue = require('../models/HealthQueue');
 const HealthEvent = require('../models/HealthEvent');
 const Resident = require('../models/Resident');
+const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
 const { createHttpError } = require('../utils/httpError');
 const mailer = require('../utils/mailer');
-const sms = require('../utils/sms');
 
 const pad = (n, width = 3) => String(n).padStart(width, '0');
 const TERMINAL_QUEUE_STATUSES = ['completed', 'no-show', 'cancelled'];
@@ -21,9 +21,7 @@ const ALLOWED_STATUS_TRANSITIONS = {
 const getUserId = (req) => req.user?._id || req.user?.id;
 const isQueueStaff = (req) => ['admin', 'bhw'].includes(req.user?.role);
 const sameId = (a, b) => a && b && String(a) === String(b);
-const deliveryStatus = (smsResult, emailResult) => ({
-    smsSent: Boolean(smsResult?.sent),
-    smsReason: smsResult?.sent ? '' : (smsResult?.reason || smsResult?.error?.message || 'send_failed'),
+const deliveryStatus = (emailResult) => ({
     emailSent: Boolean(emailResult?.sent),
     emailReason: emailResult?.sent ? '' : (emailResult?.reason || emailResult?.error?.message || 'send_failed')
 });
@@ -109,27 +107,34 @@ const refreshCurrentServing = async (eventId, event) => {
     await event.save();
 };
 
+const ensureQueueEmail = async (entry) => {
+    if (entry.email) return entry.email;
+    if (!entry.userId) return '';
+
+    const user = await User.findById(entry.userId).select('email');
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (!email) return '';
+
+    entry.email = email;
+    await entry.save();
+    return email;
+};
+
 const notifyQueueTurn = async (entry, eventId) => {
     const message = `Brgy Irawan: Hi ${entry.firstName}, it's your turn now. Please proceed to the Health Center. (${entry.queueCode})`;
-    const smsResult = await sms.sendSmsNotification({
-        phoneNumber: entry.contactNumber,
-        messageType: 'health_queue_turn',
-        messageContent: message,
-        recipientId: entry._id,
-        referenceId: eventId
-    }).catch((error) => ({ sent: false, error }));
-    const emailResult = entry.email
+    const email = await ensureQueueEmail(entry);
+    const emailResult = email
         ? await mailer.sendCustomResidentEmail(
-            entry.email,
+            email,
             `${entry.firstName} ${entry.lastName}`,
             'Health Center - Your Turn',
             message
         )
         : { sent: false, skipped: true, reason: 'missing_email' };
 
-    entry.notifiedTurn = Boolean(smsResult?.sent || emailResult?.sent);
+    entry.notifiedTurn = Boolean(emailResult?.sent);
     await entry.save();
-    return { sms: smsResult, email: emailResult };
+    return { email: emailResult };
 };
 
 const notifyNextInLine = async (eventId) => {
@@ -141,25 +146,19 @@ const notifyNextInLine = async (eventId) => {
     if (!entry) return null;
 
     const message = `Brgy Irawan: Hi ${entry.firstName}, you are next in line. Please be ready to proceed to the Health Center. (${entry.queueCode})`;
-    const smsResult = await sms.sendSmsNotification({
-        phoneNumber: entry.contactNumber,
-        messageType: 'health_queue_next',
-        messageContent: message,
-        recipientId: entry._id,
-        referenceId: eventId
-    }).catch((error) => ({ sent: false, error }));
-    const emailResult = entry.email
+    const email = await ensureQueueEmail(entry);
+    const emailResult = email
         ? await mailer.sendCustomResidentEmail(
-            entry.email,
+            email,
             `${entry.firstName} ${entry.lastName}`,
             'Health Center - You Are Next',
             message
         )
         : { sent: false, skipped: true, reason: 'missing_email' };
 
-    entry.notifiedApproaching = Boolean(smsResult?.sent || emailResult?.sent);
+    entry.notifiedApproaching = Boolean(emailResult?.sent);
     await entry.save();
-    return { entry, sms: smsResult, email: emailResult };
+    return { entry, email: emailResult };
 };
 
 const sendQueueJoinConfirmation = async (entry, event) => {
@@ -173,23 +172,17 @@ const sendQueueJoinConfirmation = async (entry, event) => {
         : `There ${waitingAhead === 1 ? 'is' : 'are'} ${waitingAhead} waiting ${waitingAhead === 1 ? 'person' : 'people'} ahead of you.`;
     const message = `Brgy Irawan: You joined the ${event.title} queue. Your number is ${entry.queueCode}. ${positionText}`;
 
-    const smsResult = await sms.sendSmsNotification({
-        phoneNumber: entry.contactNumber,
-        messageType: 'health_queue_joined',
-        messageContent: message,
-        recipientId: entry._id,
-        referenceId: event._id
-    }).catch((error) => ({ sent: false, error }));
-    const emailResult = entry.email
+    const email = await ensureQueueEmail(entry);
+    const emailResult = email
         ? await mailer.sendCustomResidentEmail(
-            entry.email,
+            email,
             `${entry.firstName} ${entry.lastName}`,
             'Health Center - Queue Confirmation',
             message
         )
         : { sent: false, skipped: true, reason: 'missing_email' };
 
-    return { sms: smsResult, email: emailResult, waitingAhead };
+    return { email: emailResult, waitingAhead };
 };
 
 const reserveQueueNumber = async (event, payload, attempts = 3) => {
@@ -260,7 +253,7 @@ const joinQueue = asyncHandler(async (req, res) => {
         message: `Joined queue. Your number is ${entry.queueCode}.`,
         data: toQueueItem(entry, { residentId: resident._id }),
         notification: {
-            ...deliveryStatus(notification.sms, notification.email),
+            ...deliveryStatus(notification.email),
             waitingAhead: notification.waitingAhead
         }
     });
@@ -334,9 +327,9 @@ const callNext = asyncHandler(async (req, res) => {
             notification: {
                 turnSent: Boolean(current.notifiedTurn),
                 nextSent: Boolean(nextNotification?.entry?.notifiedApproaching),
-                turn: deliveryStatus(turnNotification.sms, turnNotification.email),
+                turn: deliveryStatus(turnNotification.email),
                 next: nextNotification
-                    ? deliveryStatus(nextNotification.sms, nextNotification.email)
+                    ? deliveryStatus(nextNotification.email)
                     : null
             }
         });
@@ -402,11 +395,11 @@ const updateStatus = asyncHandler(async (req, res) => {
         summary,
         notification: status === 'serving'
             ? {
-                turnSent: Boolean(turnNotification?.sms?.sent || turnNotification?.email?.sent),
+                turnSent: Boolean(turnNotification?.email?.sent),
                 nextSent: Boolean(nextNotification?.entry?.notifiedApproaching),
-                turn: deliveryStatus(turnNotification?.sms, turnNotification?.email),
+                turn: deliveryStatus(turnNotification?.email),
                 next: nextNotification
-                    ? deliveryStatus(nextNotification.sms, nextNotification.email)
+                    ? deliveryStatus(nextNotification.email)
                     : null
             }
             : undefined

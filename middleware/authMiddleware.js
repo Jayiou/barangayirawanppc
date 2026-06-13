@@ -18,7 +18,7 @@ const authMiddleware = async (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        const user = await User.findById(decoded.id).select('_id role isActive');
+        const user = await User.findById(decoded.id).select('_id email role isActive');
 
         if (!user) {
             return sendAuthError(res, 401, 'Invalid token');
@@ -31,6 +31,7 @@ const authMiddleware = async (req, res, next) => {
         req.user = {
             _id: user._id,
             id: user._id.toString(),
+            email: user.email,
             role: user.role
         };
         next();

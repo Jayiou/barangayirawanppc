@@ -891,7 +891,7 @@
       "confirmDelete": "Permanenteng burahin ang queue entry {code}? Hindi na ito maibabalik.",
       "turnSent": "Na-notify ang kasalukuyang residente.",
       "turnAndNextSent": "Na-notify ang kasalukuyan at susunod na residente.",
-      "notificationNotSent": "Walang naipadalang SMS o email. Suriin ang contact details at Render notification settings."
+      "notificationNotSent": "Walang naipadalang email. Suriin ang email ng residente at Render email settings."
     },
     "announcementSlideshow": {
       "latestUpdates": "Pinakabagong Mga Update",

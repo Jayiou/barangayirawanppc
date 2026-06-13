@@ -47,6 +47,7 @@ test('authMiddleware stores the latest user role from the database and calls nex
     User.findById = () => ({
         select: async () => ({
             _id: 'user-1',
+            email: 'admin@example.com',
             role: 'admin',
             isActive: true
         })
@@ -56,6 +57,7 @@ test('authMiddleware stores the latest user role from the database and calls nex
 
     assert.equal(next.called, true);
     assert.equal(req.user.id, 'user-1');
+    assert.equal(req.user.email, 'admin@example.com');
     assert.equal(req.user.role, 'admin');
 });
 

@@ -242,10 +242,7 @@ const notificationMessage = (response, fallback) => {
       : `${fallback} ${t('components.activeQueueDashboard.turnSent')}`;
   }
   const turn = response.notification.turn || {};
-  const reasons = [
-    turn.smsReason ? `SMS: ${turn.smsReason}` : '',
-    turn.emailReason ? `email: ${turn.emailReason}` : ''
-  ].filter(Boolean).join(', ');
+  const reasons = turn.emailReason ? `email: ${turn.emailReason}` : '';
   return `${fallback} ${t('components.activeQueueDashboard.notificationNotSent')}${reasons ? ` (${reasons})` : ''}`;
 };
 const canDelete = (item) => ['completed', 'no-show', 'cancelled'].includes(item.status);

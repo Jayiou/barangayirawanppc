@@ -891,7 +891,7 @@
       "confirmDelete": "Permanently delete queue entry {code}? This cannot be undone.",
       "turnSent": "The current resident was notified.",
       "turnAndNextSent": "The current and next residents were notified.",
-      "notificationNotSent": "No SMS or email was sent. Check the resident contact details and Render notification settings."
+      "notificationNotSent": "No email was sent. Check the resident email and Render email settings."
     },
     "announcementSlideshow": {
       "latestUpdates": "Latest Updates",

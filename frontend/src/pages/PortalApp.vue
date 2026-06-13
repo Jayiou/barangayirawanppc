@@ -2781,8 +2781,8 @@ const joinHealthQueue = async (event) => {
         if (res?.success) {
             selectedHealthEvent.value = event;
             await loadHealthQueue(event._id);
-            const deliveryWarning = res.notification && !res.notification.smsSent && !res.notification.emailSent
-                ? ` Notification could not be sent (SMS: ${res.notification.smsReason || 'unavailable'}, email: ${res.notification.emailReason || 'unavailable'}). Please monitor your queue number on this page.`
+            const deliveryWarning = res.notification && !res.notification.emailSent
+                ? ` Email notification could not be sent (${res.notification.emailReason || 'unavailable'}). Please monitor your queue number on this page.`
                 : '';
             setStatus((res.message || (res.duplicate ? 'You are already in this queue.' : 'Successfully joined queue.')) + deliveryWarning);
         } else {

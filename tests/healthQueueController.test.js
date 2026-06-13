@@ -5,7 +5,6 @@ const HealthEvent = require('../models/HealthEvent');
 const HealthQueue = require('../models/HealthQueue');
 const Resident = require('../models/Resident');
 const mailer = require('../utils/mailer');
-const sms = require('../utils/sms');
 const controller = require('../controllers/healthQueueController');
 const { createMockResponse } = require('./helpers/httpMocks');
 
@@ -19,8 +18,7 @@ const originals = {
     queueDeleteOne: HealthQueue.deleteOne,
     queueSave: HealthQueue.prototype.save,
     residentFindOne: Resident.findOne,
-    sendEmail: mailer.sendCustomResidentEmail,
-    sendSms: sms.sendSmsNotification
+    sendEmail: mailer.sendCustomResidentEmail
 };
 
 test.afterEach(() => {
@@ -34,7 +32,6 @@ test.afterEach(() => {
     HealthQueue.prototype.save = originals.queueSave;
     Resident.findOne = originals.residentFindOne;
     mailer.sendCustomResidentEmail = originals.sendEmail;
-    sms.sendSmsNotification = originals.sendSms;
 });
 
 test('joinQueue uses the authenticated resident profile instead of request body identity', async () => {
@@ -43,7 +40,7 @@ test('joinQueue uses the authenticated resident profile instead of request body 
         firstName: 'Juan',
         lastName: 'Dela Cruz',
         contactNumber: '+639171234567',
-        email: 'juan@example.com'
+        email: ''
     };
     const event = { _id: '665000000000000000000002', prefix: 'MED', isQueueOpen: true };
     let findOneCall = 0;
@@ -63,7 +60,6 @@ test('joinQueue uses the authenticated resident profile instead of request body 
         return this;
     };
     HealthQueue.countDocuments = async () => 0;
-    sms.sendSmsNotification = async () => ({ sent: true });
     mailer.sendCustomResidentEmail = async () => ({ sent: true });
 
     const req = {
@@ -85,6 +81,7 @@ test('joinQueue uses the authenticated resident profile instead of request body 
     assert.equal(String(savedEntry.residentId), resident._id);
     assert.equal(savedEntry.firstName, resident.firstName);
     assert.equal(savedEntry.contactNumber, resident.contactNumber);
+    assert.equal(savedEntry.email, 'account@example.com');
     assert.equal(res.body.data.firstName, undefined);
 });
 
@@ -140,7 +137,6 @@ test('updateStatus sends turn notifications when staff manually serves a residen
         status: 'serving',
         save: async () => served
     };
-    let smsCalls = 0;
     let emailCalls = 0;
 
     HealthEvent.findById = async () => event;
@@ -153,10 +149,6 @@ test('updateStatus sends turn notifications when staff manually serves a residen
     HealthQueue.findOneAndUpdate = async () => served;
     HealthQueue.updateMany = async () => ({ modifiedCount: 0 });
     HealthQueue.find = () => ({ sort: async () => [served] });
-    sms.sendSmsNotification = async () => {
-        smsCalls += 1;
-        return { sent: true };
-    };
     mailer.sendCustomResidentEmail = async () => {
         emailCalls += 1;
         return { sent: true };
@@ -172,7 +164,6 @@ test('updateStatus sends turn notifications when staff manually serves a residen
     await controller.updateStatus(req, res);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(smsCalls, 1);
     assert.equal(emailCalls, 1);
     assert.equal(served.notifiedTurn, true);
 });
@@ -214,11 +205,10 @@ test('updateStatus notifies the first waiting resident that they are next', asyn
     HealthQueue.findOneAndUpdate = async () => served;
     HealthQueue.updateMany = async () => ({ modifiedCount: 0 });
     HealthQueue.find = () => ({ sort: async () => [served, next] });
-    sms.sendSmsNotification = async ({ messageContent }) => {
-        messages.push(messageContent);
+    mailer.sendCustomResidentEmail = async (_email, _name, _subject, message) => {
+        messages.push(message);
         return { sent: true };
     };
-    mailer.sendCustomResidentEmail = async () => ({ sent: true });
 
     const req = {
         params: { eventId: 'event-1', queueId: 'queue-1' },
