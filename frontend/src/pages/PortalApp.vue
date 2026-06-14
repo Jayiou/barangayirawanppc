@@ -1585,14 +1585,15 @@ const setResidentView = (view) => {
     }
 };
 
-const appointmentForm = ref({
+const createAppointmentForm = () => ({
     category: '',
     officialId: '',
-    appointmentDate: '',
+    appointmentDate: getMinimumAppointmentDate(),
     startTime: '',
     endTime: '',
     purpose: ''
 });
+const appointmentForm = ref(createAppointmentForm());
 const availableSlots = ref([]);
 const isFetchingSlots = ref(false);
 const isFetchingFacilityAvailability = ref(false);
@@ -1626,7 +1627,7 @@ const canSubmitAppointment = computed(() => (
 
 const handleAppointmentCategoryChange = () => {
     appointmentForm.value.officialId = '';
-    appointmentForm.value.appointmentDate = '';
+    appointmentForm.value.appointmentDate = getMinimumAppointmentDate();
     appointmentForm.value.startTime = '';
     appointmentForm.value.endTime = '';
     availableSlots.value = [];
@@ -1644,6 +1645,10 @@ const appointmentSlotMinWidth = computed(() => {
 const loadAvailableSlots = async () => {
     appointmentForm.value.startTime = '';
     appointmentForm.value.endTime = '';
+
+    if (appointmentForm.value.appointmentDate < getMinimumAppointmentDate()) {
+        appointmentForm.value.appointmentDate = getMinimumAppointmentDate();
+    }
 
     if (!appointmentForm.value.officialId || !appointmentForm.value.appointmentDate) {
         availableSlots.value = [];
@@ -1776,7 +1781,7 @@ const handleSubmitAppointment = async () => {
         setStatus("Appointment requested successfully!");
         closeModal();
         loadAll(); // reload data
-        appointmentForm.value = { category: '', officialId: '', appointmentDate: '', startTime: '', endTime: '', purpose: '' };
+        appointmentForm.value = createAppointmentForm();
         availableSlots.value = [];
     } catch(err) {
         setStatus(err.message, true);
@@ -2270,6 +2275,10 @@ const recordTimeline = computed(() => {
 
 // Modal handlers
 const openModal = (type) => {
+    if (type === 'appointment') {
+        appointmentForm.value = createAppointmentForm();
+        availableSlots.value = [];
+    }
     activeModal.value = type;
 };
 

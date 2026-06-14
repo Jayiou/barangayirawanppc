@@ -1290,10 +1290,10 @@ const guestReportMapEmbedUrl = computed(() => {
     return `https://maps.google.com/maps?q=${guestReportForm.locationLatitude},${guestReportForm.locationLongitude}&z=16&output=embed`;
 });
 const guestReportTypeConfig = computed(() => REPORT_TYPE_CONFIG[guestReportForm.reportType] || REPORT_TYPE_CONFIG.other);
-const guestAppointmentFormDefaults = {
+const createGuestAppointmentFormDefaults = () => ({
     category: '',
     officialId: '',
-    appointmentDate: '',
+    appointmentDate: getMinimumAppointmentDate(),
     startTime: '',
     endTime: '',
     purpose: '',
@@ -1305,8 +1305,8 @@ const guestAppointmentFormDefaults = {
     email: '',
     address: '',
     agreePrivacy: false
-};
-const guestAppointmentForm = reactive({ ...guestAppointmentFormDefaults });
+});
+const guestAppointmentForm = reactive(createGuestAppointmentFormDefaults());
 const guestAppointmentSlots = ref([]);
 const guestAppointmentSelectedSlot = ref('');
 const isGuestAppointmentSlotsLoading = ref(false);
@@ -2000,7 +2000,7 @@ const resetGuestReportForm = () => {
 };
 
 const resetGuestAppointmentForm = () => {
-    Object.assign(guestAppointmentForm, guestAppointmentFormDefaults);
+    Object.assign(guestAppointmentForm, createGuestAppointmentFormDefaults());
     guestAppointmentSlots.value = [];
     guestAppointmentSelectedSlot.value = '';
 };
@@ -2034,7 +2034,7 @@ const clearGuestAppointmentSlotSelection = () => {
 
 const handleGuestAppointmentCategoryChange = () => {
     guestAppointmentForm.officialId = '';
-    guestAppointmentForm.appointmentDate = '';
+    guestAppointmentForm.appointmentDate = getMinimumAppointmentDate();
     clearGuestAppointmentSlotSelection();
     guestAppointmentSlots.value = [];
 };
@@ -2054,6 +2054,10 @@ const applyGuestAppointmentSlot = () => {
 const loadGuestAppointmentSlots = async () => {
     clearGuestAppointmentSlotSelection();
     guestAppointmentSlots.value = [];
+
+    if (guestAppointmentForm.appointmentDate < getMinimumAppointmentDate()) {
+        guestAppointmentForm.appointmentDate = getMinimumAppointmentDate();
+    }
 
     if (!guestAppointmentForm.officialId || !guestAppointmentForm.appointmentDate || selectedGuestAppointmentOfficialInactive.value) {
         return;

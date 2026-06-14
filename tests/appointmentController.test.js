@@ -113,6 +113,39 @@ test('getAvailableSlots returns slots for active officials', async () => {
     assert.equal(res.body.data[0].isAvailable, true);
 });
 
+test('getAvailableSlots returns no slots for the current date', async () => {
+    const now = new Date();
+    const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0')
+    ].join('-');
+    const req = { query: { officialId, appointmentDate: today } };
+    const res = createMockResponse();
+
+    Official.findById = async () => ({
+        _id: officialId,
+        status: 'active',
+        officeHours: {
+            startTime: '08:00',
+            endTime: '17:00',
+            lunchBreakStart: '12:00',
+            lunchBreakEnd: '13:00'
+        }
+    });
+    Appointment.find = async () => {
+        throw new Error('Same-day availability should not query appointments');
+    };
+    BlockedSchedule.find = async () => {
+        throw new Error('Same-day availability should not query blocked schedules');
+    };
+
+    await appointmentController.getAvailableSlots(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.body.data, []);
+});
+
 test('Appointment generates a slotKey only while the slot should stay reserved', async () => {
     const appointment = new Appointment({
         residentId,

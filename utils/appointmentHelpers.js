@@ -76,6 +76,11 @@ const getAvailableTimeSlots = async (officialId, appointmentDate) => {
         appointmentYMD = formatYMD(new Date(appointmentDate));
     }
 
+    // Same-day appointments are not accepted, so do not advertise any slots.
+    if (!isValidAppointmentDate(appointmentYMD)) {
+        return [];
+    }
+
     const dateOnly = new Date(`${appointmentYMD}T00:00:00`);
     const endOfDay = new Date(`${appointmentYMD}T23:59:59`);
 
@@ -113,30 +118,13 @@ const getAvailableTimeSlots = async (officialId, appointmentDate) => {
         }
     });
 
-    const now = new Date();
-    const todayYMD = formatYMD(now);
-    
-    // If the date is entirely in the past, return NO slots
-    if (appointmentYMD < todayYMD) {
-        return [];
-    }
-
-    const isToday = appointmentYMD === todayYMD;
-    const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
     // Filter available slots
     const availableSlots = DEFAULT_TIME_SLOTS.map((slot) => {
         let isAvailable = true;
         let reason = '';
 
-        // If the appointment is today, filter out past time slots based on start time
-        if (isToday && slot.startTime <= currentTimeStr) {
-            isAvailable = false;
-            reason = 'Past time';
-        }
-
         // Check if within office hours
-        else if (!isWithinOfficeHours(slot.startTime, slot.endTime, officeStart, officeEnd)) {
+        if (!isWithinOfficeHours(slot.startTime, slot.endTime, officeStart, officeEnd)) {
             isAvailable = false;
             reason = 'Outside office hours';
         }
