@@ -641,7 +641,7 @@
                                     <td v-if="currentView === 'residents'"><StatusBadge :status="item.userId?.accountStatus || 'pending'" /></td>
                                     <td v-if="currentView === 'residents'">
                                         <button class="icon-button" @click="openModal('resident', item)"><i class="fa-solid fa-eye"></i> {{ t('common.ui.view') }}</button>
-                                        <button class="icon-button" @click="deleteResident(item._id)" :disabled="deletingResidentId === item._id"><i class="fa-solid fa-trash"></i> {{ t('common.ui.delete') }}</button>
+                                        <button class="icon-button danger" @click="deleteResident(item._id)" :disabled="deletingResidentId === item._id"><i class="fa-solid fa-trash"></i> {{ t('common.ui.delete') }}</button>
                                     </td>
 
                                     
@@ -5060,6 +5060,63 @@ const handleAuthSubmit = async () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+}
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 8px 13px;
+    border: 1px solid #9bcbb5;
+    border-radius: 9px;
+    background: #e9f7f0;
+    color: #0b633d;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(11, 99, 61, 0.08);
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.icon-button + .icon-button {
+    margin-left: 6px;
+}
+
+.icon-button:hover:not(:disabled) {
+    border-color: #0b633d;
+    background: #0b633d;
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(11, 99, 61, 0.2);
+    transform: translateY(-1px);
+}
+
+.icon-button.danger {
+    border-color: #efb0b5;
+    background: #fff0f1;
+    color: #a1121c;
+    box-shadow: 0 2px 5px rgba(161, 18, 28, 0.08);
+}
+
+.icon-button.danger:hover:not(:disabled) {
+    border-color: #a1121c;
+    background: #a1121c;
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(161, 18, 28, 0.2);
+}
+
+.icon-button:focus-visible {
+    outline: 3px solid rgba(21, 128, 82, 0.25);
+    outline-offset: 2px;
+}
+
+.icon-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .announcements-empty {
