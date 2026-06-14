@@ -3,15 +3,23 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const region = process.env.AWS_REGION || process.env.S3_REGION || 'us-east-1';
 const bucket = process.env.S3_BUCKET;
+const endpoint = process.env.S3_ENDPOINT || undefined;
+const forcePathStyle = /^(?:1|true|yes)$/i.test(process.env.S3_FORCE_PATH_STYLE || '')
+  || Boolean(endpoint);
 
 let client = null;
 
 const getClient = () => {
   if (client) return client;
-  client = new S3Client({ region, credentials: process.env.AWS_ACCESS_KEY_ID ? {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  } : undefined });
+  client = new S3Client({
+    region,
+    endpoint,
+    forcePathStyle,
+    credentials: process.env.AWS_ACCESS_KEY_ID ? {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    } : undefined
+  });
   return client;
 };
 
