@@ -10,6 +10,7 @@ const StatusAuditLog = require('../models/StatusAuditLog');
 const appointmentController = require('../controllers/appointmentController');
 const manpowerRequestController = require('../controllers/manpowerRequestController');
 const { createMockResponse } = require('./helpers/httpMocks');
+const { isOfficialAppropriateForCategory } = require('../utils/appointmentCategories');
 
 const officialId = '665000000000000000000001';
 const residentId = '665000000000000000000002';
@@ -32,6 +33,13 @@ const originals = {
     manpowerSave: ManpowerRequest.prototype.save,
     auditSave: StatusAuditLog.prototype.save
 };
+
+test('appointment categories map to the intended official positions', () => {
+    assert.equal(isOfficialAppropriateForCategory({ position: 'Barangay Secretary' }, 'Document Requests'), true);
+    assert.equal(isOfficialAppropriateForCategory({ position: 'Barangay Treasurer' }, 'Document Requests'), false);
+    assert.equal(isOfficialAppropriateForCategory({ position: 'Barangay Kagawad' }, 'Community Programs and Projects'), true);
+    assert.equal(isOfficialAppropriateForCategory({ position: 'Other' }, 'General Inquiries'), true);
+});
 
 test.afterEach(() => {
     Appointment.find = originals.appointmentFind;
@@ -161,6 +169,7 @@ test('requestAppointment rejects inactive officials with the admin note', async 
     const req = {
         user: { _id: userId },
         body: {
+            category: 'General Inquiries',
             officialId,
             appointmentDate: '2099-05-01',
             startTime: '09:00',
@@ -190,6 +199,7 @@ test('requestAppointment returns conflict when another request grabs the same sl
     const req = {
         user: { _id: userId },
         body: {
+            category: 'General Inquiries',
             officialId,
             appointmentDate: '2099-05-01',
             startTime: '09:00',
@@ -234,6 +244,7 @@ test('requestAppointment returns conflict when another request grabs the same sl
 test('requestPublicAppointment creates a guest appointment with slot conflict checks', async () => {
     const req = {
         body: {
+            category: 'General Inquiries',
             officialId,
             appointmentDate: '2099-05-01',
             startTime: '09:00',

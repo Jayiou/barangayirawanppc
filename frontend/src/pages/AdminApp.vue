@@ -904,7 +904,7 @@
                                         </tr>
                                     </template>
                                     <tr v-for="item in pagedAppointmentRows.items" :key="item._id" class="table-row hoverable">
-                                        <td><strong>{{ item.officialId?.name }}</strong><br><small>{{ item.officialId?.position }}</small></td>
+                                        <td><strong>{{ item.officialId?.name }}</strong><br><small>{{ item.officialId?.position }} | {{ item.category || 'General Inquiries' }}</small></td>
                                         <td>{{ getRequestorName(item) }}<br><small>{{ getRequesterTypeLabel(item) }}</small></td>
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'N/A' }} - {{ item.timeSlot?.endTime || 'N/A' }}</small></td>
                                         <td><StatusBadge :status="item.status" /></td>
@@ -3332,6 +3332,7 @@ const getRequestDetails = (item) => {
             { label: 'Official', value: officialLabel },
             { label: 'Date', value: formatDate(item.appointmentDate) },
             { label: 'Time', value: `${item.timeSlot?.startTime || 'N/A'} - ${item.timeSlot?.endTime || 'N/A'}` },
+            { label: 'Category', value: item.category || 'General Inquiries' },
             { label: 'Purpose', value: item.purpose },
             { label: 'Remarks', value: item.remarks },
             { label: 'Rejection Reason', value: item.rejectionReason },

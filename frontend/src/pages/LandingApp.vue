@@ -422,11 +422,21 @@
 
                                 <div class="two-col-grid">
                                     <div class="input-group">
+                                        <label for="guest-appointment-category">Appointment Category</label>
+                                        <div class="custom-select">
+                                            <select id="guest-appointment-category" v-model="guestAppointmentForm.category" required @change="handleGuestAppointmentCategoryChange">
+                                                <option disabled value="">Select an appointment category</option>
+                                                <option v-for="category in APPOINTMENT_CATEGORY_OPTIONS" :key="category.value" :value="category.value">{{ category.label }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
                                         <label for="guest-appointment-official">{{ t('landing.formLabels.appointmentOfficial') }}</label>
                                         <div class="custom-select">
-                                            <select id="guest-appointment-official" v-model="guestAppointmentForm.officialId" required @change="handleGuestAppointmentOfficialChange">
-                                                <option disabled value="">{{ t('common.ui.selectOfficial') }}</option>
-                                                <option v-for="official in sortedOfficials" :key="official._id" :value="official._id" :disabled="official.status !== 'active'">
+                                            <select id="guest-appointment-official" v-model="guestAppointmentForm.officialId" required :disabled="!guestAppointmentForm.category" @change="handleGuestAppointmentOfficialChange">
+                                                <option disabled value="">{{ guestAppointmentForm.category ? t('common.ui.selectOfficial') : 'Select a category first' }}</option>
+                                                <option v-for="official in guestAppointmentCategoryOfficials" :key="official._id" :value="official._id" :disabled="official.status !== 'active'">
                                                     {{ getGuestAppointmentOfficialLabel(official) }}
                                                 </option>
                                             </select>
@@ -436,7 +446,7 @@
                                     </div>
                                     <div class="input-group">
                                         <label for="guest-appointment-date">{{ t('landing.formLabels.appointmentDate') }}</label>
-                                        <input id="guest-appointment-date" v-model="guestAppointmentForm.appointmentDate" type="date" :min="getMinimumFacilityReservationDate()" required @change="loadGuestAppointmentSlots">
+                                        <input id="guest-appointment-date" v-model="guestAppointmentForm.appointmentDate" type="date" :min="getMinimumAppointmentDate()" required @change="loadGuestAppointmentSlots">
                                     </div>
                                 </div>
 
@@ -1132,6 +1142,7 @@ import { apiFetch } from '@/shared/client';
 import { resolvePublicUploadUrl } from '@/shared/uploadUrls';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { REPORT_TYPE_CONFIG } from '@/shared/reportTypeConfig';
+import { APPOINTMENT_CATEGORY_OPTIONS, filterOfficialsByAppointmentCategory, getMinimumAppointmentDate } from '@/shared/appointmentCategories';
 import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
 import { getPasswordRequirementRules, isStrongPassword } from '@/shared/passwordRules';
 import { useLandingAuth } from '@/composables/useLandingAuth';
@@ -1280,6 +1291,7 @@ const guestReportMapEmbedUrl = computed(() => {
 });
 const guestReportTypeConfig = computed(() => REPORT_TYPE_CONFIG[guestReportForm.reportType] || REPORT_TYPE_CONFIG.other);
 const guestAppointmentFormDefaults = {
+    category: '',
     officialId: '',
     appointmentDate: '',
     startTime: '',
@@ -1615,6 +1627,7 @@ const sortedOfficials = computed(() => {
     });
 });
 const selectedGuestAppointmentOfficial = computed(() => officials.value.find((official) => official._id === guestAppointmentForm.officialId) || null);
+const guestAppointmentCategoryOfficials = computed(() => filterOfficialsByAppointmentCategory(sortedOfficials.value, guestAppointmentForm.category));
 const selectedGuestAppointmentOfficialInactive = computed(() => Boolean(selectedGuestAppointmentOfficial.value && selectedGuestAppointmentOfficial.value.status !== 'active'));
 const guestAppointmentInactiveMessage = computed(() => {
     if (!selectedGuestAppointmentOfficialInactive.value) {
@@ -1628,6 +1641,7 @@ const guestAppointmentSlotsAvailable = computed(() => guestAppointmentSlots.valu
 const canSubmitGuestAppointment = computed(() => (
     !isGuestAppointmentLoading.value
     && guestAppointmentForm.agreePrivacy
+    && guestAppointmentForm.category
     && guestAppointmentForm.officialId
     && guestAppointmentForm.appointmentDate
     && guestAppointmentForm.startTime
@@ -2018,6 +2032,13 @@ const clearGuestAppointmentSlotSelection = () => {
     guestAppointmentForm.endTime = '';
 };
 
+const handleGuestAppointmentCategoryChange = () => {
+    guestAppointmentForm.officialId = '';
+    guestAppointmentForm.appointmentDate = '';
+    clearGuestAppointmentSlotSelection();
+    guestAppointmentSlots.value = [];
+};
+
 const handleGuestAppointmentOfficialChange = () => {
     clearGuestAppointmentSlotSelection();
     guestAppointmentSlots.value = [];
@@ -2238,6 +2259,7 @@ const handleGuestAppointmentRequest = async () => {
     isGuestAppointmentLoading.value = true;
     try {
         const payload = {
+            category: guestAppointmentForm.category,
             officialId: String(guestAppointmentForm.officialId || '').trim(),
             appointmentDate: guestAppointmentForm.appointmentDate,
             startTime: String(guestAppointmentForm.startTime || '').trim(),

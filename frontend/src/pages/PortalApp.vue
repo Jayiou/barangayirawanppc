@@ -446,7 +446,7 @@
                                     <tr v-for="item in pagedAppointments.items" :key="item._id">
                                         <td>{{ formatDate(item.appointmentDate) }}<br><small>{{ item.timeSlot?.startTime || 'TBD' }}-{{ item.timeSlot?.endTime || 'TBD' }}</small></td>
                                         <td>{{ item.officialId?.name || 'TBD' }}<br><small>{{ item.officialId?.position || 'Official' }}</small></td>
-                                        <td>{{ item.purpose }}</td>
+                                        <td>{{ item.purpose }}<br><small>{{ item.category || 'General Inquiries' }}</small></td>
                                         <td><StatusBadge :status="item.status" /></td>
                                         <td><div class="portal-row-actions">
                                             <button class="ghost-button table-action" @click="openRecordDetail('appointment', item)">{{ t('common.ui.view') }}</button>
@@ -740,14 +740,20 @@
                     <h2>{{ t('portal.modals.appointmentRequest') }}</h2>
                     <p class="fine-print">{{ t('common.ui.scheduleOfficialMeeting') }}</p>
                     <form class="stack" @submit.prevent="handleSubmitAppointment">
+                        <label><span>Appointment Category</span>
+                            <select v-model="appointmentForm.category" required @change="handleAppointmentCategoryChange">
+                                <option disabled value="">Select an appointment category</option>
+                                <option v-for="category in APPOINTMENT_CATEGORY_OPTIONS" :key="category.value" :value="category.value">{{ category.label }}</option>
+                            </select>
+                        </label>
                         <label><span>{{ t('portal.appointments.tableOfficial') }}</span>
-                            <select v-model="appointmentForm.officialId" required @change="loadAvailableSlots">
-                                <option disabled value="">{{ t('common.ui.selectOfficialTitle') }}</option>
-                                <option v-for="official in officials" :key="official._id" :value="official._id" :disabled="isOfficialInactive(official)">{{ formatAppointmentOfficialOption(official) }}</option>
+                            <select v-model="appointmentForm.officialId" required :disabled="!appointmentForm.category" @change="loadAvailableSlots">
+                                <option disabled value="">{{ appointmentForm.category ? t('common.ui.selectOfficialTitle') : 'Select a category first' }}</option>
+                                <option v-for="official in appointmentCategoryOfficials" :key="official._id" :value="official._id" :disabled="isOfficialInactive(official)">{{ formatAppointmentOfficialOption(official) }}</option>
                             </select>
                         </label>
                         <div v-if="selectedAppointmentOfficialInactive" class="facility-slot-note">{{ inactiveAppointmentOfficialMessage }}</div>
-                        <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="appointmentForm.appointmentDate" type="date" :min="new Date().toLocaleDateString('en-CA')" required @change="loadAvailableSlots"></label>
+                        <label><span>{{ t('landing.formLabels.incidentDate') }}</span><input v-model="appointmentForm.appointmentDate" type="date" :min="getMinimumAppointmentDate()" required @change="loadAvailableSlots"></label>
                         
                         <div v-if="appointmentForm.officialId && appointmentForm.appointmentDate && !selectedAppointmentOfficialInactive">
                             <span>{{ t('common.ui.availableTimeSlots') }}</span>
@@ -1063,6 +1069,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToastPopup from '@/components/ToastPopup.vue';
 import { apiFetch, formatDate, formatDateTime, getAuth, setAuth } from '@/shared/client';
 import { REPORT_TYPE_CONFIG, REPORT_TYPE_OPTIONS } from '@/shared/reportTypeConfig';
+import { APPOINTMENT_CATEGORY_OPTIONS, filterOfficialsByAppointmentCategory, getMinimumAppointmentDate } from '@/shared/appointmentCategories';
 import { buildFacilityInventoryPeakSummary, buildFacilityTimeOptions, formatFacilityRange, FACILITY_ITEM_OPTIONS, getFacilityItemLabel, getFacilityReservationQuantity, getMinimumFacilityReservationDate, getFacilityItemOption } from '@/shared/facilityTimeSlots';
 import { UPLOAD_SIZE_NOTE, getFileSizeError, getFilesSizeError } from '@/shared/uploadLimits';
 import { getPasswordRequirementRules } from '@/shared/passwordRules';
@@ -1579,6 +1586,7 @@ const setResidentView = (view) => {
 };
 
 const appointmentForm = ref({
+    category: '',
     officialId: '',
     appointmentDate: '',
     startTime: '',
@@ -1593,6 +1601,7 @@ const locatingPosition = ref(false);
 const getOfficialInactiveReason = (official) => String(official?.notes || '').trim() || 'No reason provided';
 const isOfficialInactive = (official) => official?.status === 'inactive';
 const selectedAppointmentOfficial = computed(() => officials.value.find((official) => official._id === appointmentForm.value.officialId) || null);
+const appointmentCategoryOfficials = computed(() => filterOfficialsByAppointmentCategory(officials.value, appointmentForm.value.category));
 const selectedAppointmentOfficialInactive = computed(() => isOfficialInactive(selectedAppointmentOfficial.value));
 const inactiveAppointmentOfficialMessage = computed(() => {
     if (!selectedAppointmentOfficialInactive.value) {
@@ -1607,10 +1616,21 @@ const formatAppointmentOfficialOption = (official) => {
 };
 const canSubmitAppointment = computed(() => (
     !isSubmitting.value
+    && Boolean(appointmentForm.value.category)
     && Boolean(appointmentForm.value.officialId)
     && !selectedAppointmentOfficialInactive.value
     && Boolean(appointmentForm.value.startTime)
+    && Boolean(appointmentForm.value.appointmentDate)
+    && Boolean(appointmentForm.value.purpose.trim())
 ));
+
+const handleAppointmentCategoryChange = () => {
+    appointmentForm.value.officialId = '';
+    appointmentForm.value.appointmentDate = '';
+    appointmentForm.value.startTime = '';
+    appointmentForm.value.endTime = '';
+    availableSlots.value = [];
+};
 const appointmentSlotMinWidth = computed(() => {
     const longestLabelLength = availableSlots.value.reduce((longest, slot) => {
         const label = String(slot?.label || `${slot?.startTime || ''} - ${slot?.endTime || ''}`).trim();
@@ -1756,7 +1776,7 @@ const handleSubmitAppointment = async () => {
         setStatus("Appointment requested successfully!");
         closeModal();
         loadAll(); // reload data
-        appointmentForm.value = { officialId: '', appointmentDate: '', startTime: '', endTime: '', purpose: '' };
+        appointmentForm.value = { category: '', officialId: '', appointmentDate: '', startTime: '', endTime: '', purpose: '' };
         availableSlots.value = [];
     } catch(err) {
         setStatus(err.message, true);
@@ -2111,6 +2131,7 @@ const recordDetailFields = computed(() => {
     const fieldSets = {
         appointment: [
             ['Official', `${item.officialId?.name || 'TBD'} - ${item.officialId?.position || 'Official'}`],
+            ['Category', item.category || 'General Inquiries'],
             ['Schedule', `${formatDate(item.appointmentDate)} | ${item.timeSlot?.startTime || 'TBD'}-${item.timeSlot?.endTime || 'TBD'}`],
             ['Purpose', item.purpose],
             ['Status', normalizeLabel(item.status)],

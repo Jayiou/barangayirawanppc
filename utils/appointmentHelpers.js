@@ -333,6 +333,7 @@ const formatAppointmentResponse = (appointment) => {
         email: appointment.email,
         address: appointment.address,
         officialId: appointment.officialId,
+        category: appointment.category,
         appointmentDate: appointment.appointmentDate,
         timeSlot: appointment.timeSlot,
         purpose: appointment.purpose,

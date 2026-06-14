@@ -99,6 +99,19 @@ const appointmentSchema = new mongoose.Schema(
             ref: 'Official',
             required: true
         },
+        category: {
+            type: String,
+            enum: [
+                'Document Requests',
+                'Financial Concerns',
+                'Complaints and Disputes',
+                'Community Programs and Projects',
+                'General Inquiries'
+            ],
+            required: true,
+            default: 'General Inquiries',
+            trim: true
+        },
         appointmentDate: {
             type: Date,
             required: true

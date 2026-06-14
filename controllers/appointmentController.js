@@ -18,6 +18,10 @@ const {
     expireOldPendingAppointments,
     DEFAULT_TIME_SLOTS
 } = require('../utils/appointmentHelpers');
+const {
+    isValidAppointmentCategory,
+    isOfficialAppropriateForCategory
+} = require('../utils/appointmentCategories');
 
 const getPersonName = (person, fallback = 'Resident') => {
     const fullName = [
@@ -64,6 +68,7 @@ const formatEmailDate = (value) => {
 
 const buildAppointmentEmailDetails = (appointment, status) => [
     { label: 'Request Type', value: 'Appointment' },
+    { label: 'Category', value: appointment?.category || 'General Inquiries' },
     { label: 'Purpose', value: appointment?.purpose },
     { label: 'Appointment Date', value: formatEmailDate(appointment?.appointmentDate) },
     { label: 'Time Slot', value: appointment?.timeSlot?.startTime && appointment?.timeSlot?.endTime ? `${appointment.timeSlot.startTime}-${appointment.timeSlot.endTime}` : '' },
@@ -80,6 +85,7 @@ const getAppointmentAuditData = (appointment) => ({
     officialId: appointment?.officialId?._id || appointment?.officialId,
     appointmentDate: appointment?.appointmentDate,
     timeSlot: appointment?.timeSlot,
+    category: appointment?.category || 'General Inquiries',
     purpose: appointment?.purpose
 });
 
@@ -449,15 +455,19 @@ const getAvailableSlots = asyncHandler(async (req, res) => {
  * Request appointment
  */
 const requestAppointment = asyncHandler(async (req, res) => {
-    const { officialId, appointmentDate, startTime, endTime, purpose } = req.body;
+    const { category, officialId, appointmentDate, startTime, endTime, purpose } = req.body;
     const userId = req.user._id;
 
     // Validate required fields
-    if (!officialId || !appointmentDate || !startTime || !endTime || !purpose) {
+    if (!category || !officialId || !appointmentDate || !startTime || !endTime || !purpose) {
         throw createHttpError(
             400,
-            'officialId, appointmentDate, startTime, endTime, and purpose are required'
+            'category, officialId, appointmentDate, startTime, endTime, and purpose are required'
         );
+    }
+
+    if (!isValidAppointmentCategory(category)) {
+        throw createHttpError(400, 'Please choose a valid appointment category');
     }
 
     // Get resident info
@@ -474,6 +484,10 @@ const requestAppointment = asyncHandler(async (req, res) => {
 
     if (official.status !== 'active') {
         throw createHttpError(400, getInactiveOfficialMessage(official));
+    }
+
+    if (!isOfficialAppropriateForCategory(official, category)) {
+        throw createHttpError(400, 'The selected official does not handle this appointment category');
     }
 
     // Validate appointment date
@@ -500,6 +514,7 @@ const requestAppointment = asyncHandler(async (req, res) => {
         residentId: resident._id,
         userId,
         officialId,
+        category,
         appointmentDate: new Date(appointmentDate),
         timeSlot: {
             startTime,
@@ -531,6 +546,7 @@ const requestAppointment = asyncHandler(async (req, res) => {
  */
 const requestPublicAppointment = asyncHandler(async (req, res) => {
     const {
+        category,
         officialId,
         appointmentDate,
         startTime,
@@ -545,11 +561,15 @@ const requestPublicAppointment = asyncHandler(async (req, res) => {
         address
     } = req.body;
 
-    if (!officialId || !appointmentDate || !startTime || !endTime || !purpose) {
+    if (!category || !officialId || !appointmentDate || !startTime || !endTime || !purpose) {
         throw createHttpError(
             400,
-            'officialId, appointmentDate, startTime, endTime, and purpose are required'
+            'category, officialId, appointmentDate, startTime, endTime, and purpose are required'
         );
+    }
+
+    if (!isValidAppointmentCategory(category)) {
+        throw createHttpError(400, 'Please choose a valid appointment category');
     }
 
     const validationError = validateGuestAppointmentData(req.body);
@@ -564,6 +584,10 @@ const requestPublicAppointment = asyncHandler(async (req, res) => {
 
     if (official.status !== 'active') {
         throw createHttpError(400, getInactiveOfficialMessage(official));
+    }
+
+    if (!isOfficialAppropriateForCategory(official, category)) {
+        throw createHttpError(400, 'The selected official does not handle this appointment category');
     }
 
     if (!isValidAppointmentDate(appointmentDate)) {
@@ -608,6 +632,7 @@ const requestPublicAppointment = asyncHandler(async (req, res) => {
         email: normalizeEmail(email),
         address: normalizeText(address),
         officialId,
+        category,
         appointmentDate: new Date(appointmentDate),
         timeSlot: {
             startTime,
